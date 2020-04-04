@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "id": "${project.rootProject.name.toLowerCase()}",
+  "version": "${project.version}",
+
+  "name": "${project.rootProject.name}",
+  "description": "${project.ext.longDescription}",
+  "authors": [
+    "zml"
+  ],
+
+  "license": "Apache v2.0",
+
+  "entrypoints": {
+    "main": [
+      {
+        "value": "ca.stellardrift.confabricate.Confabricate"
+      }
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.4.0"
+  },
+  "suggests": {
+  }
+}
