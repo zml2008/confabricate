@@ -9,6 +9,7 @@ A mod that provides Configurate's core, gson and hocon serializers, and useful u
 - `Identifier`s
 - Any item stored in a `Registry`
 - `Text` (as json)
+- Mixed lists of items and tags (represented by `TaggableCollection`s), currently for blocks, items, entity types, and fluids
 
 ### NBTNodeAdapter
 
@@ -29,14 +30,21 @@ Thanks to @i509VCB for providing an initial implementation of DynamicOps
 
 Confabricate versions are in the format `<confabricate version>+<configurate version>` for easy identification
 
-It is recommeded to use this project in jar-in-jar packaging
+It is recommended to use this project in jar-in-jar packaging
 
-Gradle:
+Confabricate is on jCenter, and Configurate is on the Sponge repository, so we need to declare both at the moment:
 
 ```kotlin
 
+repositories {
+    jcenter()
+    maven(url = "https://repo.spongepowered.org/maven") {
+        name = "sponge"
+    }
+}
+
 dependencies {
-    include("ca.stellardrift:confabricate:[...]")
-    modImplementation("ca.stellardrift:confabricate:[...]")
+    include("ca.stellardrift:confabricate:1.0+3.6.1")
+    modImplementation("ca.stellardrift:confabricate:1.0+3.6.1")
 }
 ```
