@@ -1,6 +1,6 @@
 # Confabricate
 
-A mod that provides Configurate, plus useful utilities, for a Fabric environment.
+A mod that provides Configurate's core, gson and hocon serializers, and useful utilities for a Fabric environment.
 
 ## Fabric-specific features
 
@@ -10,7 +10,7 @@ A mod that provides Configurate, plus useful utilities, for a Fabric environment
 - Any item stored in a `Registry`
 - `Text` (as json)
 
-### NBT ConfigurationLoader
+### NBTNodeAdapter
 
 Translates back and forth between Configurate nodes and Minecraft's own NBT `Tags`
 
@@ -23,14 +23,13 @@ Thanks to @i509VCB for providing an initial implementation of DynamicOps
 
 ### Configuration per-mod
 
-- Utility methods in `Confabricate` to get a HOCON-format configuration
-
+- Utility methods in `Confabricate` to get a HOCON-format configuration for a mod
 
 ## How to use
 
-Jar-in-jar
+Confabricate versions are in the format `<confabricate version>+<configurate version>` for easy identification
 
-Versioning is intended to include the version of Configurate being built against, while allowing for fabric-specific API breakages
+It is recommeded to use this project in jar-in-jar packaging
 
 Gradle:
 

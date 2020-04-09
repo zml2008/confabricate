@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package ca.stellardrift.confabricate.nbt;
+package ca.stellardrift.confabricate;
 
 import com.google.common.collect.ImmutableSet;
 import net.minecraft.nbt.ByteArrayTag;
@@ -27,75 +27,37 @@ import net.minecraft.nbt.IntTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.LongArrayTag;
 import net.minecraft.nbt.LongTag;
-import net.minecraft.nbt.PositionTracker;
 import net.minecraft.nbt.ShortTag;
 import net.minecraft.nbt.StringTag;
 import net.minecraft.nbt.Tag;
-import net.minecraft.nbt.TagReaders;
 import ninja.leaping.configurate.ConfigurationNode;
 import ninja.leaping.configurate.ConfigurationOptions;
-import ninja.leaping.configurate.commented.CommentedConfigurationNode;
-import ninja.leaping.configurate.commented.SimpleCommentedConfigurationNode;
-import ninja.leaping.configurate.loader.AbstractConfigurationLoader;
-import ninja.leaping.configurate.loader.CommentHandler;
-import ninja.leaping.configurate.loader.HeaderMode;
-import org.apache.commons.io.input.ReaderInputStream;
-import org.apache.commons.io.output.WriterOutputStream;
+import ninja.leaping.configurate.SimpleConfigurationNode;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
-import java.io.BufferedReader;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.Writer;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
-import java.util.zip.GZIPInputStream;
-import java.util.zip.GZIPOutputStream;
 
 /**
- * A configuration loader that will convert Minecraft NBT data into a Configurate {@link ConfigurationNode}
+ * A configuration adapter that will convert Minecraft NBT data into a Configurate {@link ConfigurationNode}
  */
-public class NbtConfigurationLoader extends AbstractConfigurationLoader<CommentedConfigurationNode> {
-    private static final byte END_TAG_TYPE = 0;
-    private static final String COMMENT_KEY = "__comment__";
-    private final boolean compressed;
+public class NbtNodeAdapter {
 
-    public static Builder builder() {
-        return new Builder();
-    }
-
-    protected NbtConfigurationLoader(@NonNull Builder builder) {
-        super(builder, new CommentHandler[]{});
-        this.compressed = builder.isCompressed();
-    }
-
-    @Override
-    protected void loadInternal(CommentedConfigurationNode node, BufferedReader reader) throws IOException {
-        DataInputStream dis;
-        if (compressed) {
-            dis = new DataInputStream(new GZIPInputStream(new ReaderInputStream(reader, StandardCharsets.UTF_8))); // eww, fix in configurate v4
-        } else {
-            dis = new DataInputStream(new ReaderInputStream(reader, StandardCharsets.UTF_8)); // eww, fix in configurate v4
-        }
-
-        byte b = dis.readByte();
-        if (b != END_TAG_TYPE) {
-            Tag tag = TagReaders.of(b).read(dis, 0, PositionTracker.DEFAULT);
-            tagToNode(tag, node);
-        }
-    }
-
-    private static void tagToNode(Tag tag, ConfigurationNode node) throws IOException {
+    /**
+     * Given a tag, convert it to a node.
+     * Depending on the configuration of the provided node, the conversion may lose some data when roundtripped back.
+     * For example, array tags may be converted to lists if the node provided does not support arrays.
+     *
+     * @param tag The tag to convert
+     * @param node The node to pupulate
+     * @throws IOException If invalid tags are provided
+     */
+    public static void tagToNode(Tag tag, ConfigurationNode node) throws IOException {
         if (tag instanceof CompoundTag) {
             CompoundTag compoundTag = (CompoundTag) tag;
             for (String key : compoundTag.getKeys()) {
-                if (node instanceof CommentedConfigurationNode && key.equals(COMMENT_KEY)) {
-                    ((CommentedConfigurationNode) node).setComment(compoundTag.getString(key));
-                } else {
-                    tagToNode(compoundTag.get(key), node.getNode(key));
-                }
+                tagToNode(compoundTag.get(key), node.getNode(key));
             }
         } else if (tag instanceof ListTag) {
             for (Tag value : (ListTag) tag) {
@@ -150,7 +112,15 @@ public class NbtConfigurationLoader extends AbstractConfigurationLoader<Commente
         }
     }
 
-    private static Tag nodeToTag(ConfigurationNode node) throws IOException {
+    /**
+     * Convert a node to tag. Because NBT is strongly typed and does not permit lists with mixed types,
+     * some configuration nodes will not be convertible to Tags.
+     *
+     * @param node The configuration node
+     * @return The converted tag object
+     * @throws IOException if an IO error occurs while converting the tag
+     */
+    public static Tag nodeToTag(ConfigurationNode node) throws IOException {
         if (node.hasMapChildren()) {
             CompoundTag tag = new CompoundTag();
             for (Map.Entry<Object, ? extends ConfigurationNode> ent : node.getChildrenMap().entrySet()) {
@@ -191,54 +161,14 @@ public class NbtConfigurationLoader extends AbstractConfigurationLoader<Commente
         }
     }
 
-    @Override
-    protected void saveInternal(ConfigurationNode node, Writer writer) throws IOException {
-        WriterOutputStream os = new WriterOutputStream(writer, StandardCharsets.UTF_8);
-        DataOutputStream dos;
-        if (compressed) {
-            dos = new DataOutputStream(new GZIPOutputStream(os));
-        } else {
-            dos = new DataOutputStream(os);
-        }
-
-        Tag tag = nodeToTag(node);
-
-        dos.writeByte(tag.getType());
-        if (tag.getType() != END_TAG_TYPE) {
-            dos.writeUTF("");
-            tag.write(dos);
-        }
+    public static ConfigurationNode createEmptyNode() {
+        return createEmptyNode(ConfigurationOptions.defaults().setSerializers(Confabricate.getMinecraftTypeSerializers()));
     }
 
-    @NonNull
-    @Override
-    public CommentedConfigurationNode createEmptyNode(@NonNull ConfigurationOptions options) {
-        return SimpleCommentedConfigurationNode.root(options
+    public static ConfigurationNode createEmptyNode(@NonNull ConfigurationOptions options) {
+        return SimpleConfigurationNode.root(options
                 .setAcceptedTypes(ImmutableSet.of(Map.class, List.class, Byte.class,
                         Short.class, Integer.class, Long.class, Float.class, Double.class,
                         long[].class, byte[].class, int[].class, String.class)));
-    }
-
-    public static class Builder extends AbstractConfigurationLoader.Builder<Builder> {
-        private boolean compressed = true;
-
-        protected Builder() {
-
-        }
-
-        public Builder setCompressed(boolean compressed) {
-            this.compressed = compressed;
-            return this;
-        }
-
-        public boolean isCompressed() {
-            return this.compressed;
-        }
-
-        @Override
-        public @NonNull NbtConfigurationLoader build() {
-            this.setHeaderMode(HeaderMode.NONE);
-            return new NbtConfigurationLoader(this);
-        }
     }
 }
