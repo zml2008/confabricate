@@ -9,7 +9,7 @@ plugins {
     id("org.ajoberstar.grgit") version "4.0.2"
 }
 
-val versionBase = "1.0"
+val versionBase = "1.1-SNAPSHOT"
 val versionMinecraft = ext["version.minecraft"] as String
 val versionMappings = ext["version.mappings"] as String
 val versionLoader = ext["version.loader"] as String
