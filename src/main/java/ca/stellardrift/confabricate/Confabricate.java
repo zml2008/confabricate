@@ -256,6 +256,35 @@ public class Confabricate implements ModInitializer {
                 .build();
     }
 
+    /**
+     * See static variant
+     *
+     * @param fixer The fixer containing DFU transformations to apply
+     * @param reference The reference to the DFU {@link DSL} type representing this node
+     * @param targetVersion The version to convert to
+     * @param versionKey The location of the data version in nodes provided to the transformer
+     * @return A transformation that executes a {@link DataFixer} transformation.
+     * @deprecated see {@link #createTransformation(DataFixer, DSL.TypeReference, int, Object...)}, this should have been static
+     */
+    @Deprecated
+    public ConfigurationTransformation createTransformationFrom(DataFixer fixer, DSL.TypeReference reference, int targetVersion, Object... versionKey) {
+        return createTransformation(fixer, reference, targetVersion, versionKey);
+    }
+
+    /**
+     * See static variant
+     *
+     * @param fixer The fixer containing DFU transformations to apply
+     * @param reference The reference to the DFU {@link DSL} type representing this node
+     * @param targetVersion The version to convert to
+     * @param versionKey The location of the data version in nodes provided to the transformer
+     * @return A transformation that executes a {@link DataFixer} transformation.
+     * @deprecated {@link #createTransformAction(DataFixer, DSL.TypeReference, int, Object...)}, this should have been static
+     */
+    @Deprecated
+    public TransformAction createTransformActionFrom(DataFixer fixer, DSL.TypeReference reference, int targetVersion, Object... versionKey) {
+        return createTransformAction(fixer, reference, targetVersion, versionKey);
+    }
 
     /**
      * Create a {@link ConfigurationTransformation} that applies a {@link DataFixer} to a Configurate node. The current
@@ -267,9 +296,9 @@ public class Confabricate implements ModInitializer {
      * @param versionKey The location of the data version in nodes provided to the transformer
      * @return A transformation that executes a {@link DataFixer} transformation.
      */
-    public ConfigurationTransformation createTransformationFrom(DataFixer fixer, DSL.TypeReference reference, int targetVersion, Object... versionKey) {
+    public static ConfigurationTransformation createTransformation(DataFixer fixer, DSL.TypeReference reference, int targetVersion, Object... versionKey) {
         return ConfigurationTransformation.builder()
-                .addAction(new Object[]{}, createTransformActionFrom(fixer, reference, targetVersion, versionKey))
+                .addAction(new Object[]{}, createTransformAction(fixer, reference, targetVersion, versionKey))
                 .build();
 
     }
@@ -284,7 +313,7 @@ public class Confabricate implements ModInitializer {
      * @param versionKey The location of the data version in nodes seen by this action
      * @return The created action
      */
-    public TransformAction createTransformActionFrom(DataFixer fixer, DSL.TypeReference reference, int targetVersion, Object... versionKey) {
+    public static TransformAction createTransformAction(DataFixer fixer, DSL.TypeReference reference, int targetVersion, Object... versionKey) {
         return (inputPath, valueAtPath) ->  {
             final int currentVersion = valueAtPath.getNode(versionKey).getInt(-1);
             final Dynamic<ConfigurationNode> dyn = ConfigurateOps.wrap(valueAtPath);
