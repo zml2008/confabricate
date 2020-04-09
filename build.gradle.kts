@@ -9,7 +9,7 @@ plugins {
     id("org.ajoberstar.grgit") version "4.0.2"
 }
 
-val versionBase = "1.0-SNAPSHOT"
+val versionBase = "1.0"
 val versionMinecraft = ext["version.minecraft"] as String
 val versionMappings = ext["version.mappings"] as String
 val versionLoader = ext["version.loader"] as String
@@ -158,7 +158,7 @@ bintray {
             name = project.version as String
             vcsTag = tag?.name
             desc = tag?.fullMessage
-            released = tag?.commit?.dateTime?.toString()
+            //released = tag?.commit?.dateTime?.toString()
         }
     }
     setPublications(publicationId)
