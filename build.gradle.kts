@@ -1,4 +1,3 @@
-
 plugins {
     id("fabric-loom") version "0.2.6-SNAPSHOT"
     id("com.github.hierynomus.license") version "0.15.0"
@@ -6,11 +5,14 @@ plugins {
     `java-library`
 }
 
-val versionConfigurate = "3.6.1"
-val versionMinecraft = "1.15.2"
+val versionMinecraft = ext["version.minecraft"] as String
+val versionMappings = ext["version.mappings"] as String
+val versionLoader = ext["version.loader"] as String
+val versionFabricApi = ext["version.fabricApi"] as String
+val versionConfigurate = ext["version.configurate"] as String
 
 group = "ca.stellardrift"
-version = "$versionConfigurate-SNAPSHOT"
+version = "1.0-SNAPSHOT+$versionConfigurate"
 
 minecraft {
     refmapName = "${rootProject.name.toLowerCase()}-refmap.json"
@@ -29,6 +31,7 @@ repositories {
     }
 }
 
+
 java {
     sourceCompatibility = JavaVersion.VERSION_1_8
 }
@@ -42,6 +45,11 @@ tasks.processResources {
 }
 
 fun DependencyHandlerScope.apiInclude(spec: String, func: ExternalModuleDependency.() -> Unit = {}) {
+    modApi(spec, func)
+    include(spec, func)
+}
+
+fun DependencyHandlerScope.implementationInclude(spec: String, func: ExternalModuleDependency.() -> Unit = {}) {
     modApi(spec, func)
     include(spec, func)
 }
