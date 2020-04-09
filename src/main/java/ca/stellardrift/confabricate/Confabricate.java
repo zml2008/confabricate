@@ -167,6 +167,9 @@ public class Confabricate implements ModInitializer {
                 LOGGER.warn("Registry " + Registry.REGISTRIES.getId(reg) + " does not have an associated TypeSerializer!");
             }
         }
+
+        // Commands for testing
+       // CommandRegistry.INSTANCE.register(false, TestCommands::register);
     }
 
     private static <T> void registerTaggedRegistry(TypeToken<T> token, Registry<T> registry, TagContainer<T> tagRegistry) {

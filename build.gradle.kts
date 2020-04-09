@@ -67,5 +67,9 @@ dependencies {
     }
     include("com.typesafe:config:1.4.0")
     apiInclude("org.spongepowered:configurate-gson:$versionConfigurate") { isTransitive = false }
+    // For test commands
+    // listOf("commands-v0", "api-base").forEach {
+    //     implementationInclude("net.fabricmc.fabric-api:fabric-$it:$versionFabricApi")
+    // }
 }
 
