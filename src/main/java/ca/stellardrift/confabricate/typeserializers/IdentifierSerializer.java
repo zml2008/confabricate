@@ -38,7 +38,7 @@ import java.util.List;
  *         the first is the namespace and the second is a path. If the list is one element,
  *         that element is parsed as a string (see below).
  *     </li>
- *     <li>A string, in standard <pre>[&lt;namespace>:]&lt;path></pre> format, where the default namespace is <pre>minecraft</pre></li>
+ *     <li>A string, in standard <pre>[&lt;namespace&gt;:]&lt;path&gt;</pre> format, where the default namespace is <pre>minecraft</pre></li>
  * </ul>
  */
 public class IdentifierSerializer implements TypeSerializer<Identifier> {

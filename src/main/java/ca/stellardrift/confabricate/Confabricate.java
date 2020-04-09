@@ -234,8 +234,8 @@ public class Confabricate implements ModInitializer {
 
     /**
      * Get a configuration loader for a mod. The configuration will be in Hocon format.
-     * If the configuration is in its own directory, the path will be <pre>&lt;config root>/&lt;modid>/&lt;modid>.conf</pre>
-     * Otherwise, the path will be <pre>&lt;config root>/&lt;modid>.conf</pre>
+     * If the configuration is in its own directory, the path will be <pre>&lt;config root&gt;/&lt;modid&gt;/&lt;modid&gt;.conf</pre>
+     * Otherwise, the path will be <pre>&lt;config root&gt;/&lt;modid&gt;.conf</pre>
      *
      * The returned {@link ConfigurationLoader ConfigurationLoaders} will be pre-configured to use the type serializers
      * from {@link #getMinecraftTypeSerializers()}, but will otherwise use default settings.
