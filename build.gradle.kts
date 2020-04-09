@@ -56,6 +56,14 @@ tasks.withType<Jar> {
     }
 }
 
+val javadocJar by tasks.getting
+val sourcesJar by tasks.getting
+
+tasks.build {
+    dependsOn(javadocJar)
+    dependsOn(sourcesJar)
+}
+
 tasks.processResources {
     expand("project" to project)
 }
@@ -98,10 +106,10 @@ publishing {
             }
             artifact(tasks.remapJar.get())
 
-            artifact(tasks.getByName("sourcesJar")) {
+            artifact(sourcesJar) {
                 builtBy(tasks.remapSourcesJar.get())
             }
-            artifact(tasks.getByName("javadocJar"))
+            artifact(javadocJar)
             //from(components["java"]) // doesn't work on fabric
 
             pom {
