@@ -25,7 +25,6 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.List;
-import java.util.Map;
 
 /**
  * Serializes an {@link Identifier} to a configuration object.
@@ -34,14 +33,12 @@ import java.util.Map;
  *
  * When identifiers are read, they are accepted in the formats of:
  * <ul>
- *     <li>A mapping, where the identifier's namespace is under the key <pre>namespace</pre>
- *     or <pre>key</pre>, and the path is under <pre>path</pre> or <pre>value</pre>.</li>
  *     <li>
  *         A list of either one or two elements. If the list is two elements,
  *         the first is the namespace and the second is a path. If the list is one element,
  *         that element is parsed as a string (see below).
  *     </li>
- *     <li>A string, in standard <pre>[namespace:]&ltpath></pre> format, where the default namespace is <pre>minecraft</pre></li>
+ *     <li>A string, in standard <pre>[&lt;namespace>:]&lt;path></pre> format, where the default namespace is <pre>minecraft</pre></li>
  * </ul>
  */
 public class IdentifierSerializer implements TypeSerializer<Identifier> {
@@ -64,21 +61,7 @@ public class IdentifierSerializer implements TypeSerializer<Identifier> {
         if (node.isVirtual()) {
             return null;
         }
-        if (node.hasMapChildren()) {
-            String key = firstPresentChild(node, "namespace", "key").getString();
-            String value = firstPresentChild(node, "path", "value").getString();
-            if (value == null) {
-                throw listAcceptedFormats();
-            }
-            if (key == null) {
-                if (value.contains(":")) {
-                    return createIdentifier(value);
-                } else {
-                    throw listAcceptedFormats();
-                }
-            }
-            return createIdentifier(key, value);
-        } else if (node.hasListChildren()) {
+        if (node.hasListChildren()) {
             List<? extends ConfigurationNode> children = node.getChildrenList();
             switch (children.size()) {
                 case 2:
@@ -105,17 +88,7 @@ public class IdentifierSerializer implements TypeSerializer<Identifier> {
         }
     }
 
-    private static ConfigurationNode firstPresentChild(ConfigurationNode parent, String... values) {
-        Map<Object, ? extends ConfigurationNode> children =parent.getChildrenMap();
-        for (String value : values) {
-            if (children.containsKey(value)) {
-                return children.get(value);
-            }
-        }
-        return parent.getNode(values[0]);
-    }
-
-    private static Identifier createIdentifier(String key, String value) throws ObjectMappingException {
+    static Identifier createIdentifier(String key, String value) throws ObjectMappingException {
         try {
             return new Identifier(key, value);
         } catch (InvalidIdentifierException ex) {
@@ -123,7 +96,7 @@ public class IdentifierSerializer implements TypeSerializer<Identifier> {
         }
     }
 
-    private static Identifier createIdentifier(String data) throws ObjectMappingException {
+    static Identifier createIdentifier(String data) throws ObjectMappingException {
         try {
             return new Identifier(data);
         } catch (InvalidIdentifierException ex) {
@@ -132,7 +105,7 @@ public class IdentifierSerializer implements TypeSerializer<Identifier> {
     }
 
     private static ObjectMappingException listAcceptedFormats() {
-        return new ObjectMappingException("The provided format is not an acceptable Identifier format. See IdentifierSerializer javadocs for details");
+        return new ObjectMappingException("The provided item must be in [<namespace>:]<path> format");
     }
 
     static void toNode(Identifier ident, ConfigurationNode node) {

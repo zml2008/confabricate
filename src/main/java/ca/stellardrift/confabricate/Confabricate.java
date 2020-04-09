@@ -17,8 +17,11 @@ package ca.stellardrift.confabricate;
 
 import ca.stellardrift.confabricate.typeserializers.IdentifierSerializer;
 import ca.stellardrift.confabricate.typeserializers.RegistrySerializer;
+import ca.stellardrift.confabricate.typeserializers.TaggableCollection;
+import ca.stellardrift.confabricate.typeserializers.TaggableCollectionSerializer;
 import ca.stellardrift.confabricate.typeserializers.TextSerializer;
 import com.google.common.collect.Sets;
+import com.google.common.reflect.TypeParameter;
 import com.google.common.reflect.TypeToken;
 import com.mojang.datafixers.DSL;
 import com.mojang.datafixers.DataFixer;
@@ -49,6 +52,11 @@ import net.minecraft.structure.StructurePieceType;
 import net.minecraft.structure.pool.StructurePoolElementType;
 import net.minecraft.structure.processor.StructureProcessorType;
 import net.minecraft.structure.rule.RuleTestType;
+import net.minecraft.tag.BlockTags;
+import net.minecraft.tag.EntityTypeTags;
+import net.minecraft.tag.FluidTags;
+import net.minecraft.tag.ItemTags;
+import net.minecraft.tag.TagContainer;
 import net.minecraft.util.registry.MutableRegistry;
 import net.minecraft.util.registry.Registry;
 import net.minecraft.village.VillagerProfession;
@@ -112,12 +120,12 @@ public class Confabricate implements ModInitializer {
                 .registerType(TextSerializer.TOKEN, TextSerializer.INSTANCE);
 
         registerRegistry(SoundEvent.class, Registry.SOUND_EVENT);
-        registerRegistry(Fluid.class, Registry.FLUID);
+        registerTaggedRegistry(TypeToken.of(Fluid.class), Registry.FLUID, FluidTags.getContainer());
         registerRegistry(StatusEffect.class, Registry.STATUS_EFFECT);
-        registerRegistry(Block.class, Registry.BLOCK);
+        registerTaggedRegistry(TypeToken.of(Block.class), Registry.BLOCK, BlockTags.getContainer());
         registerRegistry(Enchantment.class, Registry.ENCHANTMENT);
-        registerRegistry(new TypeToken<EntityType<?>>() {}, Registry.ENTITY_TYPE);
-        registerRegistry(Item.class, Registry.ITEM);
+        registerTaggedRegistry(new TypeToken<EntityType<?>>() {}, Registry.ENTITY_TYPE, EntityTypeTags.getContainer());
+        registerTaggedRegistry(TypeToken.of(Item.class), Registry.ITEM, ItemTags.getContainer());
         registerRegistry(Potion.class, Registry.POTION);
         registerRegistry(new TypeToken<Carver<?>>() {}, Registry.CARVER);
         registerRegistry(new TypeToken<SurfaceBuilder<?>>() {}, Registry.SURFACE_BUILDER);
@@ -158,6 +166,17 @@ public class Confabricate implements ModInitializer {
             if (!registeredRegistries.contains(reg) && !brokenRegistries.contains(reg)) {
                 LOGGER.warn("Registry " + Registry.REGISTRIES.getId(reg) + " does not have an associated TypeSerializer!");
             }
+        }
+    }
+
+    private static <T> void registerTaggedRegistry(TypeToken<T> token, Registry<T> registry, TagContainer<T> tagRegistry) {
+        final TypeParameter<T> tParam = new TypeParameter<T>() {};
+        final TypeToken<TaggableCollection<T>> fullToken = new TypeToken<TaggableCollection<T>>() {
+        }.where(tParam, token);
+
+        if (registeredRegistries.add(registry)) {
+            mcTypeSerializers.registerType(fullToken, new TaggableCollectionSerializer<>(registry, tagRegistry));
+            mcTypeSerializers.registerType(token, new RegistrySerializer<>(registry));
         }
     }
 
