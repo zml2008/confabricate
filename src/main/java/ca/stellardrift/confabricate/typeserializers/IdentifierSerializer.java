@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package ca.stellardrift.confabricate.typeserializers;
 
 import com.google.common.reflect.TypeToken;
@@ -70,11 +71,13 @@ public class IdentifierSerializer implements TypeSerializer<Identifier> {
                     if (key != null && value != null) {
                         return createIdentifier(key, value);
                     }
+                    throw listAcceptedFormats();
                 case 1:
                     final String combined = children.get(0).getString();
                     if (combined != null) {
                         return createIdentifier(combined);
                     }
+                    throw listAcceptedFormats();
                 default:
                     throw listAcceptedFormats();
 

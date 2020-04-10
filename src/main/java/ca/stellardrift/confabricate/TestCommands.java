@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package ca.stellardrift.confabricate;
 
 import com.google.common.reflect.TypeToken;
@@ -47,8 +48,6 @@ import ninja.leaping.configurate.objectmapping.Setting;
 import ninja.leaping.configurate.objectmapping.serialize.ConfigSerializable;
 
 import java.io.BufferedReader;
-import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.StringReader;
 import java.nio.file.FileSystems;
@@ -170,7 +169,7 @@ class TestCommands {
     }
 
     static Tag dumpToFile(Consumer<CompoundTag> dumpFunc, Path file) throws CommandException {
-        try (ByteArrayOutputStream os = new ByteArrayOutputStream(1024); DataOutputStream dos = new DataOutputStream(os)) {
+        try {
             CompoundTag out = new CompoundTag();
             dumpFunc.accept(out);
 
@@ -185,6 +184,7 @@ class TestCommands {
         } catch (Throwable e) {
             e.printStackTrace();
             throw new CommandException(new LiteralText(e.getMessage()));
+
         }
     }
 
