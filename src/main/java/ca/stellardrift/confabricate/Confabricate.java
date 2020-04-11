@@ -58,6 +58,7 @@ import net.minecraft.tag.EntityTypeTags;
 import net.minecraft.tag.FluidTags;
 import net.minecraft.tag.ItemTags;
 import net.minecraft.tag.TagContainer;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.registry.MutableRegistry;
 import net.minecraft.util.registry.Registry;
 import net.minecraft.village.VillagerProfession;
@@ -98,19 +99,24 @@ import java.util.Set;
  * This class has static utility methods for usage by other mods -- it should not be instantiated by anyone but the mod loader.
  */
 public class Confabricate implements ModInitializer {
-    private static boolean initialized;
+    static final String MOD_ID = "confabricate";
+
+    private static Confabricate instance;
     static final Logger LOGGER = LogManager.getLogger();
 
-    private static TypeSerializerCollection mcTypeSerializers;
-    private static Set<Registry<?>> brokenRegistries = Sets.newHashSet();
-    private static Set<Registry<?>> registeredRegistries = Sets.newHashSet();
+    private TypeSerializerCollection mcTypeSerializers;
+    private final Set<Registry<?>> brokenRegistries = Sets.newHashSet();
+    private final Set<Registry<?>> registeredRegistries = Sets.newHashSet();
 
     public Confabricate() {
-        if (initialized) {
+        if (instance != null) {
             throw new ExceptionInInitializerError("Confabricate can only be initialized by the Fabric mod loader");
         }
-        initialized = true;
+        instance = this;
+    }
 
+    static Identifier id(String item) {
+        return new Identifier(MOD_ID, item);
     }
 
     @Override
@@ -173,7 +179,7 @@ public class Confabricate implements ModInitializer {
        // CommandRegistry.INSTANCE.register(false, TestCommands::register);
     }
 
-    private static <T> void registerTaggedRegistry(TypeToken<T> token, Registry<T> registry, TagContainer<T> tagRegistry) {
+    private <T> void registerTaggedRegistry(TypeToken<T> token, Registry<T> registry, TagContainer<T> tagRegistry) {
         final TypeParameter<T> tParam = new TypeParameter<T>() {};
         final TypeToken<TaggableCollection<T>> fullToken = new TypeToken<TaggableCollection<T>>() {
         }.where(tParam, token);
@@ -191,7 +197,7 @@ public class Confabricate implements ModInitializer {
      * @param registry The registry
      * @param <T> The type registered by the registry
      */
-    private static <T> void registerRegistry(TypeToken<T> token, Registry<T> registry) {
+    private <T> void registerRegistry(TypeToken<T> token, Registry<T> registry) {
         if (registeredRegistries.add(registry)) {
             mcTypeSerializers.registerType(token, new RegistrySerializer<>(registry));
         }
@@ -204,7 +210,7 @@ public class Confabricate implements ModInitializer {
      * @param registry The registry to register
      * @param <T> The type contained by the registry
      */
-    private static <T> void registerRegistry(Class<T> registeredType, Registry<T> registry) {
+    private <T> void registerRegistry(Class<T> registeredType, Registry<T> registry) {
         registerRegistry(TypeToken.of(registeredType), registry);
     }
 
@@ -218,7 +224,7 @@ public class Confabricate implements ModInitializer {
      * @return Confabricate's collection of serializers.
      */
     public static TypeSerializerCollection getMinecraftTypeSerializers() {
-        return mcTypeSerializers;
+        return instance.mcTypeSerializers;
     }
 
     /**
