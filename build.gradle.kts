@@ -9,11 +9,11 @@ plugins {
 }
 
 val versionBase = "1.1-SNAPSHOT"
-val versionMinecraft = ext["version.minecraft"] as String
-val versionMappings = ext["version.mappings"] as String
-val versionLoader = ext["version.loader"] as String
-val versionFabricApi = ext["version.fabricApi"] as String
-val versionConfigurate = ext["version.configurate"] as String
+val versionMinecraft: String by project
+val versionMappings: String by project
+val versionLoader: String by project
+val versionFabricApi: String by project
+val versionConfigurate: String by project
 
 group = "ca.stellardrift"
 version = "$versionBase+$versionConfigurate"
@@ -47,8 +47,8 @@ tasks.processResources {
 
 dependencies {
     minecraft("com.mojang:minecraft:$versionMinecraft")
-    mappings("net.fabricmc:yarn:$versionMinecraft+build.14:v2")
-    modImplementation("net.fabricmc:fabric-loader:0.7.9+build.190")
+    mappings("net.fabricmc:yarn:$versionMinecraft+build.$versionMappings:v2")
+    modImplementation("net.fabricmc:fabric-loader:$versionLoader")
 
     apiInclude(configurate("core", versionConfigurate)) {
         exclude("com.google.guava")
