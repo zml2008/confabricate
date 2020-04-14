@@ -1,11 +1,10 @@
-import ca.stellardrift.build.apache2
 import ca.stellardrift.build.apiInclude
 import ca.stellardrift.build.configurate
 import ca.stellardrift.build.sponge
 
 plugins {
     id("fabric-loom") version "0.2.6-SNAPSHOT"
-    id("ca.stellardrift.opinionated") version "1.0"
+    id("ca.stellardrift.opinionated") version "1.0.1"
 }
 
 val versionBase = "1.1-SNAPSHOT"
@@ -35,9 +34,9 @@ repositories {
 tasks.withType(Jar::class).configureEach {
     manifest {
         attributes("Specification-Name" to "Configurate",
-        "Specification-Version" to versionConfigurate,
-        "Implementation-Name" to project.name,
-        "Implementation-Version" to versionBase)
+                "Specification-Version" to versionConfigurate,
+                "Implementation-Name" to project.name,
+                "Implementation-Version" to versionBase)
     }
 }
 
@@ -67,7 +66,7 @@ dependencies {
 
 opinionated {
     github("zml2008", "confabricate")
-    license.set(apache2())
+    apache2()
     publication.apply {
         artifact(tasks.jar.get()) {
             classifier = "dev"
