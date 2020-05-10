@@ -84,11 +84,14 @@ import ninja.leaping.configurate.hocon.HoconConfigurationLoader;
 import ninja.leaping.configurate.loader.ConfigurationLoader;
 import ninja.leaping.configurate.objectmapping.serialize.TypeSerializerCollection;
 import ninja.leaping.configurate.objectmapping.serialize.TypeSerializers;
+import ninja.leaping.configurate.reference.ConfigurationReference;
+import ninja.leaping.configurate.reference.WatchServiceListener;
 import ninja.leaping.configurate.transformation.ConfigurationTransformation;
 import ninja.leaping.configurate.transformation.TransformAction;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Set;
 
@@ -103,6 +106,7 @@ public class Confabricate implements ModInitializer {
     private static Confabricate instance;
     static final Logger LOGGER = LogManager.getLogger();
 
+    private WatchServiceListener listener;
     private TypeSerializerCollection mcTypeSerializers;
     private final Set<Registry<?>> brokenRegistries = Sets.newHashSet();
     private final Set<Registry<?>> registeredRegistries = Sets.newHashSet();
@@ -120,6 +124,20 @@ public class Confabricate implements ModInitializer {
 
     @Override
     public void onInitialize() {
+        try {
+            listener = WatchServiceListener.create();
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                try {
+                    listener.close();
+                } catch (IOException e) {
+                    LOGGER.catching(e);
+                }
+            }, "Confabricate shutdown thread"));
+        } catch (IOException e) {
+            LOGGER.error("Could not initialize file listener", e);
+        }
+
+
         mcTypeSerializers = TypeSerializerCollection.defaults()
                 .newChild()
                 .register(IdentifierSerializer.TOKEN, IdentifierSerializer.INSTANCE)
@@ -251,15 +269,63 @@ public class Confabricate implements ModInitializer {
      * @return The newly created configuration loader
      */
     public static ConfigurationLoader<CommentedConfigurationNode> createLoaderFor(ModContainer mod, boolean ownDirectory) {
+        return HoconConfigurationLoader.builder()
+                .setPath(getConfigurationFile(mod, ownDirectory))
+                .setDefaultOptions(o -> o.withSerializers(getMinecraftTypeSerializers()))
+                .build();
+    }
+
+    /**
+     * Create a configuration reference to the provided mod's main configuration file
+     * By default, this config file is in a dedicated directory for the mod.
+     * The returned reference will automatically reload.
+     *
+     * @see #createConfigurationFor(ModContainer, boolean)
+     * @param mod The mod wanting to access its config
+     * @return A configuration reference for a loaded node in HOCON format
+     * @throws IOException if a listener could not be established or the configuration failed to load
+     */
+    public static ConfigurationReference<CommentedConfigurationNode> createConfigurationFor(ModContainer mod) throws IOException {
+        return createConfigurationFor(mod, true);
+    }
+
+    /**
+     * Get a configuration reference for a mod. The configuration will be in Hocon format.
+     * If the configuration is in its own directory, the path will be <pre>&lt;config root&gt;/&lt;modid&gt;/&lt;modid&gt;.conf</pre>
+     * Otherwise, the path will be <pre>&lt;config root&gt;/&lt;modid&gt;.conf</pre>
+     *
+     * The reference's {@link ConfigurationLoader} will be pre-configured to use the type serializers
+     * from {@link #getMinecraftTypeSerializers()}, but will otherwise use default settings.
+     *
+     * @param mod The mod to get the configuration loader for
+     * @param ownDirectory Whether the configuration should be in a directory just for the mod
+     * @return The newly created and loaded configuration reference
+     * @throws IOException if a listener could not be established or the configuration failed to load
+     */
+    public static ConfigurationReference<CommentedConfigurationNode> createConfigurationFor(ModContainer mod, boolean ownDirectory) throws IOException {
+        return getFileWatcher().listenToConfiguration(path -> {
+            return HoconConfigurationLoader.builder()
+                    .setPath(path)
+                    .setDefaultOptions(o -> o.withSerializers(getMinecraftTypeSerializers()))
+                    .build();
+        }, getConfigurationFile(mod, ownDirectory));
+    }
+
+    /**
+     * Get the path to a configuration file in HOCON format for the provided mod.
+     *
+     * HOCON uses the {@code .conf} file extension.
+     *
+     * @param mod container of the mod
+     * @param ownDirectory whether the configuration should be in its own directory, or in the main configuration directory
+     * @return path to a configuration file
+     */
+    public static Path getConfigurationFile(ModContainer mod, boolean ownDirectory) {
         Path configRoot = FabricLoader.getInstance().getConfigDirectory().toPath();
         if (ownDirectory) {
             configRoot = configRoot.resolve(mod.getMetadata().getId());
         }
-        Path configFile = configRoot.resolve(mod.getMetadata().getId() + ".conf");
-        return HoconConfigurationLoader.builder()
-                .setPath(configFile)
-                .setDefaultOptions(o -> o.withSerializers(getMinecraftTypeSerializers()))
-                .build();
+        return configRoot.resolve(mod.getMetadata().getId() + ".conf");
     }
 
     /**
@@ -326,5 +392,13 @@ public class Confabricate implements ModInitializer {
             valueAtPath.setValue(fixer.update(reference, dyn, currentVersion, targetVersion).getValue());
             return null;
         };
+    }
+
+    public static WatchServiceListener getFileWatcher() {
+        final WatchServiceListener ret = instance.listener;
+        if (ret == null) {
+            throw new IllegalStateException("Configurate file watcher failed to initialize, check log for earlier errors");
+        }
+        return ret;
     }
 }

@@ -53,15 +53,15 @@ dependencies {
     modImplementation("net.fabricmc:fabric-loader:$versionLoader")
 
     modApi(platform(configurate("bom", versionConfigurate)))
-    apiInclude(configurate("core")) {
+    apiInclude(configurate("core", versionConfigurate)) {
         exclude("com.google.guava")
     }
-    apiInclude(configurate("hocon")) {
+    apiInclude(configurate("hocon", versionConfigurate)) {
         exclude("com.google.guava")
     }
 
     include("com.typesafe:config:1.4.0")
-    apiInclude(configurate("gson")) { isTransitive = false }
+    apiInclude(configurate("gson", versionConfigurate)) { isTransitive = false }
     // For test commands
     // listOf("commands-v0", "api-base").forEach {
     //     implementationInclude("net.fabricmc.fabric-api:fabric-$it:$versionFabricApi")
