@@ -44,14 +44,14 @@ public class TaggableCollectionSerializer<T> implements TypeSerializer<TaggableC
     @Nullable
     @Override
     public TaggableCollection<T> deserialize(@NonNull TypeToken<?> type, @NonNull ConfigurationNode value) throws ObjectMappingException {
-        if (value.hasMapChildren()) {
+        if (value.isMap()) {
             throw new ObjectMappingException("Tags cannot be provided in map format");
         }
 
         ImmutableSet.Builder<T> elements = ImmutableSet.builder();
         ImmutableSet.Builder<Tag<T>> tagElements = ImmutableSet.builder();
 
-        if (value.hasListChildren()) {
+        if (value.isList()) {
             for (ConfigurationNode node : value.getChildrenList()) {
                 handleSingle(node, elements, tagElements);
             }
@@ -97,11 +97,11 @@ public class TaggableCollectionSerializer<T> implements TypeSerializer<TaggableC
                 if (id == null) {
                     throw new ObjectMappingException("Unknown element " + element);
                 }
-                IdentifierSerializer.toNode(id, value.getAppendedNode());
+                IdentifierSerializer.toNode(id, value.appendListNode());
             }
 
             for (Tag<T> tag : obj.getTaggedElements()) {
-                value.getAppendedNode().setValue(TAG_PREFIX + tag.getId().toString());
+                value.appendListNode().setValue(TAG_PREFIX + tag.getId().toString());
             }
         }
 

@@ -79,7 +79,6 @@ import net.minecraft.world.gen.stateprovider.BlockStateProviderType;
 import net.minecraft.world.gen.surfacebuilder.SurfaceBuilder;
 import net.minecraft.world.poi.PointOfInterestType;
 import ninja.leaping.configurate.ConfigurationNode;
-import ninja.leaping.configurate.ConfigurationOptions;
 import ninja.leaping.configurate.commented.CommentedConfigurationNode;
 import ninja.leaping.configurate.hocon.HoconConfigurationLoader;
 import ninja.leaping.configurate.loader.ConfigurationLoader;
@@ -121,10 +120,10 @@ public class Confabricate implements ModInitializer {
 
     @Override
     public void onInitialize() {
-        mcTypeSerializers = TypeSerializers.getDefaultSerializers()
+        mcTypeSerializers = TypeSerializerCollection.defaults()
                 .newChild()
-                .registerType(IdentifierSerializer.TOKEN, IdentifierSerializer.INSTANCE)
-                .registerType(TextSerializer.TOKEN, TextSerializer.INSTANCE);
+                .register(IdentifierSerializer.TOKEN, IdentifierSerializer.INSTANCE)
+                .register(TextSerializer.TOKEN, TextSerializer.INSTANCE);
 
         registerRegistry(SoundEvent.class, Registry.SOUND_EVENT);
         registerTaggedRegistry(TypeToken.of(Fluid.class), Registry.FLUID, FluidTags.getContainer());
@@ -185,8 +184,8 @@ public class Confabricate implements ModInitializer {
         }.where(tParam, token);
 
         if (registeredRegistries.add(registry)) {
-            mcTypeSerializers.registerType(fullToken, new TaggableCollectionSerializer<>(registry, tagRegistry));
-            mcTypeSerializers.registerType(token, new RegistrySerializer<>(registry));
+            mcTypeSerializers.register(fullToken, new TaggableCollectionSerializer<>(registry, tagRegistry));
+            mcTypeSerializers.register(token, new RegistrySerializer<>(registry));
         }
     }
 
@@ -199,7 +198,7 @@ public class Confabricate implements ModInitializer {
      */
     private <T> void registerRegistry(TypeToken<T> token, Registry<T> registry) {
         if (registeredRegistries.add(registry)) {
-            mcTypeSerializers.registerType(token, new RegistrySerializer<>(registry));
+            mcTypeSerializers.register(token, new RegistrySerializer<>(registry));
         }
     }
 
@@ -259,7 +258,7 @@ public class Confabricate implements ModInitializer {
         Path configFile = configRoot.resolve(mod.getMetadata().getId() + ".conf");
         return HoconConfigurationLoader.builder()
                 .setPath(configFile)
-                .setDefaultOptions(ConfigurationOptions.defaults().setSerializers(getMinecraftTypeSerializers()))
+                .setDefaultOptions(o -> o.withSerializers(getMinecraftTypeSerializers()))
                 .build();
     }
 

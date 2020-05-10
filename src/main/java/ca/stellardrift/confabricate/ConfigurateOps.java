@@ -23,9 +23,7 @@ import com.mojang.datafixers.types.DynamicOps;
 import com.mojang.datafixers.types.Type;
 import ninja.leaping.configurate.ConfigurationNode;
 import ninja.leaping.configurate.ConfigurationOptions;
-import ninja.leaping.configurate.ValueType;
 import ninja.leaping.configurate.commented.CommentedConfigurationNode;
-import ninja.leaping.configurate.commented.SimpleCommentedConfigurationNode;
 
 import java.util.Map;
 import java.util.Optional;
@@ -43,8 +41,8 @@ import java.util.stream.Stream;
  */
 public final class ConfigurateOps implements DynamicOps<ConfigurationNode> {
     private static final ConfigurateOps INSTANCE = new ConfigurateOps(() ->
-            SimpleCommentedConfigurationNode.root(ConfigurationOptions.defaults()
-                    .setSerializers(Confabricate.getMinecraftTypeSerializers())));
+            CommentedConfigurationNode.root(ConfigurationOptions.defaults()
+                    .withSerializers(Confabricate.getMinecraftTypeSerializers())));
 
     private final Supplier<? extends ConfigurationNode> factory;
 
@@ -79,7 +77,7 @@ public final class ConfigurateOps implements DynamicOps<ConfigurationNode> {
             return new Dynamic<>(getInstance(), node);
         } else {
             final ConfigurationOptions opts = node.getOptions();
-            return new Dynamic<>(getWithNodeFactory(() -> SimpleCommentedConfigurationNode.root(opts)), node);
+            return new Dynamic<>(getWithNodeFactory(() -> CommentedConfigurationNode.root(opts)), node);
         }
     }
 
@@ -98,42 +96,40 @@ public final class ConfigurateOps implements DynamicOps<ConfigurationNode> {
             throw new NullPointerException("input is null");
         }
 
-        switch (input.getValueType()) {
-            case SCALAR:
-                Object value = input.getValue();
-                if (value instanceof String) {
-                    return DSL.string();
-                } else if (value instanceof Boolean) {
-                    return DSL.bool();
-                } else if (value instanceof Short) {
-                    return DSL.shortType();
-                } else if (value instanceof Integer) {
-                    return DSL.intType();
-                } else if (value instanceof Long) {
-                    return DSL.longType();
-                } else if (value instanceof Float) {
-                    return DSL.floatType();
-                } else if (value instanceof Double) {
-                    return DSL.doubleType();
-                } else if (value instanceof Byte) {
-                    return DSL.byteType();
-                } else {
-                    throw new IllegalArgumentException("Scalar value '" + input + "' has an unknown type: " + value.getClass().getName());
-                }
-            case MAP:
-                return DSL.compoundList(DSL.remainderType(), DSL.remainderType());
-            case LIST:
-                return DSL.list(DSL.remainderType());
-            case NULL:
+        if (input.isMap()) {
+            return DSL.compoundList(DSL.remainderType(), DSL.remainderType());
+
+        } else if (input.isList()) {
+            return DSL.list(DSL.remainderType());
+        } else {
+            Object value = input.getValue();
+            if (value == null) {
                 return DSL.nilType();
-            default:
-                throw new IllegalArgumentException("Value type '" + input + "' has an unknown type: " + input.getValue().getClass().getName());
+            } else if (value instanceof String) {
+                return DSL.string();
+            } else if (value instanceof Boolean) {
+                return DSL.bool();
+            } else if (value instanceof Short) {
+                return DSL.shortType();
+            } else if (value instanceof Integer) {
+                return DSL.intType();
+            } else if (value instanceof Long) {
+                return DSL.longType();
+            } else if (value instanceof Float) {
+                return DSL.floatType();
+            } else if (value instanceof Double) {
+                return DSL.doubleType();
+            } else if (value instanceof Byte) {
+                return DSL.byteType();
+            } else {
+                throw new IllegalArgumentException("Scalar value '" + input + "' has an unknown type: " + value.getClass().getName());
+            }
         }
     }
 
     @Override
     public Optional<Number> getNumberValue(ConfigurationNode input) {
-        if (input.getValueType() == ValueType.SCALAR) {
+        if (!(input.isMap() || input.isList())) {
             if (input.getValue() instanceof Number) {
                 return Optional.of((Number) input.getValue());
             } else if (input.getValue() instanceof Boolean) {
@@ -166,9 +162,9 @@ public final class ConfigurateOps implements DynamicOps<ConfigurationNode> {
 
     @Override
     public ConfigurationNode mergeInto(ConfigurationNode input, ConfigurationNode value) {
-        if (input.hasListChildren()) {
+        if (input.isList()) {
             ConfigurationNode ret = input.copy();
-            ret.getAppendedNode().setValue(value);
+            ret.appendListNode().setValue(value);
             return ret;
         }
         return input;
@@ -194,7 +190,7 @@ public final class ConfigurateOps implements DynamicOps<ConfigurationNode> {
 
     @Override
     public Optional<Map<ConfigurationNode, ConfigurationNode>> getMapValues(ConfigurationNode input) {
-        if(input.hasMapChildren()) {
+        if(input.isMap()) {
             ImmutableMap.Builder<ConfigurationNode, ConfigurationNode> builder = ImmutableMap.builder();
             for (Map.Entry<Object, ? extends ConfigurationNode> entry : input.getChildrenMap().entrySet()) {
                 builder.put(empty().setValue(entry.getKey()), entry.getValue().copy());
@@ -218,7 +214,7 @@ public final class ConfigurateOps implements DynamicOps<ConfigurationNode> {
 
     @Override
     public Optional<Stream<ConfigurationNode>> getStream(ConfigurationNode input) {
-        if(input.hasListChildren()) {
+        if(input.isList()) {
             Stream<ConfigurationNode> stream = input.getChildrenList().stream().map(it -> it);
             return Optional.of(stream);
         }
@@ -230,14 +226,14 @@ public final class ConfigurateOps implements DynamicOps<ConfigurationNode> {
     public ConfigurationNode createList(Stream<ConfigurationNode> input) {
         ConfigurationNode ret = empty();
         input.forEach(it -> {
-            ret.getAppendedNode().setValue(it);
+            ret.appendListNode().setValue(it);
         });
         return ret;
     }
 
     @Override
     public ConfigurationNode remove(ConfigurationNode input, String key) {
-        if(input.hasMapChildren()) {
+        if(input.isMap()) {
             ConfigurationNode ret = input.copy();
             ret.getNode(key).setValue(null);
             return ret;

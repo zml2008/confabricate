@@ -62,7 +62,7 @@ public class IdentifierSerializer implements TypeSerializer<Identifier> {
         if (node.isVirtual()) {
             return null;
         }
-        if (node.hasListChildren()) {
+        if (node.isList()) {
             List<? extends ConfigurationNode> children = node.getChildrenList();
             switch (children.size()) {
                 case 2:

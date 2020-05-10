@@ -28,14 +28,17 @@ license {
 
 repositories {
     jcenter()
+    maven(url="https://repo.glaremasters.me/repository/permissionsex") {
+        name = "pex"
+    }
     sponge()
 }
 
 tasks.withType(Jar::class).configureEach {
     manifest {
-        attributes("Specification-Name" to "Configurate",
+        attributes("Specification-Title" to "Configurate",
                 "Specification-Version" to versionConfigurate,
-                "Implementation-Name" to project.name,
+                "Implementation-Title" to project.name,
                 "Implementation-Version" to versionBase)
     }
 }
@@ -49,15 +52,16 @@ dependencies {
     mappings("net.fabricmc:yarn:$versionMinecraft+build.$versionMappings:v2")
     modImplementation("net.fabricmc:fabric-loader:$versionLoader")
 
-    apiInclude(configurate("core", versionConfigurate)) {
+    modApi(platform(configurate("bom", versionConfigurate)))
+    apiInclude(configurate("core")) {
         exclude("com.google.guava")
     }
-    apiInclude(configurate("hocon", versionConfigurate)) {
+    apiInclude(configurate("hocon")) {
         exclude("com.google.guava")
     }
 
     include("com.typesafe:config:1.4.0")
-    apiInclude(configurate("gson", versionConfigurate)) { isTransitive = false }
+    apiInclude(configurate("gson")) { isTransitive = false }
     // For test commands
     // listOf("commands-v0", "api-base").forEach {
     //     implementationInclude("net.fabricmc.fabric-api:fabric-$it:$versionFabricApi")

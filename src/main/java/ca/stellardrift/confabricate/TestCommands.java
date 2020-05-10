@@ -40,8 +40,6 @@ import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import ninja.leaping.configurate.ConfigurationNode;
-import ninja.leaping.configurate.ConfigurationOptions;
-import ninja.leaping.configurate.SimpleConfigurationNode;
 import ninja.leaping.configurate.gson.GsonConfigurationLoader;
 import ninja.leaping.configurate.objectmapping.ObjectMappingException;
 import ninja.leaping.configurate.objectmapping.Setting;
@@ -114,7 +112,7 @@ class TestCommands {
         return literal("parse").then(argument("json", StringArgumentType.greedyString()).executes(ctx -> {
             String jsonText = StringArgumentType.getString(ctx, "json");
             GsonConfigurationLoader loader = GsonConfigurationLoader.builder()
-                    .setDefaultOptions(ConfigurationOptions.defaults().setSerializers(Confabricate.getMinecraftTypeSerializers()))
+                    .setDefaultOptions(o -> o.withSerializers(Confabricate.getMinecraftTypeSerializers()))
                     .setSource(() -> new BufferedReader(new StringReader(jsonText))).build();
 
             try {
@@ -173,7 +171,7 @@ class TestCommands {
             CompoundTag out = new CompoundTag();
             dumpFunc.accept(out);
 
-            ConfigurationNode node = SimpleConfigurationNode.root();
+            ConfigurationNode node = ConfigurationNode.root();
             NbtNodeAdapter.tagToNode(out, node);
 
             Files.createDirectories(file.getParent());

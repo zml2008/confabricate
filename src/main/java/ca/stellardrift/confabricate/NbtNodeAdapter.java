@@ -33,7 +33,6 @@ import net.minecraft.nbt.StringTag;
 import net.minecraft.nbt.Tag;
 import ninja.leaping.configurate.ConfigurationNode;
 import ninja.leaping.configurate.ConfigurationOptions;
-import ninja.leaping.configurate.SimpleConfigurationNode;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.IOException;
@@ -62,7 +61,7 @@ public class NbtNodeAdapter {
             }
         } else if (tag instanceof ListTag) {
             for (Tag value : (ListTag) tag) {
-                tagToNode(value, node.getAppendedNode());
+                tagToNode(value, node.appendListNode());
             }
         } else if (tag instanceof StringTag) {
             node.setValue(tag.asString());
@@ -84,7 +83,7 @@ public class NbtNodeAdapter {
             } else {
                 node.setValue(null);
                 for (byte b : ((ByteArrayTag) tag).getByteArray()) {
-                    node.getAppendedNode().setValue(b);
+                    node.appendListNode().setValue(b);
                 }
             }
         } else if (tag instanceof IntArrayTag) {
@@ -93,7 +92,7 @@ public class NbtNodeAdapter {
             } else {
                 node.setValue(null);
                 for (int i : ((IntArrayTag) tag).getIntArray()) {
-                    node.getAppendedNode().setValue(i);
+                    node.appendListNode().setValue(i);
                 }
             }
 
@@ -103,7 +102,7 @@ public class NbtNodeAdapter {
             } else {
                 node.setValue(null);
                 for (long l : ((LongArrayTag) tag).getLongArray()) {
-                    node.getAppendedNode().setValue(l);
+                    node.appendListNode().setValue(l);
                 }
             }
         } else if (tag instanceof EndTag) {
@@ -122,13 +121,13 @@ public class NbtNodeAdapter {
      * @throws IOException if an IO error occurs while converting the tag
      */
     public static Tag nodeToTag(ConfigurationNode node) throws IOException {
-        if (node.hasMapChildren()) {
+        if (node.isMap()) {
             CompoundTag tag = new CompoundTag();
             for (Map.Entry<Object, ? extends ConfigurationNode> ent : node.getChildrenMap().entrySet()) {
                 tag.put(ent.getKey().toString(), nodeToTag(ent.getValue()));
             }
             return tag;
-        } else if (node.hasListChildren()) {
+        } else if (node.isList()) {
             ListTag list = new ListTag();
             for (ConfigurationNode child : node.getChildrenList()) {
                list.add(nodeToTag(child));
@@ -163,12 +162,12 @@ public class NbtNodeAdapter {
     }
 
     public static ConfigurationNode createEmptyNode() {
-        return createEmptyNode(ConfigurationOptions.defaults().setSerializers(Confabricate.getMinecraftTypeSerializers()));
+        return createEmptyNode(ConfigurationOptions.defaults().withSerializers(Confabricate.getMinecraftTypeSerializers()));
     }
 
     public static ConfigurationNode createEmptyNode(@NonNull ConfigurationOptions options) {
-        return SimpleConfigurationNode.root(options
-                .setAcceptedTypes(ImmutableSet.of(Map.class, List.class, Byte.class,
+        return ConfigurationNode.root(options
+                .withAcceptedTypes(ImmutableSet.of(Map.class, List.class, Byte.class,
                         Short.class, Integer.class, Long.class, Float.class, Double.class,
                         long[].class, byte[].class, int[].class, String.class)));
     }
