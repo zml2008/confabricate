@@ -3,8 +3,8 @@ import ca.stellardrift.build.configurate
 import ca.stellardrift.build.sponge
 
 plugins {
-    id("fabric-loom") version "0.2.6-SNAPSHOT"
-    id("ca.stellardrift.opinionated") version "1.0.1"
+    id("fabric-loom") version "0.2.7-SNAPSHOT"
+    id("ca.stellardrift.opinionated") version "2.0.1"
 }
 
 val versionBase = "1.1-SNAPSHOT"
@@ -52,7 +52,7 @@ dependencies {
     mappings("net.fabricmc:yarn:$versionMinecraft+build.$versionMappings:v2")
     modImplementation("net.fabricmc:fabric-loader:$versionLoader")
 
-    modApi(platform(configurate("bom", versionConfigurate)))
+    modApi(enforcedPlatform(configurate("bom", versionConfigurate)))
     apiInclude(configurate("core", versionConfigurate)) {
         exclude("com.google.guava")
     }
@@ -71,7 +71,7 @@ dependencies {
 opinionated {
     github("zml2008", "confabricate")
     apache2()
-    publication.apply {
+    publication?.apply {
         artifact(tasks.jar.get()) {
             classifier = "dev"
         }

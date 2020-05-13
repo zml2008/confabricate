@@ -167,7 +167,7 @@ public class NbtNodeAdapter {
 
     public static ConfigurationNode createEmptyNode(@NonNull ConfigurationOptions options) {
         return ConfigurationNode.root(options
-                .withAcceptedTypes(ImmutableSet.of(Map.class, List.class, Byte.class,
+                .withNativeTypes(ImmutableSet.of(Map.class, List.class, Byte.class,
                         Short.class, Integer.class, Long.class, Float.class, Double.class,
                         long[].class, byte[].class, int[].class, String.class)));
     }
