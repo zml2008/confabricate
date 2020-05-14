@@ -32,13 +32,13 @@ import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.ModContainer;
 import net.minecraft.block.Block;
 import net.minecraft.block.entity.BlockEntityType;
-import net.minecraft.container.ContainerType;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.ai.brain.Activity;
 import net.minecraft.entity.ai.brain.MemoryModuleType;
 import net.minecraft.entity.ai.brain.Schedule;
 import net.minecraft.entity.ai.brain.sensor.SensorType;
+import net.minecraft.entity.attribute.EntityAttribute;
 import net.minecraft.entity.decoration.painting.PaintingMotive;
 import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.fluid.Fluid;
@@ -47,11 +47,13 @@ import net.minecraft.particle.ParticleType;
 import net.minecraft.potion.Potion;
 import net.minecraft.recipe.RecipeSerializer;
 import net.minecraft.recipe.RecipeType;
+import net.minecraft.screen.ScreenHandlerType;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.stat.StatType;
 import net.minecraft.structure.StructurePieceType;
 import net.minecraft.structure.pool.StructurePoolElementType;
 import net.minecraft.structure.processor.StructureProcessorType;
+import net.minecraft.structure.rule.PosRuleTestType;
 import net.minecraft.structure.rule.RuleTestType;
 import net.minecraft.tag.BlockTags;
 import net.minecraft.tag.EntityTypeTags;
@@ -68,15 +70,16 @@ import net.minecraft.world.biome.source.BiomeSourceType;
 import net.minecraft.world.chunk.ChunkStatus;
 import net.minecraft.world.dimension.DimensionType;
 import net.minecraft.world.gen.carver.Carver;
-import net.minecraft.world.gen.chunk.ChunkGeneratorType;
 import net.minecraft.world.gen.decorator.Decorator;
 import net.minecraft.world.gen.decorator.TreeDecoratorType;
 import net.minecraft.world.gen.feature.Feature;
 import net.minecraft.world.gen.feature.StructureFeature;
+import net.minecraft.world.gen.feature.size.FeatureSizeType;
 import net.minecraft.world.gen.foliage.FoliagePlacerType;
 import net.minecraft.world.gen.placer.BlockPlacerType;
 import net.minecraft.world.gen.stateprovider.BlockStateProviderType;
 import net.minecraft.world.gen.surfacebuilder.SurfaceBuilder;
+import net.minecraft.world.gen.trunk.TrunkPlacerType;
 import net.minecraft.world.poi.PointOfInterestType;
 import ninja.leaping.configurate.ConfigurationNode;
 import ninja.leaping.configurate.commented.CommentedConfigurationNode;
@@ -141,7 +144,7 @@ public class Confabricate implements ModInitializer {
         mcTypeSerializers = TypeSerializerCollection.defaults()
                 .newChild()
                 .register(IdentifierSerializer.TOKEN, IdentifierSerializer.INSTANCE)
-                .register(TextSerializer.TOKEN, TextSerializer.INSTANCE);
+                .register(TextSerializer.INSTANCE);
 
         registerRegistry(SoundEvent.class, Registry.SOUND_EVENT);
         registerTaggedRegistry(TypeToken.of(Fluid.class), Registry.FLUID, FluidTags.getContainer());
@@ -161,9 +164,8 @@ public class Confabricate implements ModInitializer {
         registerRegistry(new TypeToken<FoliagePlacerType<?>>() {}, Registry.FOLIAGE_PLACER_TYPE);
         registerRegistry(new TypeToken<TreeDecoratorType<?>>() {}, Registry.TREE_DECORATOR_TYPE);
         registerRegistry(new TypeToken<ParticleType<?>>() {}, Registry.PARTICLE_TYPE);
-        registerRegistry(new TypeToken<BiomeSourceType<?, ?>>() {}, Registry.BIOME_SOURCE_TYPE);
+        registerRegistry(BiomeSourceType.class, Registry.BIOME_SOURCE_TYPE);
         registerRegistry(new TypeToken<BlockEntityType<?>>() {}, Registry.BLOCK_ENTITY_TYPE);
-        registerRegistry(new TypeToken<ChunkGeneratorType<?, ?>>() {}, Registry.CHUNK_GENERATOR_TYPE);
         registerRegistry(DimensionType.class, Registry.DIMENSION_TYPE);
         registerRegistry(PaintingMotive.class, Registry.PAINTING_MOTIVE);
         brokenRegistries.add(Registry.CUSTOM_STAT);
@@ -174,7 +176,7 @@ public class Confabricate implements ModInitializer {
         registerRegistry(RuleTestType.class, Registry.RULE_TEST);
         registerRegistry(StructureProcessorType.class, Registry.STRUCTURE_PROCESSOR);
         registerRegistry(StructurePoolElementType.class, Registry.STRUCTURE_POOL_ELEMENT);
-        registerRegistry(new TypeToken<ContainerType<?>>() {}, Registry.CONTAINER);
+        registerRegistry(new TypeToken<ScreenHandlerType<?>>() {}, Registry.SCREEN_HANDLER);
         registerRegistry(new TypeToken<RecipeType<?>>() {}, Registry.RECIPE_TYPE);
         registerRegistry(new TypeToken<RecipeSerializer<?>>() {}, Registry.RECIPE_SERIALIZER);
         registerRegistry(new TypeToken<StatType<?>>() {}, Registry.STAT_TYPE);
@@ -185,6 +187,10 @@ public class Confabricate implements ModInitializer {
         registerRegistry(new TypeToken<SensorType<?>>() {}, Registry.SENSOR_TYPE);
         registerRegistry(Schedule.class, Registry.SCHEDULE);
         registerRegistry(Activity.class, Registry.ACTIVITY);
+        registerRegistry(new TypeToken<TrunkPlacerType<?>>() {}, Registry.TRUNK_PLACER_TYPE);
+        registerRegistry(new TypeToken<FeatureSizeType<?>>() {}, Registry.FEATURE_SIZE_TYPE);
+        registerRegistry(PosRuleTestType.class, Registry.POS_RULE_TEST);
+        registerRegistry(EntityAttribute.class, Registry.ATTRIBUTES);
 
         for (MutableRegistry<?> reg : Registry.REGISTRIES) {
             if (!registeredRegistries.contains(reg) && !brokenRegistries.contains(reg)) {

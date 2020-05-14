@@ -101,7 +101,7 @@ public class TaggableCollectionSerializer<T> implements TypeSerializer<TaggableC
             }
 
             for (Tag<T> tag : obj.getTaggedElements()) {
-                value.appendListNode().setValue(TAG_PREFIX + tag.getId().toString());
+                value.appendListNode().setValue(TAG_PREFIX + tagRegistry.getId(tag));
             }
         }
 

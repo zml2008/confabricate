@@ -134,7 +134,7 @@ class TestCommands {
                         ctx.getSource().sendFeedback(roundtripped, false);
 
                         ctx.getSource().sendFeedback(new LiteralText("Successfully dumped data from player ")
-                                .append(entity.getNameAndUuid().styled(s -> s.setColor(Formatting.AQUA))), false);
+                                .append(entity.getNameAndUuid().copy().styled(s -> s.withColor(Formatting.AQUA))), false);
                     } catch (Throwable t) {
                         t.printStackTrace();
                     }
@@ -147,7 +147,7 @@ class TestCommands {
                     ctx.getSource().sendFeedback(roundtripped, false);
 
                     ctx.getSource().sendFeedback(new LiteralText("Successfully dumped data from ")
-                            .append(entity.getDisplayName().styled(s -> s.setColor(Formatting.AQUA))), false);
+                            .append(entity.getDisplayName().copy().styled(s -> s.withColor(Formatting.AQUA))), false);
                     return 1;
                 })))
                 .then(literal("block").then(argument("pos", BlockPosArgumentType.blockPos()).executes(ctx -> {
@@ -161,7 +161,7 @@ class TestCommands {
                     Text roundtripped = dumpToFile(entity::toTag, getPath("file", ctx)).toText();
                     ctx.getSource().sendFeedback(roundtripped, false);
                     ctx.getSource().sendFeedback(new LiteralText("Successfully dumped data from ")
-                            .append(new LiteralText(pos.toString()).styled(s -> s.setColor(Formatting.AQUA))), false);
+                            .append(new LiteralText(pos.toString()).styled(s -> s.withColor(Formatting.AQUA))), false);
                     return 1;
                 }))));
     }

@@ -51,6 +51,9 @@ public class RegistrySerializer<T> implements TypeSerializer<T> {
         }
 
         Identifier ident = registry.getId(obj);
-
+        if (ident == null) {
+            throw new ObjectMappingException("Unknown registry element " + obj);
+        }
+        IdentifierSerializer.toNode(ident, value);
     }
 }

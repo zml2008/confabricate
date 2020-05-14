@@ -97,7 +97,7 @@ class TaggableCollectionImpl<T> implements TaggableCollection<T> {
         ImmutableSet.Builder<Tag<T>> newBuild = ImmutableSet.builder();
         boolean changed = false;
         for (Tag<T> element : tagElements) {
-            if (!tag.equals(element.getId())) {
+            if (!tag.equals(tags.getId(element))) {
                 newBuild.add(element);
                 changed = true;
             }

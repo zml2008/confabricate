@@ -18,35 +18,28 @@ package ca.stellardrift.confabricate.typeserializers;
 
 import com.google.common.reflect.TypeToken;
 import net.minecraft.text.Text;
-import ninja.leaping.configurate.ConfigurationNode;
 import ninja.leaping.configurate.objectmapping.ObjectMappingException;
-import ninja.leaping.configurate.objectmapping.serialize.TypeSerializer;
-import org.checkerframework.checker.nullness.qual.NonNull;
-import org.checkerframework.checker.nullness.qual.Nullable;
+import ninja.leaping.configurate.objectmapping.serialize.ScalarSerializer;
 
-public class TextSerializer implements TypeSerializer<Text> {
-    public static final TypeToken<Text> TOKEN = TypeToken.of(Text.class);
-    public static final TypeSerializer<Text> INSTANCE = new TextSerializer();
+import java.util.function.Predicate;
+
+public class TextSerializer extends ScalarSerializer<Text> {
+    public static final ScalarSerializer<Text> INSTANCE = new TextSerializer();
 
     private TextSerializer() {
-    }
-
-    @Nullable
-    @Override
-    public Text deserialize(@NonNull TypeToken<?> type, @NonNull ConfigurationNode value) throws ObjectMappingException {
-        final String text = value.getString();
-        if (text == null) {
-            return null;
-        }
-        return Text.Serializer.fromLenientJson(text);
+        super(Text.class);
     }
 
     @Override
-    public void serialize(@NonNull TypeToken<?> type, @Nullable Text obj, @NonNull ConfigurationNode value) throws ObjectMappingException {
-        if (obj == null) {
-            value.setValue(null);
-        } else {
-            value.setValue(Text.Serializer.toJson(obj));
+    public Text deserialize(TypeToken<?> type, Object obj) throws ObjectMappingException {
+        if (obj instanceof CharSequence) {
+            return Text.Serializer.fromLenientJson(((CharSequence) obj).toString());
         }
+        throw new ObjectMappingException("Provided value was not a CharSequence");
+    }
+
+    @Override
+    public Object serialize(Text item, Predicate<Class<?>> typeSupported) {
+        return Text.Serializer.toJson(item); // String always supported
     }
 }
