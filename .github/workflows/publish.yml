@@ -22,12 +22,10 @@ jobs:
           path: ~/.gradle/caches
           key: ${{ runner.os }}-${{matrix.java}}-gradle-${{ hashFiles('**/*.gradle') }}
           restore-keys: ${{ runner.os }}-${{matrix.java}}-gradle
-      - name: Print out home directory
-        run: "echo \"Home directory: $HOME\""
       - name: Set up publishing
         uses: DamianReeves/write-file-action@v1.0
         with:
-          path: $HOME/.gradle/gradle.properties
+          path: /home/runner/.gradle/gradle.properties # TODO: How to do do this properly?
           contents: ${{ secrets.PEX_REPO }}
           write-mode: overwrite
       - name: Make gradle wrapper executable
