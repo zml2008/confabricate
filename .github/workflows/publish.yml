@@ -23,10 +23,12 @@ jobs:
           key: ${{ runner.os }}-${{matrix.java}}-gradle-${{ hashFiles('**/*.gradle') }}
           restore-keys: ${{ runner.os }}-${{matrix.java}}-gradle
       - name: Set up publishing
-        uses: DamianReeves/write-file-action
+        uses: DamianReeves/write-file-action@v1.0
         with:
           path: ${{ env.home }}/.gradle/gradle.properties
           contents: ${{ secrets.PEX_REPO }}
           write-mode: overwrite
+      - name: Make gradle wrapper executable
+        run: chmod +x ./gradlew
       - name: Publish with Gradle
         run: ./gradlew publish
