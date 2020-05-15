@@ -32,7 +32,7 @@ Confabricate versions are in the format `<confabricate version>+<configurate ver
 
 It is recommended to use this project in jar-in-jar packaging
 
-Confabricate is on jCenter, and Configurate is on the Sponge repository, so we need to declare both at the moment:
+Releases of Confabricate are on jCenter, and Configurate is on the Sponge repository, so we need to declare both at the moment. Snapshots are published on the PermissionsEx repository.
 
 ```kotlin
 
@@ -41,6 +41,9 @@ repositories {
     maven(url = "https://repo.spongepowered.org/maven") {
         name = "sponge"
     }
+    maven(url= "https://repo.glaremasters.me/repository/permissionsex") {
+        name = "pex"
+    }
 }
 
 dependencies {
@@ -48,3 +51,4 @@ dependencies {
     modImplementation("ca.stellardrift:confabricate:1.0+3.6.1")
 }
 ```
+

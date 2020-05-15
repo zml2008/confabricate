@@ -5,6 +5,7 @@ import ca.stellardrift.build.sponge
 plugins {
     id("fabric-loom") version "0.2.7-SNAPSHOT"
     id("ca.stellardrift.opinionated") version "2.0.1"
+    id("ca.stellardrift.opinionated.publish") version "2.0.1"
 }
 
 val versionBase = "1.1-SNAPSHOT"
@@ -15,7 +16,7 @@ val versionFabricApi: String by project
 val versionConfigurate: String by project
 
 group = "ca.stellardrift"
-version = "$versionBase+$versionConfigurate"
+version = "$versionBase+${versionConfigurate.replace("-SNAPSHOT", "")}"
 description = ext["longDescription"] as String
 
 minecraft {
@@ -90,6 +91,20 @@ opinionated {
                 }
             }
         }
+    }
+}
 
+publishing {
+    repositories {
+        if (project.hasProperty("pexUsername") && project.hasProperty("pexPassword")) {
+            maven {
+                name = "pex"
+                url = uri("https://repo.glaremasters.me/repository/permissionsex")
+                credentials {
+                    username = project.property("pexUsername").toString()
+                    password = project.property("pexPassword").toString()
+                }
+            }
+        }
     }
 }
