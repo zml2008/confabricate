@@ -7,7 +7,7 @@ on:
       branches: [master, "mc/*"]
 
 jobs:
-  build:
+  publish:
     runs-on: ubuntu-latest
     steps:
       - name: Check out
@@ -25,7 +25,7 @@ jobs:
       - name: Set up publishing
         uses: DamianReeves/write-file-action@v1.0
         with:
-          path: ${{ env.HOME }}/.gradle/gradle.properties
+          path: ~/.gradle/gradle.properties
           contents: ${{ secrets.PEX_REPO }}
           write-mode: overwrite
       - name: Make gradle wrapper executable
