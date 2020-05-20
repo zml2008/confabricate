@@ -4,3 +4,6 @@ build/
 
 # Fabric dev env
 run/
+
+# IntelliJ
+.idea/

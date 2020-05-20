@@ -17,16 +17,15 @@
 package ca.stellardrift.confabricate;
 
 import com.google.common.collect.ImmutableMap;
-import com.mojang.datafixers.DSL;
-import com.mojang.datafixers.Dynamic;
-import com.mojang.datafixers.types.DynamicOps;
-import com.mojang.datafixers.types.Type;
+import com.mojang.datafixers.util.Pair;
+import com.mojang.serialization.DataResult;
+import com.mojang.serialization.Dynamic;
+import com.mojang.serialization.DynamicOps;
 import ninja.leaping.configurate.ConfigurationNode;
 import ninja.leaping.configurate.ConfigurationOptions;
 import ninja.leaping.configurate.commented.CommentedConfigurationNode;
 
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
@@ -91,36 +90,36 @@ public final class ConfigurateOps implements DynamicOps<ConfigurationNode> {
     }
 
     @Override
-    public Type<?> getType(ConfigurationNode input) {
+    public <U> U convertTo(DynamicOps<U> outOps, ConfigurationNode input) {
         if (input == null) {
             throw new NullPointerException("input is null");
         }
 
         if (input.isMap()) {
-            return DSL.compoundList(DSL.remainderType(), DSL.remainderType());
+            return convertMap(outOps, input);
 
         } else if (input.isList()) {
-            return DSL.list(DSL.remainderType());
+            return convertList(outOps, input);
         } else {
             Object value = input.getValue();
             if (value == null) {
-                return DSL.nilType();
+                return outOps.empty();
             } else if (value instanceof String) {
-                return DSL.string();
+                return outOps.createString((String) value);
             } else if (value instanceof Boolean) {
-                return DSL.bool();
+                return outOps.createBoolean((Boolean) value);
             } else if (value instanceof Short) {
-                return DSL.shortType();
+                return outOps.createShort((Short) value);
             } else if (value instanceof Integer) {
-                return DSL.intType();
+                return outOps.createInt((Integer) value);
             } else if (value instanceof Long) {
-                return DSL.longType();
+                return outOps.createLong((Long) value);
             } else if (value instanceof Float) {
-                return DSL.floatType();
+                return outOps.createFloat((Float) value);
             } else if (value instanceof Double) {
-                return DSL.doubleType();
+                return outOps.createDouble((Double) value);
             } else if (value instanceof Byte) {
-                return DSL.byteType();
+                return outOps.createByte((Byte) value);
             } else {
                 throw new IllegalArgumentException("Scalar value '" + input + "' has an unknown type: " + value.getClass().getName());
             }
@@ -128,16 +127,16 @@ public final class ConfigurateOps implements DynamicOps<ConfigurationNode> {
     }
 
     @Override
-    public Optional<Number> getNumberValue(ConfigurationNode input) {
+    public DataResult<Number> getNumberValue(ConfigurationNode input) {
         if (!(input.isMap() || input.isList())) {
             if (input.getValue() instanceof Number) {
-                return Optional.of((Number) input.getValue());
+                return DataResult.success((Number) input.getValue());
             } else if (input.getValue() instanceof Boolean) {
-                return Optional.of(input.getBoolean() ? 1 : 0);
+                return DataResult.success(input.getBoolean() ? 1 : 0);
             }
         }
 
-        return Optional.empty();
+        return DataResult.error("Not a number: " + input);
     }
 
     @Override
@@ -151,8 +150,12 @@ public final class ConfigurateOps implements DynamicOps<ConfigurationNode> {
     }
 
     @Override
-    public Optional<String> getStringValue(ConfigurationNode input) {
-        return Optional.ofNullable(input.getString());
+    public DataResult<String> getStringValue(ConfigurationNode input) {
+        if (input.getString() != null) {
+            return DataResult.success(input.getString());
+        }
+
+        return DataResult.error("Not a string: " + input);
     }
 
     @Override
@@ -161,44 +164,45 @@ public final class ConfigurateOps implements DynamicOps<ConfigurationNode> {
     }
 
     @Override
-    public ConfigurationNode mergeInto(ConfigurationNode input, ConfigurationNode value) {
+    public DataResult<ConfigurationNode> mergeToList(ConfigurationNode input, ConfigurationNode value) {
         if (input.isList()) {
             ConfigurationNode ret = input.copy();
             ret.appendListNode().setValue(value);
-            return ret;
+            return DataResult.success(ret);
         }
-        return input;
+
+        return DataResult.error("mergeToList called on a node which is not a list: " + input, input);
     }
 
     @Override
-    public ConfigurationNode mergeInto(ConfigurationNode input, ConfigurationNode key, ConfigurationNode value) {
-        return input.copy().getNode(key.getValue()).setValue(value);
-    }
+    public DataResult<ConfigurationNode> mergeToMap(ConfigurationNode input, ConfigurationNode key, ConfigurationNode value) {
+        if (input.isMap()) {
+            return DataResult.success(input.copy().getNode(key.getValue()).setValue(value));
+        }
 
-    /**
-     * Merge into a newly created node
-     *
-     * @param first The primary node
-     * @param second The second node, with values that will override those in the first node
-     * @return A newly created node
-     */
-    @Override
-    public ConfigurationNode merge(ConfigurationNode first, ConfigurationNode second) {
-        return first.copy().mergeValuesFrom(second);
-
+        return DataResult.error("mergeToMap called on a node which is not a map: " + input, input);
     }
 
     @Override
-    public Optional<Map<ConfigurationNode, ConfigurationNode>> getMapValues(ConfigurationNode input) {
+    public DataResult<Stream<Pair<ConfigurationNode, ConfigurationNode>>> getMapValues(ConfigurationNode input) {
         if(input.isMap()) {
             ImmutableMap.Builder<ConfigurationNode, ConfigurationNode> builder = ImmutableMap.builder();
             for (Map.Entry<Object, ? extends ConfigurationNode> entry : input.getChildrenMap().entrySet()) {
                 builder.put(empty().setValue(entry.getKey()), entry.getValue().copy());
             }
-            return Optional.of(builder.build());
+            return DataResult.success(builder.build().entrySet().stream().map(entry -> Pair.of(entry.getKey(), entry.getValue())));
         }
 
-        return Optional.empty();
+        return DataResult.error("Not a map: " + input);
+    }
+
+    @Override
+    public ConfigurationNode createMap(Stream<Pair<ConfigurationNode, ConfigurationNode>> map) {
+        final ConfigurationNode ret = empty();
+
+        map.forEach(p -> ret.getNode(p.getFirst().getValue()).setValue(p.getSecond().getValue()));
+
+        return ret;
     }
 
     @Override
@@ -213,13 +217,13 @@ public final class ConfigurateOps implements DynamicOps<ConfigurationNode> {
     }
 
     @Override
-    public Optional<Stream<ConfigurationNode>> getStream(ConfigurationNode input) {
+    public DataResult<Stream<ConfigurationNode>> getStream(ConfigurationNode input) {
         if(input.isList()) {
             Stream<ConfigurationNode> stream = input.getChildrenList().stream().map(it -> it);
-            return Optional.of(stream);
+            return DataResult.success(stream);
         }
 
-        return Optional.empty();
+        return DataResult.error("Not a list: " + input);
     }
 
     @Override
@@ -243,15 +247,15 @@ public final class ConfigurateOps implements DynamicOps<ConfigurationNode> {
     }
 
     @Override
-    public Optional<ConfigurationNode> get(final ConfigurationNode input, final String key) {
+    public DataResult<ConfigurationNode> get(final ConfigurationNode input, final String key) {
         ConfigurationNode ret = input.getNode(key);
-        return ret.isVirtual() ? Optional.empty() : Optional.of(ret);
+        return ret.isVirtual() ? DataResult.error("No element " + key + " in the map " + input) : DataResult.success(ret);
     }
 
     @Override
-    public Optional<ConfigurationNode> getGeneric(final ConfigurationNode input, final ConfigurationNode key) {
+    public DataResult<ConfigurationNode> getGeneric(final ConfigurationNode input, final ConfigurationNode key) {
         ConfigurationNode ret = input.getNode(key.getValue());
-        return ret.isVirtual() ? Optional.empty() : Optional.of(ret);
+        return ret.isVirtual() ?  DataResult.error("No element " + key + " in the map " + input) : DataResult.success(ret);
     }
 
     @Override

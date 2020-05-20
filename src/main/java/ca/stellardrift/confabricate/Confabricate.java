@@ -26,7 +26,8 @@ import com.google.common.reflect.TypeParameter;
 import com.google.common.reflect.TypeToken;
 import com.mojang.datafixers.DSL;
 import com.mojang.datafixers.DataFixer;
-import com.mojang.datafixers.Dynamic;
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.Dynamic;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.ModContainer;
@@ -61,12 +62,11 @@ import net.minecraft.tag.FluidTags;
 import net.minecraft.tag.ItemTags;
 import net.minecraft.tag.TagContainer;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.registry.MutableRegistry;
 import net.minecraft.util.registry.Registry;
 import net.minecraft.village.VillagerProfession;
 import net.minecraft.village.VillagerType;
 import net.minecraft.world.biome.Biome;
-import net.minecraft.world.biome.source.BiomeSourceType;
+import net.minecraft.world.biome.source.BiomeSource;
 import net.minecraft.world.chunk.ChunkStatus;
 import net.minecraft.world.dimension.DimensionType;
 import net.minecraft.world.gen.carver.Carver;
@@ -164,18 +164,19 @@ public class Confabricate implements ModInitializer {
         registerRegistry(new TypeToken<FoliagePlacerType<?>>() {}, Registry.FOLIAGE_PLACER_TYPE);
         registerRegistry(new TypeToken<TreeDecoratorType<?>>() {}, Registry.TREE_DECORATOR_TYPE);
         registerRegistry(new TypeToken<ParticleType<?>>() {}, Registry.PARTICLE_TYPE);
-        registerRegistry(BiomeSourceType.class, Registry.BIOME_SOURCE_TYPE);
+        registerRegistry(new TypeToken<Codec<? extends BiomeSource>>() {}, Registry.BIOME_SOURCE);
         registerRegistry(new TypeToken<BlockEntityType<?>>() {}, Registry.BLOCK_ENTITY_TYPE);
-        registerRegistry(DimensionType.class, Registry.DIMENSION_TYPE);
+        // TODO: Figure out how to manage dimension types. They are present in "class_5318 and are not statically availible or DimensionTracker as Yarn PRs say"
+        //registerRegistry(DimensionType.class, Registry.DIMENSION_TYPE);
         registerRegistry(PaintingMotive.class, Registry.PAINTING_MOTIVE);
         brokenRegistries.add(Registry.CUSTOM_STAT);
         //registerRegistry(Identifier, Registry.CUSTOM_STAT); // can't register -- doesn't have its own type
         registerRegistry(ChunkStatus.class, Registry.CHUNK_STATUS);
         registerRegistry(new TypeToken<StructureFeature<?>>() {}, Registry.STRUCTURE_FEATURE);
         registerRegistry(StructurePieceType.class, Registry.STRUCTURE_PIECE);
-        registerRegistry(RuleTestType.class, Registry.RULE_TEST);
-        registerRegistry(StructureProcessorType.class, Registry.STRUCTURE_PROCESSOR);
-        registerRegistry(StructurePoolElementType.class, Registry.STRUCTURE_POOL_ELEMENT);
+        registerRegistry(new TypeToken<RuleTestType<?>>() {}, Registry.RULE_TEST);
+        registerRegistry(new TypeToken<StructureProcessorType<?>>() {}, Registry.STRUCTURE_PROCESSOR);
+        registerRegistry(new TypeToken<StructurePoolElementType<?>>() {}, Registry.STRUCTURE_POOL_ELEMENT);
         registerRegistry(new TypeToken<ScreenHandlerType<?>>() {}, Registry.SCREEN_HANDLER);
         registerRegistry(new TypeToken<RecipeType<?>>() {}, Registry.RECIPE_TYPE);
         registerRegistry(new TypeToken<RecipeSerializer<?>>() {}, Registry.RECIPE_SERIALIZER);
@@ -189,12 +190,12 @@ public class Confabricate implements ModInitializer {
         registerRegistry(Activity.class, Registry.ACTIVITY);
         registerRegistry(new TypeToken<TrunkPlacerType<?>>() {}, Registry.TRUNK_PLACER_TYPE);
         registerRegistry(new TypeToken<FeatureSizeType<?>>() {}, Registry.FEATURE_SIZE_TYPE);
-        registerRegistry(PosRuleTestType.class, Registry.POS_RULE_TEST);
+        //registerRegistry(PosRuleTestType.class, Registry.POS_RULE_TEST);
         registerRegistry(EntityAttribute.class, Registry.ATTRIBUTES);
 
-        for (MutableRegistry<?> reg : Registry.REGISTRIES) {
+        for (Registry reg : Registry.REGISTRIES) {
             if (!registeredRegistries.contains(reg) && !brokenRegistries.contains(reg)) {
-                LOGGER.warn("Registry " + Registry.REGISTRIES.getId(reg) + " does not have an associated TypeSerializer!");
+                LOGGER.warn("Registry " + ((Registry) Registry.REGISTRIES).getId(reg) + " does not have an associated TypeSerializer!");
             }
         }
 
