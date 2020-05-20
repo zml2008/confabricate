@@ -8,7 +8,7 @@ plugins {
     id("ca.stellardrift.opinionated.publish") version "2.0.1"
 }
 
-val versionBase = "1.2-SNAPSHOT"
+val versionBase = "1.3-SNAPSHOT"
 val versionMinecraft: String by project
 val versionMappings: String by project
 val versionLoader: String by project
@@ -67,6 +67,13 @@ dependencies {
     // listOf("commands-v0", "api-base").forEach {
     //     implementationInclude("net.fabricmc.fabric-api:fabric-$it:$versionFabricApi")
     // }
+
+    testImplementation("org.junit.jupiter:junit-jupiter-api:5.6.0")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine")
+}
+
+tasks.named<Test>("test") {
+    useJUnitPlatform()
 }
 
 opinionated {
