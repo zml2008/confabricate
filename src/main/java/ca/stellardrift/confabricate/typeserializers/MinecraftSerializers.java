@@ -16,12 +16,36 @@
 
 package ca.stellardrift.confabricate.typeserializers;
 
-import ca.stellardrift.confabricate.Confabricate;
+import static java.util.Objects.requireNonNull;
+
 import ca.stellardrift.confabricate.ConfigurateOps;
+import ca.stellardrift.confabricate.mixin.RegistryAccessor;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.reflect.TypeParameter;
 import com.google.common.reflect.TypeToken;
 import com.mojang.serialization.Codec;
+import net.minecraft.block.Block;
+import net.minecraft.entity.EntityType;
+import net.minecraft.fluid.Fluid;
+import net.minecraft.item.Item;
+import net.minecraft.tag.BlockTags;
+import net.minecraft.tag.EntityTypeTags;
+import net.minecraft.tag.FluidTags;
+import net.minecraft.tag.ItemTags;
+import net.minecraft.tag.TagContainer;
+import net.minecraft.util.registry.Registry;
+import net.minecraft.util.registry.RegistryKey;
 import ninja.leaping.configurate.objectmapping.serialize.TypeSerializer;
 import ninja.leaping.configurate.objectmapping.serialize.TypeSerializerCollection;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+import java.lang.reflect.Type;
+import java.util.AbstractMap;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Access serializers for Minecraft types.
@@ -32,6 +56,27 @@ import ninja.leaping.configurate.objectmapping.serialize.TypeSerializerCollectio
  */
 public final class MinecraftSerializers {
 
+    // impl note: initialization order is critical here to ensure we can test
+    // most parts of Confabricate without having to fully initialize Minecraft
+    // and use any of our Mixins
+
+    /**
+     * Registries that should not be added to a serializer collection.
+     */
+    private static final Set<RegistryKey<? extends Registry<?>>> SPECIAL_REGISTRIES =
+            ImmutableSet.of(Registry.CUSTOM_STAT_KEY, // Type of identifier
+                    Registry.FLUID_KEY,
+                    Registry.BLOCK_KEY,
+                    Registry.ITEM_KEY,
+                    Registry.ENTITY_TYPE_KEY
+            );
+
+    private static Set<Map.Entry<TypeToken<?>, TypeSerializer<?>>> KNOWN_REGISTRIES;
+
+    private static final TypeToken<Registry<?>> TYPE_REGISTRY_GENERIC = new TypeToken<Registry<?>>() {};
+    private static final Type TYPE_REGISTRY_ELEMENT = Registry.class.getTypeParameters()[0];
+    private static final Logger LOGGER = LogManager.getLogger();
+
     private static TypeSerializerCollection MINECRAFT_COLLECTION;
 
     private MinecraftSerializers() {}
@@ -41,7 +86,7 @@ public final class MinecraftSerializers {
     }
 
     public static <V, S extends V> Codec<S> forSerializer(final TypeToken<S> type) {
-        return forSerializer(type, MINECRAFT_COLLECTION);
+        return forSerializer(type, collection());
     }
 
     public static <V> Codec<V> forSerializer(final TypeToken<V> type, final TypeSerializerCollection collection) {
@@ -50,29 +95,147 @@ public final class MinecraftSerializers {
     }
 
     /**
+     * Create a {@link TypeSerializer} than can interpret values in the
+     * provided registry.
+     *
+     * @param registry The registry
+     * @param <T> The type registered by the registry
+     * @return a serializer for the registry
+     */
+    public static <T> TypeSerializer<T> forRegistry(final Registry<T> registry) {
+        return new RegistrySerializer<>(registry);
+    }
+
+    /**
      * The default collection of game serializers.
      *
-     * <p>This collection includes:
+     * <p>While the collection is mutable, modifying it is discouraged in favor
+     * of working with a new child, created with
+     * {@link TypeSerializerCollection#newChild()}. Collections of serializers
+     * will become immutable in Configurate 4.0
      *
+     *
+     * @see #populate(TypeSerializerCollection) for information about which
+     *      serializers this collection will include
      * @return minecraft serializers
      */
     public static TypeSerializerCollection collection() {
         if (MINECRAFT_COLLECTION == null) {
-            MINECRAFT_COLLECTION = Confabricate.getMinecraftTypeSerializers();
-            // populate(TypeSerializerCollection.defaults().newChild());
+            MINECRAFT_COLLECTION = populate(TypeSerializerCollection.defaults().newChild());
         }
         return MINECRAFT_COLLECTION;
     }
 
     /**
+     * Check if a collection is our populated collection without attempting to
+     * initialize serializers.
+     *
+     * <p>This helps to integrate with Confabricate in test environments.
+     *
+     * @param collection Collection to test
+     * @return if tested collection is the confabricate default collection
+     */
+    public static boolean isCommonCollection(final TypeSerializerCollection collection) {
+        return requireNonNull(collection, "collection").equals(MINECRAFT_COLLECTION);
+    }
+
+    private static boolean shouldRegister(final Registry<?> registry) {
+        return !SPECIAL_REGISTRIES.contains(((RegistryAccessor) registry).getRegistryKey());
+    }
+
+    /**
      * Register Minecraft {@link TypeSerializer}s with the provided collection.
+     *
+     * <p>This will add serializers for: <ul>
+     *     <li>identifiers</li>
+     *     <li>Text (as a string)</li>
+     *     <li>Any elements in vanilla registries</li>
+     *     <li>{@link TaggableCollection} of a combination of identifiers and
+         *     tags for blocks, items, fluids, and entity types</li>
+     * </ul>
      *
      * @param collection to populate
      * @return provided collection
      */
     public static TypeSerializerCollection populate(final TypeSerializerCollection collection) {
-        throw new UnsupportedOperationException("Not yet implemented");
-        //return collection;
+        collection.register(IdentifierSerializer.TOKEN, IdentifierSerializer.INSTANCE)
+                .register(TextSerializer.INSTANCE);
+
+        for (Map.Entry<TypeToken<?>, TypeSerializer<?>> registry : getKnownRegistries()) {
+            registerRegistry(collection, registry.getKey(), registry.getValue());
+        }
+
+
+        // All registries here should be in SPECIAL_REGISTRIES
+        populateTaggedRegistry(collection, TypeToken.of(Fluid.class), Registry.FLUID, FluidTags.getContainer());
+        populateTaggedRegistry(collection, TypeToken.of(Block.class), Registry.BLOCK, BlockTags.getContainer());
+        populateTaggedRegistry(collection, new TypeToken<EntityType<?>>() {}, Registry.ENTITY_TYPE, EntityTypeTags.getContainer());
+        populateTaggedRegistry(collection, TypeToken.of(Item.class), Registry.ITEM, ItemTags.getContainer());
+
+        return collection;
+    }
+
+    /**
+     * Lazily initialize our set of vanilla registries.
+     *
+     * <p>This is moderately expensive due to having to reflectively analyze
+     * the fields in the Registry class, so we cache the created serializers
+     * after the first initialization.
+     *
+     * @return Collection of built-in registries
+     */
+    private static Set<Map.Entry<TypeToken<?>, TypeSerializer<?>>> getKnownRegistries() {
+        if (KNOWN_REGISTRIES == null) {
+            final ImmutableSet.Builder<Map.Entry<TypeToken<?>, TypeSerializer<?>>> accumulator = ImmutableSet.builder();
+            for (Field registryField : Registry.class.getFields()) {
+                // only look at public static fields (excludes the ROOT registry)
+                if ((registryField.getModifiers() & (Modifier.STATIC | Modifier.PUBLIC)) != (Modifier.STATIC | Modifier.PUBLIC)) {
+                    continue;
+                }
+
+                final TypeToken<?> fieldType = TypeToken.of(registryField.getGenericType());
+                if (!fieldType.isSubtypeOf(TYPE_REGISTRY_GENERIC)) { // if not a registry (keys)
+                    continue;
+                }
+
+                final TypeToken<?> elementType = fieldType.resolveType(TYPE_REGISTRY_ELEMENT);
+                try {
+                    final Registry<?> registry = (Registry<?>) registryField.get(null);
+                    if (shouldRegister(registry)) {
+                        accumulator.add(new AbstractMap.SimpleImmutableEntry<>(elementType, forRegistry(registry)));
+                        LOGGER.debug("Created serializer for Minecraft registry {} with element type {}", registry, elementType);
+                    }
+                } catch (final IllegalAccessException e) {
+                    LOGGER.error("Unable to create serializer for registry of type " + elementType + " due to access error", e);
+                }
+            }
+            KNOWN_REGISTRIES = accumulator.build();
+        }
+        return KNOWN_REGISTRIES;
+    }
+
+    // Limit scope of warning suppression for reflective registry initialization
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private static void registerRegistry(final TypeSerializerCollection collection, final TypeToken<?> type, final TypeSerializer<?> registry) {
+        collection.register(type, (TypeSerializer) registry);
+    }
+
+    /**
+     * Add a serializer for the registry and its {@link TaggableCollection}.
+     *
+     * @param collection The collection to serialize
+     * @param token Generic element type of the registry
+     * @param registry Registry containing values
+     * @param tagRegistry Tag container for values in the registry
+     * @param <T> element type
+     */
+    private static <T> void populateTaggedRegistry(final TypeSerializerCollection collection, final TypeToken<T> token, final Registry<T> registry,
+            final TagContainer<T> tagRegistry) {
+        final TypeParameter<T> tParam = new TypeParameter<T>() {};
+        final TypeToken<TaggableCollection<T>> taggableType = new TypeToken<TaggableCollection<T>>() {}.where(tParam, token);
+
+        collection.register(taggableType, new TaggableCollectionSerializer<>(registry, tagRegistry));
+        collection.register(token, new RegistrySerializer<>(registry));
     }
 
 }

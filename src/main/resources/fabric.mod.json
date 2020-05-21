@@ -18,6 +18,9 @@
       }
     ]
   },
+  "mixins": [
+    "${project.rootProject.name.toLowerCase()}.mixins.json"
+  ],
   "depends": {
     "fabricloader": ">=0.4.0"
   },

@@ -26,6 +26,8 @@ import com.mojang.serialization.DataResult;
 import ninja.leaping.configurate.ConfigurationNode;
 import ninja.leaping.configurate.objectmapping.ObjectMappingException;
 import ninja.leaping.configurate.objectmapping.serialize.TypeSerializer;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -33,6 +35,8 @@ import org.checkerframework.checker.nullness.qual.Nullable;
  * TypeSerializer implementation wrapping around codecs.
  */
 final class CodecSerializer<V> implements TypeSerializer<V> {
+
+    private static final Logger LOGGER = LogManager.getLogger();
 
     private final Codec<V> codec;
 
@@ -42,19 +46,21 @@ final class CodecSerializer<V> implements TypeSerializer<V> {
 
     @Override
     public @Nullable V deserialize(@NonNull final TypeToken<?> type, @NonNull final ConfigurationNode value) throws ObjectMappingException {
-        final DataResult<Pair<V, ConfigurationNode>> result = this.codec.decode(ConfigurateOps.getInstance(), value);
-        final DataResult.PartialResult<Pair<V, ConfigurationNode>> err = result.error().orElse(null);
-        if (err != null) {
-            throw new ObjectMappingException(err.message());
+        final DataResult<Pair<V, ConfigurationNode>> result = this.codec.decode(ConfigurateOps.fromNode(value), value);
+        final DataResult.PartialResult<Pair<V, ConfigurationNode>> error = result.error().orElse(null);
+        if (error != null) {
+            LOGGER.trace("Unable to decode value using {} due to {}", this.codec, error);
+            throw new ObjectMappingException(error.message());
         }
         return result.result().orElseThrow(() -> new ObjectMappingException("Neither a result or error was present")).getFirst();
     }
 
     @Override public void serialize(@NonNull final TypeToken<?> type, @Nullable final V obj, @NonNull final ConfigurationNode value)
             throws ObjectMappingException {
-        final DataResult<ConfigurationNode> result = this.codec.encode(obj, ConfigurateOps.getInstance(), value);
+        final DataResult<ConfigurationNode> result = this.codec.encode(obj, ConfigurateOps.fromNode(value), value);
         final DataResult.PartialResult<ConfigurationNode> error = result.error().orElse(null);
         if (error != null) {
+            LOGGER.trace("Unable to encode value using {} due to {}", this.codec, error);
             throw new ObjectMappingException(error.message());
         }
 

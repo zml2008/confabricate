@@ -16,70 +16,14 @@
 
 package ca.stellardrift.confabricate;
 
-import ca.stellardrift.confabricate.typeserializers.IdentifierSerializer;
-import ca.stellardrift.confabricate.typeserializers.RegistrySerializer;
-import ca.stellardrift.confabricate.typeserializers.TaggableCollection;
-import ca.stellardrift.confabricate.typeserializers.TaggableCollectionSerializer;
-import ca.stellardrift.confabricate.typeserializers.TextSerializer;
-import com.google.common.collect.Sets;
-import com.google.common.reflect.TypeParameter;
-import com.google.common.reflect.TypeToken;
+import ca.stellardrift.confabricate.typeserializers.MinecraftSerializers;
 import com.mojang.datafixers.DSL;
 import com.mojang.datafixers.DataFixer;
-import com.mojang.serialization.Codec;
 import com.mojang.serialization.Dynamic;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.ModContainer;
-import net.minecraft.block.Block;
-import net.minecraft.block.entity.BlockEntityType;
-import net.minecraft.enchantment.Enchantment;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.ai.brain.Activity;
-import net.minecraft.entity.ai.brain.MemoryModuleType;
-import net.minecraft.entity.ai.brain.Schedule;
-import net.minecraft.entity.ai.brain.sensor.SensorType;
-import net.minecraft.entity.attribute.EntityAttribute;
-import net.minecraft.entity.decoration.painting.PaintingMotive;
-import net.minecraft.entity.effect.StatusEffect;
-import net.minecraft.fluid.Fluid;
-import net.minecraft.item.Item;
-import net.minecraft.particle.ParticleType;
-import net.minecraft.potion.Potion;
-import net.minecraft.recipe.RecipeSerializer;
-import net.minecraft.recipe.RecipeType;
-import net.minecraft.screen.ScreenHandlerType;
-import net.minecraft.sound.SoundEvent;
-import net.minecraft.stat.StatType;
-import net.minecraft.structure.StructurePieceType;
-import net.minecraft.structure.pool.StructurePoolElementType;
-import net.minecraft.structure.processor.StructureProcessorType;
-import net.minecraft.structure.rule.PosRuleTestType;
-import net.minecraft.structure.rule.RuleTestType;
-import net.minecraft.tag.BlockTags;
-import net.minecraft.tag.EntityTypeTags;
-import net.minecraft.tag.FluidTags;
-import net.minecraft.tag.ItemTags;
-import net.minecraft.tag.TagContainer;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.registry.Registry;
-import net.minecraft.village.VillagerProfession;
-import net.minecraft.village.VillagerType;
-import net.minecraft.world.biome.Biome;
-import net.minecraft.world.biome.source.BiomeSource;
-import net.minecraft.world.chunk.ChunkStatus;
-import net.minecraft.world.gen.carver.Carver;
-import net.minecraft.world.gen.decorator.Decorator;
-import net.minecraft.world.gen.decorator.TreeDecoratorType;
-import net.minecraft.world.gen.feature.Feature;
-import net.minecraft.world.gen.feature.StructureFeature;
-import net.minecraft.world.gen.feature.size.FeatureSizeType;
-import net.minecraft.world.gen.foliage.FoliagePlacerType;
-import net.minecraft.world.gen.placer.BlockPlacerType;
-import net.minecraft.world.gen.stateprovider.BlockStateProviderType;
-import net.minecraft.world.gen.surfacebuilder.SurfaceBuilder;
-import net.minecraft.world.gen.trunk.TrunkPlacerType;
-import net.minecraft.world.poi.PointOfInterestType;
 import ninja.leaping.configurate.ConfigurationNode;
 import ninja.leaping.configurate.commented.CommentedConfigurationNode;
 import ninja.leaping.configurate.hocon.HoconConfigurationLoader;
@@ -95,7 +39,6 @@ import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.Set;
 
 /**
  * Configurate integration holder, providing access to configuration loaders
@@ -112,9 +55,6 @@ public class Confabricate implements ModInitializer {
     static final Logger LOGGER = LogManager.getLogger();
 
     private WatchServiceListener listener;
-    private TypeSerializerCollection mcTypeSerializers;
-    private final Set<Registry<?>> brokenRegistries = Sets.newHashSet();
-    private final Set<Registry<?>> registeredRegistries = Sets.newHashSet();
 
     /**
      * Constructor for loader usage only.
@@ -145,104 +85,11 @@ public class Confabricate implements ModInitializer {
             LOGGER.error("Could not initialize file listener", e);
         }
 
-        this.mcTypeSerializers = TypeSerializerCollection.defaults()
-                .newChild()
-                .register(IdentifierSerializer.TOKEN, IdentifierSerializer.INSTANCE)
-                .register(TextSerializer.INSTANCE);
-
-        registerRegistry(SoundEvent.class, Registry.SOUND_EVENT);
-        registerTaggedRegistry(TypeToken.of(Fluid.class), Registry.FLUID, FluidTags.getContainer());
-        registerRegistry(StatusEffect.class, Registry.STATUS_EFFECT);
-        registerTaggedRegistry(TypeToken.of(Block.class), Registry.BLOCK, BlockTags.getContainer());
-        registerRegistry(Enchantment.class, Registry.ENCHANTMENT);
-        registerTaggedRegistry(new TypeToken<EntityType<?>>() {}, Registry.ENTITY_TYPE, EntityTypeTags.getContainer());
-        registerTaggedRegistry(TypeToken.of(Item.class), Registry.ITEM, ItemTags.getContainer());
-        registerRegistry(Potion.class, Registry.POTION);
-        registerRegistry(new TypeToken<Carver<?>>() {}, Registry.CARVER);
-        registerRegistry(new TypeToken<SurfaceBuilder<?>>() {}, Registry.SURFACE_BUILDER);
-        registerRegistry(new TypeToken<Feature<?>>() {}, Registry.FEATURE);
-        registerRegistry(new TypeToken<Decorator<?>>() {}, Registry.DECORATOR);
-        registerRegistry(Biome.class, Registry.BIOME);
-        registerRegistry(new TypeToken<BlockStateProviderType<?>>() {}, Registry.BLOCK_STATE_PROVIDER_TYPE);
-        registerRegistry(new TypeToken<BlockPlacerType<?>>() {}, Registry.BLOCK_PLACER_TYPE);
-        registerRegistry(new TypeToken<FoliagePlacerType<?>>() {}, Registry.FOLIAGE_PLACER_TYPE);
-        registerRegistry(new TypeToken<TreeDecoratorType<?>>() {}, Registry.TREE_DECORATOR_TYPE);
-        registerRegistry(new TypeToken<ParticleType<?>>() {}, Registry.PARTICLE_TYPE);
-        registerRegistry(new TypeToken<Codec<? extends BiomeSource>>() {}, Registry.BIOME_SOURCE);
-        registerRegistry(new TypeToken<BlockEntityType<?>>() {}, Registry.BLOCK_ENTITY_TYPE);
-        // TODO: Figure out how to manage dimension types. They are present in
-        // "class_5318 and are not statically availible or DimensionTracker as Yarn PRs say"
-        //registerRegistry(DimensionType.class, Registry.DIMENSION_TYPE);
-        registerRegistry(PaintingMotive.class, Registry.PAINTING_MOTIVE);
-        this.brokenRegistries.add(Registry.CUSTOM_STAT);
-        //registerRegistry(Identifier, Registry.CUSTOM_STAT); // can't register -- doesn't have its own type
-        registerRegistry(ChunkStatus.class, Registry.CHUNK_STATUS);
-        registerRegistry(new TypeToken<StructureFeature<?>>() {}, Registry.STRUCTURE_FEATURE);
-        registerRegistry(StructurePieceType.class, Registry.STRUCTURE_PIECE);
-        registerRegistry(new TypeToken<RuleTestType<?>>() {}, Registry.RULE_TEST);
-        registerRegistry(new TypeToken<StructureProcessorType<?>>() {}, Registry.STRUCTURE_PROCESSOR);
-        registerRegistry(new TypeToken<StructurePoolElementType<?>>() {}, Registry.STRUCTURE_POOL_ELEMENT);
-        registerRegistry(new TypeToken<ScreenHandlerType<?>>() {}, Registry.SCREEN_HANDLER);
-        registerRegistry(new TypeToken<RecipeType<?>>() {}, Registry.RECIPE_TYPE);
-        registerRegistry(new TypeToken<RecipeSerializer<?>>() {}, Registry.RECIPE_SERIALIZER);
-        registerRegistry(new TypeToken<StatType<?>>() {}, Registry.STAT_TYPE);
-        registerRegistry(VillagerType.class, Registry.VILLAGER_TYPE);
-        registerRegistry(VillagerProfession.class, Registry.VILLAGER_PROFESSION);
-        registerRegistry(PointOfInterestType.class, Registry.POINT_OF_INTEREST_TYPE);
-        registerRegistry(new TypeToken<MemoryModuleType<?>>() {}, Registry.MEMORY_MODULE_TYPE);
-        registerRegistry(new TypeToken<SensorType<?>>() {}, Registry.SENSOR_TYPE);
-        registerRegistry(Schedule.class, Registry.SCHEDULE);
-        registerRegistry(Activity.class, Registry.ACTIVITY);
-        registerRegistry(new TypeToken<TrunkPlacerType<?>>() {}, Registry.TRUNK_PLACER_TYPE);
-        registerRegistry(new TypeToken<FeatureSizeType<?>>() {}, Registry.FEATURE_SIZE_TYPE);
-        registerRegistry(new TypeToken<PosRuleTestType<?>>() {}, Registry.POS_RULE_TEST);
-        registerRegistry(EntityAttribute.class, Registry.ATTRIBUTES);
-
-        for (Registry<?> reg : Registry.REGISTRIES) {
-            if (!this.registeredRegistries.contains(reg) && !this.brokenRegistries.contains(reg)) {
-                LOGGER.warn("Registry " + ((Registry) Registry.REGISTRIES).getId(reg) + " does not have an associated TypeSerializer!");
-            }
-        }
+        // initialize serializers early, fail fast
+        MinecraftSerializers.collection();
 
         // Commands for testing
         // CommandRegistry.INSTANCE.register(false, TestCommands::register);
-    }
-
-    private <T> void registerTaggedRegistry(final TypeToken<T> token, final Registry<T> registry, final TagContainer<T> tagRegistry) {
-        final TypeParameter<T> tParam = new TypeParameter<T>() {};
-        final TypeToken<TaggableCollection<T>> fullToken = new TypeToken<TaggableCollection<T>>() {
-        }.where(tParam, token);
-
-        if (this.registeredRegistries.add(registry)) {
-            this.mcTypeSerializers.register(fullToken, new TaggableCollectionSerializer<>(registry, tagRegistry));
-            this.mcTypeSerializers.register(token, new RegistrySerializer<>(registry));
-        }
-    }
-
-    /**
-     * Register a TypeSerializer for a registry that has a generic
-     * type parameter.
-     *
-     * @param token A token for the type contained within the registry
-     * @param registry The registry
-     * @param <T> The type registered by the registry
-     */
-    private <T> void registerRegistry(final TypeToken<T> token, final Registry<T> registry) {
-        if (this.registeredRegistries.add(registry)) {
-            this.mcTypeSerializers.register(token, new RegistrySerializer<>(registry));
-        }
-    }
-
-    /**
-     * Register a TypeSerializer for a {@link Registry} that has a
-     * concrete type.
-     *
-     * @param registeredType The class contained within the registry
-     * @param registry The registry to register
-     * @param <T> The type contained by the registry
-     */
-    private <T> void registerRegistry(final Class<T> registeredType, final Registry<T> registry) {
-        registerRegistry(TypeToken.of(registeredType), registry);
     }
 
     /**
@@ -256,9 +103,11 @@ public class Confabricate implements ModInitializer {
      * will become immutable in Configurate 4.0
      *
      * @return Confabricate's collection of serializers.
+     * @deprecated Use {@link MinecraftSerializers#collection()} instead
      */
+    @Deprecated
     public static TypeSerializerCollection getMinecraftTypeSerializers() {
-        return instance == null ? TypeSerializerCollection.defaults() : instance.mcTypeSerializers;
+        return MinecraftSerializers.collection();
     }
 
     /**
@@ -286,7 +135,7 @@ public class Confabricate implements ModInitializer {
      *
      * <p>The returned {@link ConfigurationLoader ConfigurationLoaders} will be
      * pre-configured to use the type serializers from
-     * {@link #getMinecraftTypeSerializers()}, but will otherwise use
+     * {@link MinecraftSerializers#collection()}, but will otherwise use
      * default settings.
      *
      * @param mod The mod to get the configuration loader for
@@ -297,7 +146,7 @@ public class Confabricate implements ModInitializer {
     public static ConfigurationLoader<CommentedConfigurationNode> createLoaderFor(final ModContainer mod, final boolean ownDirectory) {
         return HoconConfigurationLoader.builder()
                 .setPath(getConfigurationFile(mod, ownDirectory))
-                .setDefaultOptions(o -> o.withSerializers(getMinecraftTypeSerializers()))
+                .setDefaultOptions(o -> o.withSerializers(MinecraftSerializers.collection()))
                 .build();
     }
 
@@ -328,7 +177,7 @@ public class Confabricate implements ModInitializer {
      * <pre>&lt;config root&gt;/&lt;modid&gt;.conf</pre>.
      *
      * <p>The reference's {@link ConfigurationLoader} will be pre-configured to
-     * use the type serializers from {@link #getMinecraftTypeSerializers()},
+     * use the type serializers from {@link MinecraftSerializers#collection()}
      * but will otherwise use default settings.
      *
      * @param mod The mod to get the configuration loader for
@@ -343,7 +192,7 @@ public class Confabricate implements ModInitializer {
         return getFileWatcher().listenToConfiguration(path -> {
             return HoconConfigurationLoader.builder()
                     .setPath(path)
-                    .setDefaultOptions(o -> o.withSerializers(getMinecraftTypeSerializers()))
+                    .setDefaultOptions(o -> o.withSerializers(MinecraftSerializers.collection()))
                     .build();
         }, getConfigurationFile(mod, ownDirectory));
     }

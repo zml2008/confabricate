@@ -43,7 +43,7 @@ import java.util.stream.Stream;
  * will be used to create a new node to contain results. Otherwise, the provided
  * factory will be used. The default factory creates a
  * {@link CommentedConfigurationNode} with Confabricate's
- * {@link Confabricate#getMinecraftTypeSerializers() own TypeSerializer collection},
+ * {@link MinecraftSerializers#collection()  own TypeSerializer collection},
  * but a custom factory may be provided.
  *
  */
@@ -82,7 +82,7 @@ public final class ConfigurateOps implements DynamicOps<ConfigurationNode> {
      * @return ops instance
      */
     public static DynamicOps<ConfigurationNode> getForSerializers(final TypeSerializerCollection collection) {
-        if (requireNonNull(collection, "collection").equals(MinecraftSerializers.collection())) {
+        if (MinecraftSerializers.isCommonCollection(collection)) {
             return INSTANCE;
         } else {
             return getWithNodeFactory(() -> ConfigurationNode.root(ConfigurationOptions.defaults().withSerializers(collection)));
@@ -98,7 +98,7 @@ public final class ConfigurateOps implements DynamicOps<ConfigurationNode> {
      * @return a wrapped node
      */
     public static Dynamic<ConfigurationNode> wrap(final ConfigurationNode node) {
-        if (node.getOptions().getSerializers().equals(Confabricate.getMinecraftTypeSerializers())) {
+        if (MinecraftSerializers.isCommonCollection(node.getOptions().getSerializers())) {
             return new Dynamic<>(getInstance(), node);
         } else {
             final ConfigurationOptions opts = node.getOptions();
@@ -120,6 +120,25 @@ public final class ConfigurateOps implements DynamicOps<ConfigurationNode> {
         return requireNonNull(node.getValue(), "The provided key node must have a value");
     }
 
+    /**
+     * Configure an ops instance using the options of an existing node.
+     *
+     * @param value The value type
+     * @return values
+     */
+    public static DynamicOps<ConfigurationNode> fromNode(final ConfigurationNode value) {
+        if (MinecraftSerializers.isCommonCollection(value.getOptions().getSerializers())) {
+            return getInstance();
+        } else {
+            return new ConfigurateOps(() -> ConfigurationNode.root(value.getOptions()));
+        }
+    }
+
+    /**
+     * Create a new empty node using this ops instance's factory.
+     *
+     * @return The new node
+     */
     @Override
     public ConfigurationNode empty() {
         return this.factory.get();
@@ -223,7 +242,7 @@ public final class ConfigurateOps implements DynamicOps<ConfigurationNode> {
 
     @Override
     public DataResult<ConfigurationNode> mergeToList(final ConfigurationNode input, final ConfigurationNode value) {
-        if (input.isList()) {
+        if (input.isList() || input.isEmpty()) {
             final ConfigurationNode ret = input.copy();
             ret.appendListNode().setValue(value);
             return DataResult.success(ret);
@@ -234,7 +253,7 @@ public final class ConfigurateOps implements DynamicOps<ConfigurationNode> {
 
     @Override
     public DataResult<ConfigurationNode> mergeToMap(final ConfigurationNode input, final ConfigurationNode key, final ConfigurationNode value) {
-        if (input.isMap()) {
+        if (input.isMap() || input.isEmpty()) {
             final ConfigurationNode copied = input.copy();
             copied.getNode(keyFrom(key)).setValue(value);
             return DataResult.success(copied);

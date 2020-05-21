@@ -19,6 +19,7 @@ package ca.stellardrift.confabricate;
 import static net.minecraft.server.command.CommandManager.argument;
 import static net.minecraft.server.command.CommandManager.literal;
 
+import ca.stellardrift.confabricate.typeserializers.MinecraftSerializers;
 import com.google.common.reflect.TypeToken;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
@@ -115,7 +116,7 @@ final class TestCommands {
         return literal("parse").then(argument("json", StringArgumentType.greedyString()).executes(ctx -> {
             final String jsonText = StringArgumentType.getString(ctx, "json");
             final GsonConfigurationLoader loader = GsonConfigurationLoader.builder()
-                    .setDefaultOptions(o -> o.withSerializers(Confabricate.getMinecraftTypeSerializers()))
+                    .setDefaultOptions(o -> o.withSerializers(MinecraftSerializers.collection()))
                     .setSource(() -> new BufferedReader(new StringReader(jsonText))).build();
 
             try {

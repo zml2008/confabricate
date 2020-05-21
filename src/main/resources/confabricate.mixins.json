@@ -1,0 +1,11 @@
+{
+    "required": true,
+    "package": "ca.stellardrift.confabricate.mixin",
+    "compatibilityLevel": "JAVA_8",
+    "mixins": [
+        "RegistryAccessor"
+    ],
+    "injectors": {
+        "defaultRequire": 1
+    }
+}

@@ -16,6 +16,7 @@
 
 package ca.stellardrift.confabricate;
 
+import ca.stellardrift.confabricate.typeserializers.MinecraftSerializers;
 import com.google.common.collect.ImmutableSet;
 import net.minecraft.nbt.ByteArrayTag;
 import net.minecraft.nbt.ByteTag;
@@ -173,7 +174,7 @@ public final class NbtNodeAdapter {
      * @return the new node
      */
     public static ConfigurationNode createEmptyNode() {
-        return createEmptyNode(ConfigurationOptions.defaults().withSerializers(Confabricate.getMinecraftTypeSerializers()));
+        return createEmptyNode(ConfigurationOptions.defaults().withSerializers(MinecraftSerializers.collection()));
     }
 
     /**
