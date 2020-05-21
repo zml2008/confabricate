@@ -68,7 +68,6 @@ import net.minecraft.village.VillagerType;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.source.BiomeSource;
 import net.minecraft.world.chunk.ChunkStatus;
-import net.minecraft.world.dimension.DimensionType;
 import net.minecraft.world.gen.carver.Carver;
 import net.minecraft.world.gen.decorator.Decorator;
 import net.minecraft.world.gen.decorator.TreeDecoratorType;
@@ -190,10 +189,10 @@ public class Confabricate implements ModInitializer {
         registerRegistry(Activity.class, Registry.ACTIVITY);
         registerRegistry(new TypeToken<TrunkPlacerType<?>>() {}, Registry.TRUNK_PLACER_TYPE);
         registerRegistry(new TypeToken<FeatureSizeType<?>>() {}, Registry.FEATURE_SIZE_TYPE);
-        //registerRegistry(PosRuleTestType.class, Registry.POS_RULE_TEST);
+        registerRegistry(new TypeToken<PosRuleTestType<?>>() {}, Registry.POS_RULE_TEST);
         registerRegistry(EntityAttribute.class, Registry.ATTRIBUTES);
 
-        for (Registry reg : Registry.REGISTRIES) {
+        for (Registry<?> reg : Registry.REGISTRIES) {
             if (!registeredRegistries.contains(reg) && !brokenRegistries.contains(reg)) {
                 LOGGER.warn("Registry " + ((Registry) Registry.REGISTRIES).getId(reg) + " does not have an associated TypeSerializer!");
             }

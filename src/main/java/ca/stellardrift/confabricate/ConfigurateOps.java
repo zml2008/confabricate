@@ -16,7 +16,6 @@
 
 package ca.stellardrift.confabricate;
 
-import com.google.common.collect.ImmutableMap;
 import com.mojang.datafixers.util.Pair;
 import com.mojang.serialization.DataResult;
 import com.mojang.serialization.Dynamic;
@@ -186,11 +185,8 @@ public final class ConfigurateOps implements DynamicOps<ConfigurationNode> {
     @Override
     public DataResult<Stream<Pair<ConfigurationNode, ConfigurationNode>>> getMapValues(ConfigurationNode input) {
         if(input.isMap()) {
-            ImmutableMap.Builder<ConfigurationNode, ConfigurationNode> builder = ImmutableMap.builder();
-            for (Map.Entry<Object, ? extends ConfigurationNode> entry : input.getChildrenMap().entrySet()) {
-                builder.put(empty().setValue(entry.getKey()), entry.getValue().copy());
-            }
-            return DataResult.success(builder.build().entrySet().stream().map(entry -> Pair.of(entry.getKey(), entry.getValue())));
+            return DataResult.success(input.getChildrenMap().entrySet().stream()
+                    .map(entry -> Pair.of(empty().setValue(entry.getKey()), entry.getValue().copy())));
         }
 
         return DataResult.error("Not a map: " + input);
