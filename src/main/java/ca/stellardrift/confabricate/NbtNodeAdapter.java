@@ -40,22 +40,27 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * A configuration adapter that will convert Minecraft NBT data into a Configurate {@link ConfigurationNode}
+ * A configuration adapter that will convert Minecraft NBT data into a
+ * Configurate {@link ConfigurationNode}.
  */
-public class NbtNodeAdapter {
+public final class NbtNodeAdapter {
+
+    private NbtNodeAdapter() {}
 
     /**
      * Given a tag, convert it to a node.
-     * Depending on the configuration of the provided node, the conversion may lose some data when roundtripped back.
-     * For example, array tags may be converted to lists if the node provided does not support arrays.
+     *
+     * <p>Depending on the configuration of the provided node, the conversion
+     * may lose some data when roundtripped back. For example, array tags may
+     * be converted to lists if the node provided does not support arrays.
      *
      * @param tag The tag to convert
      * @param node The node to pupulate
      * @throws IOException If invalid tags are provided
      */
-    public static void tagToNode(Tag tag, ConfigurationNode node) throws IOException {
+    public static void tagToNode(final Tag tag, final ConfigurationNode node) throws IOException {
         if (tag instanceof CompoundTag) {
-            CompoundTag compoundTag = (CompoundTag) tag;
+            final CompoundTag compoundTag = (CompoundTag) tag;
             for (String key : compoundTag.getKeys()) {
                 tagToNode(compoundTag.get(key), node.getNode(key));
             }
@@ -113,28 +118,29 @@ public class NbtNodeAdapter {
     }
 
     /**
-     * Convert a node to tag. Because NBT is strongly typed and does not permit lists with mixed types,
-     * some configuration nodes will not be convertible to Tags.
+     * Convert a node to tag. Because NBT is strongly typed and does not permit
+     * lists with mixed types, some configuration nodes will not be convertible
+     * to Tags.
      *
      * @param node The configuration node
      * @return The converted tag object
      * @throws IOException if an IO error occurs while converting the tag
      */
-    public static Tag nodeToTag(ConfigurationNode node) throws IOException {
+    public static Tag nodeToTag(final ConfigurationNode node) throws IOException {
         if (node.isMap()) {
-            CompoundTag tag = new CompoundTag();
+            final CompoundTag tag = new CompoundTag();
             for (Map.Entry<Object, ? extends ConfigurationNode> ent : node.getChildrenMap().entrySet()) {
                 tag.put(ent.getKey().toString(), nodeToTag(ent.getValue()));
             }
             return tag;
         } else if (node.isList()) {
-            ListTag list = new ListTag();
+            final ListTag list = new ListTag();
             for (ConfigurationNode child : node.getChildrenList()) {
-               list.add(nodeToTag(child));
+                list.add(nodeToTag(child));
             }
             return list;
         } else {
-            Object obj = node.getValue();
+            final Object obj = node.getValue();
             if (obj instanceof byte[]) {
                 return new ByteArrayTag((byte[]) obj);
             } else if (obj instanceof int[]) {
@@ -149,7 +155,7 @@ public class NbtNodeAdapter {
                 return IntTag.of((Integer) obj);
             } else if (obj instanceof Long) {
                 return LongTag.of((Long) obj);
-            }  else if (obj instanceof Float) {
+            } else if (obj instanceof Float) {
                 return FloatTag.of((Float) obj);
             } else if (obj instanceof Double) {
                 return DoubleTag.of((Double) obj);
@@ -161,14 +167,26 @@ public class NbtNodeAdapter {
         }
     }
 
+    /**
+     * Create an empty node with options appropriate for handling NBT data.
+     *
+     * @return the new node
+     */
     public static ConfigurationNode createEmptyNode() {
         return createEmptyNode(ConfigurationOptions.defaults().withSerializers(Confabricate.getMinecraftTypeSerializers()));
     }
 
-    public static ConfigurationNode createEmptyNode(@NonNull ConfigurationOptions options) {
+    /**
+     * Create an empty node with options appropriate for handling NBT data.
+     *
+     * @param options Options to work with
+     * @return the new node
+     */
+    public static ConfigurationNode createEmptyNode(final @NonNull ConfigurationOptions options) {
         return ConfigurationNode.root(options
                 .withNativeTypes(ImmutableSet.of(Map.class, List.class, Byte.class,
                         Short.class, Integer.class, Long.class, Float.class, Double.class,
                         long[].class, byte[].class, int[].class, String.class)));
     }
+
 }

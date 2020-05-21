@@ -98,11 +98,14 @@ import java.nio.file.Path;
 import java.util.Set;
 
 /**
- * Configurate integration holder, providing access to configuration loaders pre-configured to work with Minecraft types.
+ * Configurate integration holder, providing access to configuration loaders
+ * pre-configured to work with Minecraft types.
  *
- * This class has static utility methods for usage by other mods -- it should not be instantiated by anyone but the mod loader.
+ * <p>This class has static utility methods for usage by other mods -- it should
+ * not be instantiated by anyone but the mod loader.
  */
 public class Confabricate implements ModInitializer {
+
     static final String MOD_ID = "confabricate";
 
     private static Confabricate instance;
@@ -113,6 +116,9 @@ public class Confabricate implements ModInitializer {
     private final Set<Registry<?>> brokenRegistries = Sets.newHashSet();
     private final Set<Registry<?>> registeredRegistries = Sets.newHashSet();
 
+    /**
+     * Constructor for loader usage only.
+     */
     public Confabricate() {
         if (instance != null) {
             throw new ExceptionInInitializerError("Confabricate can only be initialized by the Fabric mod loader");
@@ -120,27 +126,26 @@ public class Confabricate implements ModInitializer {
         instance = this;
     }
 
-    static Identifier id(String item) {
+    static Identifier id(final String item) {
         return new Identifier(MOD_ID, item);
     }
 
     @Override
     public void onInitialize() {
         try {
-            listener = WatchServiceListener.create();
+            this.listener = WatchServiceListener.create();
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
                 try {
-                    listener.close();
-                } catch (IOException e) {
+                    this.listener.close();
+                } catch (final IOException e) {
                     LOGGER.catching(e);
                 }
             }, "Confabricate shutdown thread"));
-        } catch (IOException e) {
+        } catch (final IOException e) {
             LOGGER.error("Could not initialize file listener", e);
         }
 
-
-        mcTypeSerializers = TypeSerializerCollection.defaults()
+        this.mcTypeSerializers = TypeSerializerCollection.defaults()
                 .newChild()
                 .register(IdentifierSerializer.TOKEN, IdentifierSerializer.INSTANCE)
                 .register(TextSerializer.INSTANCE);
@@ -165,10 +170,11 @@ public class Confabricate implements ModInitializer {
         registerRegistry(new TypeToken<ParticleType<?>>() {}, Registry.PARTICLE_TYPE);
         registerRegistry(new TypeToken<Codec<? extends BiomeSource>>() {}, Registry.BIOME_SOURCE);
         registerRegistry(new TypeToken<BlockEntityType<?>>() {}, Registry.BLOCK_ENTITY_TYPE);
-        // TODO: Figure out how to manage dimension types. They are present in "class_5318 and are not statically availible or DimensionTracker as Yarn PRs say"
+        // TODO: Figure out how to manage dimension types. They are present in
+        // "class_5318 and are not statically availible or DimensionTracker as Yarn PRs say"
         //registerRegistry(DimensionType.class, Registry.DIMENSION_TYPE);
         registerRegistry(PaintingMotive.class, Registry.PAINTING_MOTIVE);
-        brokenRegistries.add(Registry.CUSTOM_STAT);
+        this.brokenRegistries.add(Registry.CUSTOM_STAT);
         //registerRegistry(Identifier, Registry.CUSTOM_STAT); // can't register -- doesn't have its own type
         registerRegistry(ChunkStatus.class, Registry.CHUNK_STATUS);
         registerRegistry(new TypeToken<StructureFeature<?>>() {}, Registry.STRUCTURE_FEATURE);
@@ -193,56 +199,61 @@ public class Confabricate implements ModInitializer {
         registerRegistry(EntityAttribute.class, Registry.ATTRIBUTES);
 
         for (Registry<?> reg : Registry.REGISTRIES) {
-            if (!registeredRegistries.contains(reg) && !brokenRegistries.contains(reg)) {
+            if (!this.registeredRegistries.contains(reg) && !this.brokenRegistries.contains(reg)) {
                 LOGGER.warn("Registry " + ((Registry) Registry.REGISTRIES).getId(reg) + " does not have an associated TypeSerializer!");
             }
         }
 
         // Commands for testing
-       // CommandRegistry.INSTANCE.register(false, TestCommands::register);
+        // CommandRegistry.INSTANCE.register(false, TestCommands::register);
     }
 
-    private <T> void registerTaggedRegistry(TypeToken<T> token, Registry<T> registry, TagContainer<T> tagRegistry) {
+    private <T> void registerTaggedRegistry(final TypeToken<T> token, final Registry<T> registry, final TagContainer<T> tagRegistry) {
         final TypeParameter<T> tParam = new TypeParameter<T>() {};
         final TypeToken<TaggableCollection<T>> fullToken = new TypeToken<TaggableCollection<T>>() {
         }.where(tParam, token);
 
-        if (registeredRegistries.add(registry)) {
-            mcTypeSerializers.register(fullToken, new TaggableCollectionSerializer<>(registry, tagRegistry));
-            mcTypeSerializers.register(token, new RegistrySerializer<>(registry));
+        if (this.registeredRegistries.add(registry)) {
+            this.mcTypeSerializers.register(fullToken, new TaggableCollectionSerializer<>(registry, tagRegistry));
+            this.mcTypeSerializers.register(token, new RegistrySerializer<>(registry));
         }
     }
 
     /**
-     * Register a TypeSerializer for a registry that has a generic type parameter
+     * Register a TypeSerializer for a registry that has a generic
+     * type parameter.
      *
      * @param token A token for the type contained within the registry
      * @param registry The registry
      * @param <T> The type registered by the registry
      */
-    private <T> void registerRegistry(TypeToken<T> token, Registry<T> registry) {
-        if (registeredRegistries.add(registry)) {
-            mcTypeSerializers.register(token, new RegistrySerializer<>(registry));
+    private <T> void registerRegistry(final TypeToken<T> token, final Registry<T> registry) {
+        if (this.registeredRegistries.add(registry)) {
+            this.mcTypeSerializers.register(token, new RegistrySerializer<>(registry));
         }
     }
 
     /**
-     * Register a TypeSerializer for a {@link Registry} that has a concrete type
+     * Register a TypeSerializer for a {@link Registry} that has a
+     * concrete type.
      *
      * @param registeredType The class contained within the registry
      * @param registry The registry to register
      * @param <T> The type contained by the registry
      */
-    private <T> void registerRegistry(Class<T> registeredType, Registry<T> registry) {
+    private <T> void registerRegistry(final Class<T> registeredType, final Registry<T> registry) {
         registerRegistry(TypeToken.of(registeredType), registry);
     }
 
     /**
-     * Get a {@link TypeSerializerCollection} which contains additional {@link TypeSerializers} for Minecraft types,
-     * in addition to the defaults provided by Configurate.
+     * Get a {@link TypeSerializerCollection} which contains additional
+     * {@link TypeSerializers} for Minecraft types, in addition to the defaults
+     * provided by Configurate.
      *
-     * While the collection is mutable, modifying it is discouraged in favour of working with a new child,
-     * created with {@link TypeSerializerCollection#newChild()}. Collections of serializers will become immutable in Configurate 4.0
+     * <p>While the collection is mutable, modifying it is discouraged in favor
+     * of working with a new child, created with
+     * {@link TypeSerializerCollection#newChild()}. Collections of serializers
+     * will become immutable in Configurate 4.0
      *
      * @return Confabricate's collection of serializers.
      */
@@ -251,30 +262,39 @@ public class Confabricate implements ModInitializer {
     }
 
     /**
-     * Create a configuration loader for the given mod's main configuration file.
-     * By default, this config file is in a dedicated directory for the mod.
+     * Create a configuration loader for the given mod's main
+     * configuration file.
+     *
+     * <p>By default, this config file is in a dedicated directory for the mod.
      *
      * @see #createLoaderFor(ModContainer, boolean)
      * @param mod The mod wanting to access its config
      * @return A configuration loader in the Hocon format
      */
-    public static ConfigurationLoader<CommentedConfigurationNode> createLoaderFor(ModContainer mod) {
+    public static ConfigurationLoader<CommentedConfigurationNode> createLoaderFor(final ModContainer mod) {
         return createLoaderFor(mod, true);
     }
 
     /**
-     * Get a configuration loader for a mod. The configuration will be in Hocon format.
-     * If the configuration is in its own directory, the path will be <pre>&lt;config root&gt;/&lt;modid&gt;/&lt;modid&gt;.conf</pre>
-     * Otherwise, the path will be <pre>&lt;config root&gt;/&lt;modid&gt;.conf</pre>
+     * Get a configuration loader for a mod. The configuration will be in
+     * Hocon format.
      *
-     * The returned {@link ConfigurationLoader ConfigurationLoaders} will be pre-configured to use the type serializers
-     * from {@link #getMinecraftTypeSerializers()}, but will otherwise use default settings.
+     * <p>If the configuration is in its own directory, the path will be
+     * <pre>&lt;config root&gt;/&lt;modid&gt;/&lt;modid&gt;.conf</pre>.
+     * Otherwise, the path will be
+     * <pre>&lt;config root&gt;/&lt;modid&gt;.conf</pre>.
+     *
+     * <p>The returned {@link ConfigurationLoader ConfigurationLoaders} will be
+     * pre-configured to use the type serializers from
+     * {@link #getMinecraftTypeSerializers()}, but will otherwise use
+     * default settings.
      *
      * @param mod The mod to get the configuration loader for
-     * @param ownDirectory Whether the configuration should be in a directory just for the mod
+     * @param ownDirectory Whether the configuration should be in a directory
+     *                     just for the mod, or a file in the config root
      * @return The newly created configuration loader
      */
-    public static ConfigurationLoader<CommentedConfigurationNode> createLoaderFor(ModContainer mod, boolean ownDirectory) {
+    public static ConfigurationLoader<CommentedConfigurationNode> createLoaderFor(final ModContainer mod, final boolean ownDirectory) {
         return HoconConfigurationLoader.builder()
                 .setPath(getConfigurationFile(mod, ownDirectory))
                 .setDefaultOptions(o -> o.withSerializers(getMinecraftTypeSerializers()))
@@ -282,33 +302,44 @@ public class Confabricate implements ModInitializer {
     }
 
     /**
-     * Create a configuration reference to the provided mod's main configuration file
-     * By default, this config file is in a dedicated directory for the mod.
+     * Create a configuration reference to the provided mod's main
+     * configuration file.
+     *
+     * <p>By default, this config file is in a dedicated directory for the mod.
      * The returned reference will automatically reload.
      *
      * @see #createConfigurationFor(ModContainer, boolean)
      * @param mod The mod wanting to access its config
      * @return A configuration reference for a loaded node in HOCON format
-     * @throws IOException if a listener could not be established or the configuration failed to load
+     * @throws IOException if a listener could not be established or if the
+     *                     configuration failed to load
      */
-    public static ConfigurationReference<CommentedConfigurationNode> createConfigurationFor(ModContainer mod) throws IOException {
+    public static ConfigurationReference<CommentedConfigurationNode> createConfigurationFor(final ModContainer mod) throws IOException {
         return createConfigurationFor(mod, true);
     }
 
     /**
-     * Get a configuration reference for a mod. The configuration will be in Hocon format.
-     * If the configuration is in its own directory, the path will be <pre>&lt;config root&gt;/&lt;modid&gt;/&lt;modid&gt;.conf</pre>
-     * Otherwise, the path will be <pre>&lt;config root&gt;/&lt;modid&gt;.conf</pre>
+     * Get a configuration reference for a mod. The configuration will be in
+     * Hocon format.
      *
-     * The reference's {@link ConfigurationLoader} will be pre-configured to use the type serializers
-     * from {@link #getMinecraftTypeSerializers()}, but will otherwise use default settings.
+     * <p>If the configuration is in its own directory, the path will be
+     * <pre>&lt;config root&gt;/&lt;modid&gt;/&lt;modid&gt;.conf</pre>
+     * Otherwise, the path will be
+     * <pre>&lt;config root&gt;/&lt;modid&gt;.conf</pre>.
+     *
+     * <p>The reference's {@link ConfigurationLoader} will be pre-configured to
+     * use the type serializers from {@link #getMinecraftTypeSerializers()},
+     * but will otherwise use default settings.
      *
      * @param mod The mod to get the configuration loader for
-     * @param ownDirectory Whether the configuration should be in a directory just for the mod
+     * @param ownDirectory Whether the configuration should be in a directory
+     *                     just for the mod
      * @return The newly created and loaded configuration reference
-     * @throws IOException if a listener could not be established or the configuration failed to load
+     * @throws IOException if a listener could not be established or the
+     *                     configuration failed to load.
      */
-    public static ConfigurationReference<CommentedConfigurationNode> createConfigurationFor(ModContainer mod, boolean ownDirectory) throws IOException {
+    public static ConfigurationReference<CommentedConfigurationNode> createConfigurationFor(final ModContainer mod,
+            final boolean ownDirectory) throws IOException {
         return getFileWatcher().listenToConfiguration(path -> {
             return HoconConfigurationLoader.builder()
                     .setPath(path)
@@ -318,15 +349,16 @@ public class Confabricate implements ModInitializer {
     }
 
     /**
-     * Get the path to a configuration file in HOCON format for the provided mod.
+     * Get the path to a configuration file in HOCON format for {@code mod}.
      *
-     * HOCON uses the {@code .conf} file extension.
+     * <p>HOCON uses the {@code .conf} file extension.
      *
      * @param mod container of the mod
-     * @param ownDirectory whether the configuration should be in its own directory, or in the main configuration directory
+     * @param ownDirectory whether the configuration should be in its own
+     *                  directory, or in the main configuration directory
      * @return path to a configuration file
      */
-    public static Path getConfigurationFile(ModContainer mod, boolean ownDirectory) {
+    public static Path getConfigurationFile(final ModContainer mod, final boolean ownDirectory) {
         Path configRoot = FabricLoader.getInstance().getConfigDirectory().toPath();
         if (ownDirectory) {
             configRoot = configRoot.resolve(mod.getMetadata().getId());
@@ -335,46 +367,56 @@ public class Confabricate implements ModInitializer {
     }
 
     /**
-     * See static variant
+     * See static variant.
      *
      * @param fixer The fixer containing DFU transformations to apply
      * @param reference The reference to the DFU {@link DSL} type representing this node
      * @param targetVersion The version to convert to
-     * @param versionKey The location of the data version in nodes provided to the transformer
+     * @param versionKey The location of the data version in nodes provided to
+     *                  the transformer
      * @return A transformation that executes a {@link DataFixer} transformation.
      * @deprecated see {@link #createTransformation(DataFixer, DSL.TypeReference, int, Object...)}, this should have been static
      */
     @Deprecated
-    public ConfigurationTransformation createTransformationFrom(DataFixer fixer, DSL.TypeReference reference, int targetVersion, Object... versionKey) {
+    public ConfigurationTransformation createTransformationFrom(final DataFixer fixer, final DSL.TypeReference reference,
+            final int targetVersion, final Object... versionKey) {
         return createTransformation(fixer, reference, targetVersion, versionKey);
     }
 
     /**
-     * See static variant
+     * See static variant.
      *
      * @param fixer The fixer containing DFU transformations to apply
-     * @param reference The reference to the DFU {@link DSL} type representing this node
+     * @param reference The reference to the DFU {@link DSL} type representing
+     *                  this node
      * @param targetVersion The version to convert to
-     * @param versionKey The location of the data version in nodes provided to the transformer
+     * @param versionKey The location of the data version in nodes provided to
+     *                   the transformer
      * @return A transformation that executes a {@link DataFixer} transformation.
      * @deprecated {@link #createTransformAction(DataFixer, DSL.TypeReference, int, Object...)}, this should have been static
      */
     @Deprecated
-    public TransformAction createTransformActionFrom(DataFixer fixer, DSL.TypeReference reference, int targetVersion, Object... versionKey) {
+    public TransformAction createTransformActionFrom(final DataFixer fixer, final DSL.TypeReference reference,
+            final int targetVersion, final Object... versionKey) {
         return createTransformAction(fixer, reference, targetVersion, versionKey);
     }
 
     /**
-     * Create a {@link ConfigurationTransformation} that applies a {@link DataFixer} to a Configurate node. The current
-     * version of the node is provided by the path {@code versionKey}. The transformation is executed from the provided node.
+     * Create a {@link ConfigurationTransformation} that applies a
+     * {@link DataFixer} to a Configurate node. The current version of the node
+     * is provided by the path {@code versionKey}. The transformation is
+     * executed from the provided node.
      *
      * @param fixer The fixer containing DFU transformations to apply
-     * @param reference The reference to the DFU {@link DSL} type representing this node
+     * @param reference The reference to the DFU {@link DSL} type representing
+     *                  this node
      * @param targetVersion The version to convert to
-     * @param versionKey The location of the data version in nodes provided to the transformer
+     * @param versionKey The location of the data version in nodes provided to
+     *                   the transformer
      * @return A transformation that executes a {@link DataFixer} transformation.
      */
-    public static ConfigurationTransformation createTransformation(DataFixer fixer, DSL.TypeReference reference, int targetVersion, Object... versionKey) {
+    public static ConfigurationTransformation createTransformation(final DataFixer fixer, final DSL.TypeReference reference, final int targetVersion,
+            final Object... versionKey) {
         return ConfigurationTransformation.builder()
                 .addAction(new Object[]{}, createTransformAction(fixer, reference, targetVersion, versionKey))
                 .build();
@@ -382,17 +424,20 @@ public class Confabricate implements ModInitializer {
     }
 
     /**
-     * Create a TransformAction applying a {@link DataFixer} to a Configurate node. This can be used within {@link ConfigurationTransformation}
+     * Create a TransformAction applying a {@link DataFixer} to a Configurate
+     * node. This can be used within {@link ConfigurationTransformation}
      * when some values are controlled by DFUs and some aren't.
      *
      * @param fixer The fixer containing DFU transformations to apply
      * @param reference The reference to the DFU {@link DSL} type representing this node
      * @param targetVersion The version to convert to
-     * @param versionKey The location of the data version in nodes seen by this action
+     * @param versionKey The location of the data version in nodes seen by
+     *                  this action.
      * @return The created action
      */
-    public static TransformAction createTransformAction(DataFixer fixer, DSL.TypeReference reference, int targetVersion, Object... versionKey) {
-        return (inputPath, valueAtPath) ->  {
+    public static TransformAction createTransformAction(final DataFixer fixer, final DSL.TypeReference reference,
+            final int targetVersion, final Object... versionKey) {
+        return (inputPath, valueAtPath) -> {
             final int currentVersion = valueAtPath.getNode(versionKey).getInt(-1);
             final Dynamic<ConfigurationNode> dyn = ConfigurateOps.wrap(valueAtPath);
             valueAtPath.setValue(fixer.update(reference, dyn, currentVersion, targetVersion).getValue());
@@ -400,6 +445,12 @@ public class Confabricate implements ModInitializer {
         };
     }
 
+    /**
+     * Access the shared watch service for listening to files in this game on
+     * the default filesystem.
+     *
+     * @return watcher
+     */
     public static WatchServiceListener getFileWatcher() {
         final WatchServiceListener ret = instance.listener;
         if (ret == null) {
@@ -407,4 +458,5 @@ public class Confabricate implements ModInitializer {
         }
         return ret;
     }
+
 }

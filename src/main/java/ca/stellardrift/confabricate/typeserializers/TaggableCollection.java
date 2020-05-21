@@ -54,14 +54,19 @@ public interface TaggableCollection<T> extends Iterable<T> {
     }
 
     Registry<T> getContainingRegistry();
+
     TagContainer<T> getTagContainer();
 
     Set<T> getSpecificElements();
+
     Set<Tag<T>> getTaggedElements();
 
     TaggableCollection<T> addingSingle(Identifier ident);
+
     TaggableCollection<T> addingTag(Identifier tag);
 
     TaggableCollection<T> removingSingle(Identifier ident);
+
     TaggableCollection<T> removingTag(Identifier tag);
+
 }

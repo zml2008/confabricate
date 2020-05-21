@@ -25,35 +25,36 @@ import ninja.leaping.configurate.objectmapping.serialize.TypeSerializer;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-public class RegistrySerializer<T> implements TypeSerializer<T> {
+public final class RegistrySerializer<T> implements TypeSerializer<T> {
+
     private final Registry<T> registry;
 
-    public RegistrySerializer(Registry<T> registry) {
+    public RegistrySerializer(final Registry<T> registry) {
         this.registry = registry;
     }
 
-
-    @Nullable
     @Override
-    public T deserialize(@NonNull TypeToken<?> type, @NonNull ConfigurationNode value) throws ObjectMappingException {
-        Identifier ident = IdentifierSerializer.fromNode(value);
+    public @Nullable T deserialize(final @NonNull TypeToken<?> type, final @NonNull ConfigurationNode value) throws ObjectMappingException {
+        final Identifier ident = IdentifierSerializer.fromNode(value);
         if (ident == null) {
             return null;
         }
 
-        return registry.get(ident);
+        return this.registry.get(ident);
     }
 
     @Override
-    public void serialize(@NonNull TypeToken<?> type, @Nullable T obj, @NonNull ConfigurationNode value) throws ObjectMappingException {
+    public void serialize(final @NonNull TypeToken<?> type, final @Nullable T obj,
+            final @NonNull ConfigurationNode value) throws ObjectMappingException {
         if (obj == null) {
             value.setValue(null);
         }
 
-        Identifier ident = registry.getId(obj);
+        final Identifier ident = this.registry.getId(obj);
         if (ident == null) {
             throw new ObjectMappingException("Unknown registry element " + obj);
         }
         IdentifierSerializer.toNode(ident, value);
     }
+
 }

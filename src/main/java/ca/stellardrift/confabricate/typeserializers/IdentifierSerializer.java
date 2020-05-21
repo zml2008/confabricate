@@ -30,40 +30,43 @@ import java.util.List;
 /**
  * Serializes an {@link Identifier} to a configuration object.
  *
- * When identifiers are output, they are given in the canonical string format.
+ * <p>When identifiers are output, they are given in the canonical
+ * string format.
  *
- * When identifiers are read, they are accepted in the formats of:
+ * <p>When identifiers are read, they are accepted in the formats of:
  * <ul>
  *     <li>
  *         A list of either one or two elements. If the list is two elements,
- *         the first is the namespace and the second is a path. If the list is one element,
- *         that element is parsed as a string (see below).
+ *         the first is the namespace and the second is a path. If the list is
+ *         one element, that element is parsed as a string (see below).
  *     </li>
- *     <li>A string, in standard <pre>[&lt;namespace&gt;:]&lt;path&gt;</pre> format, where the default namespace is <pre>minecraft</pre></li>
+ *     <li>A string, in standard <pre>[&lt;namespace&gt;:]&lt;path&gt;</pre>
+ *     format, where the default namespace is <pre>minecraft</pre></li>
  * </ul>
  */
 public class IdentifierSerializer implements TypeSerializer<Identifier> {
+
     //private static final String NAMESPACE_MINECRAFT = "minecraft";
     public static final IdentifierSerializer INSTANCE = new IdentifierSerializer();
     public static final TypeToken<Identifier> TOKEN = TypeToken.of(Identifier.class);
 
     @Nullable
     @Override
-    public Identifier deserialize(@NonNull TypeToken<?> type, @NonNull ConfigurationNode value) throws ObjectMappingException {
+    public Identifier deserialize(final @NonNull TypeToken<?> type, final @NonNull ConfigurationNode value) throws ObjectMappingException {
         return fromNode(value);
     }
 
     @Override
-    public void serialize(@NonNull TypeToken<?> type, @Nullable Identifier obj, @NonNull ConfigurationNode value) throws ObjectMappingException {
+    public void serialize(final @NonNull TypeToken<?> type, final @Nullable Identifier obj, final @NonNull ConfigurationNode value) {
         toNode(obj, value);
     }
 
-    static Identifier fromNode(ConfigurationNode node) throws ObjectMappingException {
+    static Identifier fromNode(final ConfigurationNode node) throws ObjectMappingException {
         if (node.isVirtual()) {
             return null;
         }
         if (node.isList()) {
-            List<? extends ConfigurationNode> children = node.getChildrenList();
+            final List<? extends ConfigurationNode> children = node.getChildrenList();
             switch (children.size()) {
                 case 2:
                     final String key = children.get(0).getString();
@@ -83,7 +86,7 @@ public class IdentifierSerializer implements TypeSerializer<Identifier> {
 
             }
         } else {
-            String val = node.getString();
+            final String val = node.getString();
             if (val == null) {
                 throw listAcceptedFormats();
             }
@@ -91,18 +94,18 @@ public class IdentifierSerializer implements TypeSerializer<Identifier> {
         }
     }
 
-    static Identifier createIdentifier(String key, String value) throws ObjectMappingException {
+    static Identifier createIdentifier(final String key, final String value) throws ObjectMappingException {
         try {
             return new Identifier(key, value);
-        } catch (InvalidIdentifierException ex) {
+        } catch (final InvalidIdentifierException ex) {
             throw new ObjectMappingException(ex);
         }
     }
 
-    static Identifier createIdentifier(String data) throws ObjectMappingException {
+    static Identifier createIdentifier(final String data) throws ObjectMappingException {
         try {
             return new Identifier(data);
-        } catch (InvalidIdentifierException ex) {
+        } catch (final InvalidIdentifierException ex) {
             throw new ObjectMappingException(ex.getMessage());
         }
     }
@@ -111,11 +114,12 @@ public class IdentifierSerializer implements TypeSerializer<Identifier> {
         return new ObjectMappingException("The provided item must be in [<namespace>:]<path> format");
     }
 
-    static void toNode(Identifier ident, ConfigurationNode node) {
+    static void toNode(final Identifier ident, final ConfigurationNode node) {
         if (ident == null) {
             node.setValue(null);
         } else {
             node.setValue(ident.toString());
         }
     }
+
 }

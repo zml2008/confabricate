@@ -57,25 +57,28 @@ import java.nio.file.Path;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
-class TestCommands {
+final class TestCommands {
+
+    private TestCommands() {}
+
     private static final Path currentDir = FileSystems.getDefault().getPath(".");
 
-    public static void register(CommandDispatcher<ServerCommandSource> src) {
-        LiteralCommandNode<ServerCommandSource> root = src.register(literal("confabricate")
+    public static void register(final CommandDispatcher<ServerCommandSource> src) {
+        final LiteralCommandNode<ServerCommandSource> root = src.register(literal("confabricate")
                 .requires(scs -> scs.hasPermissionLevel(4))
                 .then(dumpCommand())
-        .then(parseObjectCommand()));
-        src.register(literal("confab").redirect(root ));
+                .then(parseObjectCommand()));
+        src.register(literal("confab").redirect(root));
     }
 
-    private static RequiredArgumentBuilder<ServerCommandSource, String> path(String argumentName) {
+    private static RequiredArgumentBuilder<ServerCommandSource, String> path(final String argumentName) {
         return argument(argumentName, StringArgumentType.string()).suggests((src, builder) -> {
             return CompletableFuture.supplyAsync(() -> {
                 try {
                     Files.list(currentDir)
                             .filter(it -> it.toString().startsWith(builder.getRemaining()))
                             .forEach(it -> builder.suggest(it.toString()));
-                } catch (IOException e) {
+                } catch (final IOException e) {
                     // no-op
                 }
                 return builder.build();
@@ -83,7 +86,7 @@ class TestCommands {
         });
     }
 
-    private static Path getPath(String argumentName, CommandContext<?> ctx) {
+    private static Path getPath(final String argumentName, final CommandContext<?> ctx) {
         return FileSystems.getDefault().getPath(StringArgumentType.getString(ctx, argumentName)).toAbsolutePath();
     }
 
@@ -100,18 +103,18 @@ class TestCommands {
 
         @Override
         public String toString() {
-            return "DataTest{" +
-                    "material=" + material +
-                    ", entity=" + entity +
-                    ", ident=" + ident +
-                    '}';
+            return "DataTest{"
+                    + "material=" + this.material
+                    + ", entity=" + this.entity
+                    + ", ident=" + this.ident
+                    + '}';
         }
     }
 
     static LiteralArgumentBuilder<ServerCommandSource> parseObjectCommand() {
         return literal("parse").then(argument("json", StringArgumentType.greedyString()).executes(ctx -> {
-            String jsonText = StringArgumentType.getString(ctx, "json");
-            GsonConfigurationLoader loader = GsonConfigurationLoader.builder()
+            final String jsonText = StringArgumentType.getString(ctx, "json");
+            final GsonConfigurationLoader loader = GsonConfigurationLoader.builder()
                     .setDefaultOptions(o -> o.withSerializers(Confabricate.getMinecraftTypeSerializers()))
                     .setSource(() -> new BufferedReader(new StringReader(jsonText))).build();
 
@@ -128,22 +131,22 @@ class TestCommands {
         return literal("dump").then(path("file")
                 .then(literal("player").then(argument("ply", EntityArgumentType.player()).executes(ctx -> {
                     try {
-                        ServerPlayerEntity entity = EntityArgumentType.getPlayer(ctx, "ply");
+                        final ServerPlayerEntity entity = EntityArgumentType.getPlayer(ctx, "ply");
 
-                        Text roundtripped = dumpToFile(entity::toTag, getPath("file", ctx)).toText();
+                        final Text roundtripped = dumpToFile(entity::toTag, getPath("file", ctx)).toText();
                         ctx.getSource().sendFeedback(roundtripped, false);
 
                         ctx.getSource().sendFeedback(new LiteralText("Successfully dumped data from player ")
                                 .append(entity.getNameAndUuid().copy().styled(s -> s.withColor(Formatting.AQUA))), false);
-                    } catch (Throwable t) {
+                    } catch (final Throwable t) {
                         t.printStackTrace();
                     }
                     return 1;
                 })))
                 .then(literal("entity").then(argument("ent", EntityArgumentType.entity()).executes(ctx -> {
-                    Entity entity = EntityArgumentType.getEntity(ctx, "ent");
+                    final Entity entity = EntityArgumentType.getEntity(ctx, "ent");
 
-                    Text roundtripped = dumpToFile(entity::toTag, getPath("file", ctx)).toText();
+                    final Text roundtripped = dumpToFile(entity::toTag, getPath("file", ctx)).toText();
                     ctx.getSource().sendFeedback(roundtripped, false);
 
                     ctx.getSource().sendFeedback(new LiteralText("Successfully dumped data from ")
@@ -151,14 +154,14 @@ class TestCommands {
                     return 1;
                 })))
                 .then(literal("block").then(argument("pos", BlockPosArgumentType.blockPos()).executes(ctx -> {
-                    BlockPos pos = BlockPosArgumentType.getBlockPos(ctx, "pos");
-                    BlockEntity entity = ctx.getSource().getWorld().getBlockEntity(pos);
+                    final BlockPos pos = BlockPosArgumentType.getBlockPos(ctx, "pos");
+                    final BlockEntity entity = ctx.getSource().getWorld().getBlockEntity(pos);
 
                     if (entity == null) {
                         throw new CommandException(new LiteralText("No block entity found!"));
                     }
 
-                    Text roundtripped = dumpToFile(entity::toTag, getPath("file", ctx)).toText();
+                    final Text roundtripped = dumpToFile(entity::toTag, getPath("file", ctx)).toText();
                     ctx.getSource().sendFeedback(roundtripped, false);
                     ctx.getSource().sendFeedback(new LiteralText("Successfully dumped data from ")
                             .append(new LiteralText(pos.toString()).styled(s -> s.withColor(Formatting.AQUA))), false);
@@ -166,20 +169,20 @@ class TestCommands {
                 }))));
     }
 
-    static Tag dumpToFile(Consumer<CompoundTag> dumpFunc, Path file) throws CommandException {
+    static Tag dumpToFile(final Consumer<CompoundTag> dumpFunc, final Path file) throws CommandException {
         try {
-            CompoundTag out = new CompoundTag();
+            final CompoundTag out = new CompoundTag();
             dumpFunc.accept(out);
 
-            ConfigurationNode node = ConfigurationNode.root();
+            final ConfigurationNode node = ConfigurationNode.root();
             NbtNodeAdapter.tagToNode(out, node);
 
             Files.createDirectories(file.getParent());
-            GsonConfigurationLoader output = GsonConfigurationLoader.builder().setPath(file).build();
+            final GsonConfigurationLoader output = GsonConfigurationLoader.builder().setPath(file).build();
             output.save(node);
 
             return NbtNodeAdapter.nodeToTag(output.load());
-        } catch (Throwable e) {
+        } catch (final Throwable e) {
             e.printStackTrace();
             throw new CommandException(new LiteralText(e.getMessage()));
 

@@ -19,13 +19,6 @@ package ca.stellardrift.confabricate;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
-
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
@@ -38,12 +31,21 @@ import ninja.leaping.configurate.ConfigurationNode;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
+
 /**
  * Unit tests to validate ConfigurateOps functions properly.
  */
-public class ConfigurateOpsTests {
+public final class ConfigurateOpsTests {
+
     /**
-     * We cannot use Minecraft's Type Serializers in JUnit testing due to loom not liking JUnit.
+     * We cannot use Minecraft's Type Serializers in JUnit testing due to loom
+     * not liking JUnit.
      */
     private static final DynamicOps<ConfigurationNode> CONFIGURATE_OPS = ConfigurateOps.getWithNodeFactory(ConfigurationNode::root);
 
@@ -106,8 +108,12 @@ public class ConfigurateOpsTests {
         final ConfigurationNode output = wrapped.convert(CONFIGURATE_OPS).getValue();
 
         assertTrue(output.isList(), "Resulting configuration node was not a list.");
-        assertEquals(3, output.getChildrenList().size(), "Resulting configuration node had wrong amount of child elements in list");
-        assertTrue(output.getChildrenList().stream().map(ConfigurationNode::getInt).collect(Collectors.toList()).containsAll(expectedElements), "Resulting configuration node did not contain every element in original JsonArray");
+        assertEquals(3, output.getChildrenList().size(),
+                "Resulting configuration node had wrong amount of child elements in list");
+        assertTrue(output.getChildrenList().stream()
+                .map(ConfigurationNode::getInt)
+                .collect(Collectors.toList()).containsAll(expectedElements),
+                "Resulting configuration node did not contain every element in original JsonArray");
     }
 
     @Test
@@ -127,8 +133,10 @@ public class ConfigurateOpsTests {
         assertTrue(output.isJsonArray(), "Resulting Element was not an array");
         assertEquals(3, output.getAsJsonArray().size(), "Resulting array had the wrong amount of elements");
 
-        final List<Integer> elements = StreamSupport.stream(output.getAsJsonArray().spliterator(), false).map(JsonElement::getAsInt).collect(Collectors.toList());
-        assertTrue(elements.containsAll(expectedElements), "Resulting array did not contain all the same elements as the original configuration node");
+        final List<Integer> elements = StreamSupport.stream(output.getAsJsonArray().spliterator(), false)
+                .map(JsonElement::getAsInt).collect(Collectors.toList());
+        assertTrue(elements.containsAll(expectedElements),
+                "Resulting array did not contain all the same elements as the original configuration node");
     }
 
     @Test
@@ -165,4 +173,5 @@ public class ConfigurateOpsTests {
         assertEquals(2, element.getAsJsonObject().size(), "Resulting json object had wrong amount of child elements");
         // TODO: Verify the values in the resulting maps are equal
     }
+
 }

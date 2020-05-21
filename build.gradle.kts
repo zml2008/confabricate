@@ -6,6 +6,7 @@ plugins {
     id("fabric-loom") version "0.2.7-SNAPSHOT"
     id("ca.stellardrift.opinionated") version "2.0.1"
     id("ca.stellardrift.opinionated.publish") version "2.0.1"
+    checkstyle
 }
 
 val versionBase = "1.2-SNAPSHOT"
@@ -46,6 +47,14 @@ tasks.withType(Jar::class).configureEach {
 
 tasks.processResources {
     expand("project" to project)
+}
+
+checkstyle {
+    toolVersion = "8.32"
+    configDirectory.set(project.projectDir.resolve("etc/checkstyle"))
+    configProperties = mapOf(
+            "severity" to "error"
+    )
 }
 
 dependencies {

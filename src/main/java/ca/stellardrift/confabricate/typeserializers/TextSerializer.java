@@ -23,7 +23,8 @@ import ninja.leaping.configurate.objectmapping.serialize.ScalarSerializer;
 
 import java.util.function.Predicate;
 
-public class TextSerializer extends ScalarSerializer<Text> {
+public final class TextSerializer extends ScalarSerializer<Text> {
+
     public static final ScalarSerializer<Text> INSTANCE = new TextSerializer();
 
     private TextSerializer() {
@@ -31,7 +32,7 @@ public class TextSerializer extends ScalarSerializer<Text> {
     }
 
     @Override
-    public Text deserialize(TypeToken<?> type, Object obj) throws ObjectMappingException {
+    public Text deserialize(final TypeToken<?> type, final Object obj) throws ObjectMappingException {
         if (obj instanceof CharSequence) {
             return Text.Serializer.fromLenientJson(((CharSequence) obj).toString());
         }
@@ -39,7 +40,8 @@ public class TextSerializer extends ScalarSerializer<Text> {
     }
 
     @Override
-    public Object serialize(Text item, Predicate<Class<?>> typeSupported) {
+    public Object serialize(final Text item, final Predicate<Class<?>> typeSupported) {
         return Text.Serializer.toJson(item); // String always supported
     }
+
 }
