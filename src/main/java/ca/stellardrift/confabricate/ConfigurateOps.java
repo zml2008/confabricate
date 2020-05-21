@@ -16,15 +16,22 @@
 
 package ca.stellardrift.confabricate;
 
+import static java.util.Objects.requireNonNull;
+
+import ca.stellardrift.confabricate.typeserializers.MinecraftSerializers;
 import com.mojang.datafixers.util.Pair;
 import com.mojang.serialization.DataResult;
 import com.mojang.serialization.Dynamic;
 import com.mojang.serialization.DynamicOps;
+import com.mojang.serialization.MapLike;
 import ninja.leaping.configurate.ConfigurationNode;
 import ninja.leaping.configurate.ConfigurationOptions;
 import ninja.leaping.configurate.commented.CommentedConfigurationNode;
+import ninja.leaping.configurate.objectmapping.serialize.TypeSerializerCollection;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
@@ -44,7 +51,7 @@ public final class ConfigurateOps implements DynamicOps<ConfigurationNode> {
 
     private static final ConfigurateOps INSTANCE = new ConfigurateOps(() ->
             CommentedConfigurationNode.root(ConfigurationOptions.defaults()
-                    .withSerializers(Confabricate.getMinecraftTypeSerializers())));
+                    .withSerializers(MinecraftSerializers.collection())));
 
     private final Supplier<? extends ConfigurationNode> factory;
 
@@ -69,6 +76,20 @@ public final class ConfigurateOps implements DynamicOps<ConfigurationNode> {
     }
 
     /**
+     * Get an ops instance that will create nodes using the provided collection.
+     *
+     * @param collection Collection to provide through created nodes' options
+     * @return ops instance
+     */
+    public static DynamicOps<ConfigurationNode> getForSerializers(final TypeSerializerCollection collection) {
+        if (requireNonNull(collection, "collection").equals(MinecraftSerializers.collection())) {
+            return INSTANCE;
+        } else {
+            return getWithNodeFactory(() -> ConfigurationNode.root(ConfigurationOptions.defaults().withSerializers(collection)));
+        }
+    }
+
+    /**
      * Wrap a ConfigurationNode in a {@link Dynamic} instance. The returned
      * Dynamic will use the same type serializer collection as the original node
      * for its operations.
@@ -89,15 +110,40 @@ public final class ConfigurateOps implements DynamicOps<ConfigurationNode> {
         this.factory = factory;
     }
 
+    /**
+     * Extract a value from a node used as a {@code key} in DFU methods.
+     *
+     * @param node data source
+     * @return a key, asserted non-null
+     */
+    static Object keyFrom(final ConfigurationNode node) {
+        return requireNonNull(node.getValue(), "The provided key node must have a value");
+    }
+
     @Override
     public ConfigurationNode empty() {
         return this.factory.get();
+    }
+
+    // If the destination ops is another Configurate ops instance, just directly pass the node through
+    @SuppressWarnings("unchecked")
+    private <U> @Nullable U convertSelf(final DynamicOps<U> outOps, final ConfigurationNode input) {
+        if (outOps instanceof ConfigurateOps) {
+            return (U) input;
+        } else {
+            return null;
+        }
     }
 
     @Override
     public <U> U convertTo(final DynamicOps<U> outOps, final ConfigurationNode input) {
         if (input == null) {
             throw new NullPointerException("input is null");
+        }
+
+        final U self = convertSelf(outOps, input);
+        if (self != null) {
+            return self;
         }
 
         if (input.isMap()) {
@@ -168,6 +214,13 @@ public final class ConfigurateOps implements DynamicOps<ConfigurationNode> {
         return empty().setValue(value);
     }
 
+    @Override public DataResult<ConfigurationNode> mergeToPrimitive(final ConfigurationNode prefix, final ConfigurationNode value) {
+        if (!prefix.isEmpty()) {
+            return DataResult.error("Cannot merge " + value + " into non-empty node " + prefix);
+        }
+        return DataResult.success(value);
+    }
+
     @Override
     public DataResult<ConfigurationNode> mergeToList(final ConfigurationNode input, final ConfigurationNode value) {
         if (input.isList()) {
@@ -182,7 +235,9 @@ public final class ConfigurateOps implements DynamicOps<ConfigurationNode> {
     @Override
     public DataResult<ConfigurationNode> mergeToMap(final ConfigurationNode input, final ConfigurationNode key, final ConfigurationNode value) {
         if (input.isMap()) {
-            return DataResult.success(input.copy().getNode(key.getValue()).setValue(value));
+            final ConfigurationNode copied = input.copy();
+            copied.getNode(keyFrom(key)).setValue(value);
+            return DataResult.success(copied);
         }
 
         return DataResult.error("mergeToMap called on a node which is not a map: " + input, input);
@@ -192,17 +247,38 @@ public final class ConfigurateOps implements DynamicOps<ConfigurationNode> {
     public DataResult<Stream<Pair<ConfigurationNode, ConfigurationNode>>> getMapValues(final ConfigurationNode input) {
         if (input.isMap()) {
             return DataResult.success(input.getChildrenMap().entrySet().stream()
-                    .map(entry -> Pair.of(empty().setValue(entry.getKey()), entry.getValue().copy())));
+                    .map(entry -> Pair.of(ConfigurationNode.root(input.getOptions()).setValue(entry.getKey()), entry.getValue().copy())));
         }
 
         return DataResult.error("Not a map: " + input);
+    }
+
+    @Override public DataResult<MapLike<ConfigurationNode>> getMap(final ConfigurationNode input) {
+        if (input.isMap()) {
+            return DataResult.success(new NodeMaplike(input));
+        } else {
+            return DataResult.error("Input node is not a map");
+        }
+    }
+
+    @Override
+    public DataResult<Consumer<Consumer<ConfigurationNode>>> getList(final ConfigurationNode input) {
+        if (input.isList()) {
+            return DataResult.success(action -> {
+                for (ConfigurationNode child : input.getChildrenList()) {
+                    action.accept(child);
+                }
+            });
+        } else {
+            return DataResult.error("Input node is not a list");
+        }
     }
 
     @Override
     public ConfigurationNode createMap(final Stream<Pair<ConfigurationNode, ConfigurationNode>> map) {
         final ConfigurationNode ret = empty();
 
-        map.forEach(p -> ret.getNode(p.getFirst().getValue()).setValue(p.getSecond().getValue()));
+        map.forEach(p -> ret.getNode(keyFrom(p.getFirst())).setValue(p.getSecond().getValue()));
 
         return ret;
     }
@@ -212,7 +288,7 @@ public final class ConfigurateOps implements DynamicOps<ConfigurationNode> {
         final ConfigurationNode ret = empty();
 
         for (Map.Entry<ConfigurationNode, ConfigurationNode> entry : map.entrySet()) {
-            ret.getNode(entry.getKey().getValue()).setValue(entry.getValue());
+            ret.getNode(keyFrom(entry.getKey())).setValue(entry.getValue());
         }
 
         return ret;
@@ -231,9 +307,7 @@ public final class ConfigurateOps implements DynamicOps<ConfigurationNode> {
     @Override
     public ConfigurationNode createList(final Stream<ConfigurationNode> input) {
         final ConfigurationNode ret = empty();
-        input.forEach(it -> {
-            ret.appendListNode().setValue(it);
-        });
+        input.forEach(it -> ret.appendListNode().setValue(it));
         return ret;
     }
 
@@ -256,7 +330,7 @@ public final class ConfigurateOps implements DynamicOps<ConfigurationNode> {
 
     @Override
     public DataResult<ConfigurationNode> getGeneric(final ConfigurationNode input, final ConfigurationNode key) {
-        final ConfigurationNode ret = input.getNode(key.getValue());
+        final ConfigurationNode ret = input.getNode(keyFrom(key));
         return ret.isVirtual() ? DataResult.error("No element " + key + " in the map " + input) : DataResult.success(ret);
     }
 
@@ -282,7 +356,7 @@ public final class ConfigurateOps implements DynamicOps<ConfigurationNode> {
     @Override
     public ConfigurationNode updateGeneric(final ConfigurationNode input, final ConfigurationNode wrappedKey,
             final Function<ConfigurationNode, ConfigurationNode> function) {
-        final Object key = wrappedKey.getValue();
+        final Object key = keyFrom(wrappedKey);
         if (input.getNode(key).isVirtual()) {
             return input;
         }

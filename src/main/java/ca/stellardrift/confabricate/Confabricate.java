@@ -258,7 +258,7 @@ public class Confabricate implements ModInitializer {
      * @return Confabricate's collection of serializers.
      */
     public static TypeSerializerCollection getMinecraftTypeSerializers() {
-        return instance.mcTypeSerializers;
+        return instance == null ? TypeSerializerCollection.defaults() : instance.mcTypeSerializers;
     }
 
     /**
