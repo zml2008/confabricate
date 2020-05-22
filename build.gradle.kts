@@ -62,7 +62,7 @@ dependencies {
     mappings("net.fabricmc:yarn:$versionMinecraft+build.$versionMappings:v2")
     modImplementation("net.fabricmc:fabric-loader:$versionLoader")
 
-    modApi(enforcedPlatform(configurate("bom", versionConfigurate)))
+    api(enforcedPlatform(configurate("bom", versionConfigurate)))
     apiInclude(configurate("core", versionConfigurate)) {
         exclude("com.google.guava")
     }

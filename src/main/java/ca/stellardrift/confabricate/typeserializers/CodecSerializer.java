@@ -49,18 +49,19 @@ final class CodecSerializer<V> implements TypeSerializer<V> {
         final DataResult<Pair<V, ConfigurationNode>> result = this.codec.decode(ConfigurateOps.fromNode(value), value);
         final DataResult.PartialResult<Pair<V, ConfigurationNode>> error = result.error().orElse(null);
         if (error != null) {
-            LOGGER.trace("Unable to decode value using {} due to {}", this.codec, error);
+            LOGGER.debug("Unable to decode value using {} due to {}", this.codec, error.message());
             throw new ObjectMappingException(error.message());
         }
         return result.result().orElseThrow(() -> new ObjectMappingException("Neither a result or error was present")).getFirst();
     }
 
-    @Override public void serialize(@NonNull final TypeToken<?> type, @Nullable final V obj, @NonNull final ConfigurationNode value)
+    @Override
+    public void serialize(@NonNull final TypeToken<?> type, @Nullable final V obj, @NonNull final ConfigurationNode value)
             throws ObjectMappingException {
         final DataResult<ConfigurationNode> result = this.codec.encode(obj, ConfigurateOps.fromNode(value), value);
         final DataResult.PartialResult<ConfigurationNode> error = result.error().orElse(null);
         if (error != null) {
-            LOGGER.trace("Unable to encode value using {} due to {}", this.codec, error);
+            LOGGER.debug("Unable to encode value using {} due to {}", this.codec, error.message());
             throw new ObjectMappingException(error.message());
         }
 

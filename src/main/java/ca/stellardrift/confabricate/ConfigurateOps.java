@@ -30,14 +30,24 @@ import ninja.leaping.configurate.commented.CommentedConfigurationNode;
 import ninja.leaping.configurate.objectmapping.serialize.TypeSerializerCollection;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import java.nio.ByteBuffer;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.IntStream;
+import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
 /**
  * Implementation of DataFixerUpper's DynamicOps.
+ *
+ * <p>The {@link DynamicOps} interface should be thought of essentially as a way
+ * to perform operations on a type without having to directly implement that
+ * interface on the type. Rather than taking an object that implements an
+ * interface, DFU methods take the implementation of the DynamicOps interface
+ * plus the type implemented onto.
  *
  * <p>When possible, the first node's {@link ConfigurationNode#copy()} method
  * will be used to create a new node to contain results. Otherwise, the provided
@@ -46,6 +56,41 @@ import java.util.stream.Stream;
  * {@link MinecraftSerializers#collection()  own TypeSerializer collection},
  * but a custom factory may be provided.
  *
+ * <p>DynamicOps has the following primitive types (as determined by those
+ * codecs that implement {@link com.mojang.serialization.codecs.PrimitiveCodec}):
+ * <dl>
+ *     <dt>boolean</dt>
+ *     <dd>literal boolean, or numeric 1 for true, 0 for false</dd>
+ *     <dt>byte</dt>
+ *     <dd>numeric value, {@link Number#byteValue() coerced} to a byte.
+ *     If {@link #compressMaps()}, a string may be parsed as a byte as well.</dd>
+ *     <dt>short</dt>
+ *     <dd>numeric value, {@link Number#shortValue() coerced} to a short.
+ *     If {@link #compressMaps()}, a string may be parsed as a short as well.</dd>
+ *     <dt>int</dt>
+ *     <dd>numeric value, {@link Number#intValue() coerced} to an integer.
+ *     If {@link #compressMaps()}, a string may be parsed as an integer as well.</dd>
+ *     <dt>long</dt>
+ *     <dd>numeric value, {@link Number#longValue() coerced} to a long.
+ *     If {@link #compressMaps()}, a string may be parsed as a long as well.</dd>
+ *     <dt>float</dt>
+ *     <dd>numeric value, {@link Number#floatValue() coerced} to a float.
+ *     If {@link #compressMaps()}, a string may be parsed as a float as well.</dd>
+ *     <dt>double</dt>
+ *     <dd>numeric value, {@link Number#doubleValue() coerced} to a double.
+ *     If {@link #compressMaps()}, a string may be parsed as a double as well.</dd>
+ *     <dt>{@link String}</dt>
+ *     <dd>Any scalar value, as {@link Object#toString() a string}</dd>
+ *     <dt>{@link java.nio.ByteBuffer}</dt>
+ *     <dd>An array of bytes. Either a native byte array in the node,
+ *         or (by default impl) a list of bytes</dd>
+ *     <dt>{@link java.util.stream.IntStream}</dt>
+ *     <dd>A sequence of integers. Either a native int array in the node,
+ *         or (by default impl) a list of integers</dd>
+ *     <dt>{@link java.util.stream.LongStream}</dt>
+ *     <dd>A sequence of longs. Either a native long array in the node,
+ *         or (by default impl) a list of longs</dd>
+ * </dl>
  */
 public final class ConfigurateOps implements DynamicOps<ConfigurationNode> {
 
@@ -106,20 +151,6 @@ public final class ConfigurateOps implements DynamicOps<ConfigurationNode> {
         }
     }
 
-    protected ConfigurateOps(final Supplier<? extends ConfigurationNode> factory) {
-        this.factory = factory;
-    }
-
-    /**
-     * Extract a value from a node used as a {@code key} in DFU methods.
-     *
-     * @param node data source
-     * @return a key, asserted non-null
-     */
-    static Object keyFrom(final ConfigurationNode node) {
-        return requireNonNull(node.getValue(), "The provided key node must have a value");
-    }
-
     /**
      * Configure an ops instance using the options of an existing node.
      *
@@ -132,6 +163,24 @@ public final class ConfigurateOps implements DynamicOps<ConfigurationNode> {
         } else {
             return new ConfigurateOps(() -> ConfigurationNode.root(value.getOptions()));
         }
+    }
+
+    protected ConfigurateOps(final Supplier<? extends ConfigurationNode> factory) {
+        this.factory = factory;
+    }
+
+    /**
+     * Extract a value from a node used as a {@code key} in DFU methods.
+     *
+     * <p>This currently only attempts to interpret the key as a single level
+     * down. However, we may want to try to extract an array or iterable of path
+     * elements to be able to traverse multiple levels.
+     *
+     * @param node data source
+     * @return a key, asserted non-null
+     */
+    static Object keyFrom(final ConfigurationNode node) {
+        return requireNonNull(node.getValue(), "The provided key node must have a value");
     }
 
     /**
@@ -154,92 +203,169 @@ public final class ConfigurateOps implements DynamicOps<ConfigurationNode> {
         }
     }
 
+    /**
+     * Create a copy of the source node converted to a different data structure.
+     *
+     * <p>Value types will be preserved as much as possible, but a reverse
+     * conversion will most likely be lossy
+     *
+     * @param targetOps Output type
+     * @param source Source value
+     * @param <U> output type
+     * @return output value
+     */
     @Override
-    public <U> U convertTo(final DynamicOps<U> outOps, final ConfigurationNode input) {
-        if (input == null) {
-            throw new NullPointerException("input is null");
-        }
+    public <U> U convertTo(final DynamicOps<U> targetOps, final ConfigurationNode source) {
 
-        final U self = convertSelf(outOps, input);
+        final U self = convertSelf(requireNonNull(targetOps, "targetOps"), requireNonNull(source, "source"));
         if (self != null) {
             return self;
         }
 
-        if (input.isMap()) {
-            return convertMap(outOps, input);
-
-        } else if (input.isList()) {
-            return convertList(outOps, input);
+        if (source.isMap()) {
+            return convertMap(targetOps, source);
+        } else if (source.isList()) {
+            return convertList(targetOps, source);
         } else {
-            final Object value = input.getValue();
+            final Object value = source.getValue();
             if (value == null) {
-                return outOps.empty();
+                return targetOps.empty();
             } else if (value instanceof String) {
-                return outOps.createString((String) value);
+                return targetOps.createString((String) value);
             } else if (value instanceof Boolean) {
-                return outOps.createBoolean((Boolean) value);
+                return targetOps.createBoolean((Boolean) value);
             } else if (value instanceof Short) {
-                return outOps.createShort((Short) value);
+                return targetOps.createShort((Short) value);
             } else if (value instanceof Integer) {
-                return outOps.createInt((Integer) value);
+                return targetOps.createInt((Integer) value);
             } else if (value instanceof Long) {
-                return outOps.createLong((Long) value);
+                return targetOps.createLong((Long) value);
             } else if (value instanceof Float) {
-                return outOps.createFloat((Float) value);
+                return targetOps.createFloat((Float) value);
             } else if (value instanceof Double) {
-                return outOps.createDouble((Double) value);
+                return targetOps.createDouble((Double) value);
             } else if (value instanceof Byte) {
-                return outOps.createByte((Byte) value);
+                return targetOps.createByte((Byte) value);
+            } else if (value instanceof byte[]) {
+                return targetOps.createByteList(ByteBuffer.wrap((byte[]) value));
+            } else if (value instanceof int[]) {
+                return targetOps.createIntList(IntStream.of((int[]) value));
+            } else if (value instanceof long[]) {
+                return targetOps.createLongList(LongStream.of((long[]) value));
             } else {
-                throw new IllegalArgumentException("Scalar value '" + input + "' has an unknown type: " + value.getClass().getName());
+                throw new IllegalArgumentException("Scalar value '" + source + "' has an unknown type: " + value.getClass().getName());
             }
         }
     }
 
+    /**
+     * Get the value of the provided node if it is a number or boolean.
+     *
+     * <p>If {@link #compressMaps()} is true, values may be coerced from
+     * another type.
+     *
+     * @param input data source
+     * @return extracted number
+     */
     @Override
     public DataResult<Number> getNumberValue(final ConfigurationNode input) {
         if (!(input.isMap() || input.isList())) {
-            if (input.getValue() instanceof Number) {
-                return DataResult.success((Number) input.getValue());
-            } else if (input.getValue() instanceof Boolean) {
-                return DataResult.success(input.getBoolean() ? 1 : 0);
+            final Object value = input.getValue();
+            if (value instanceof Number) {
+                return DataResult.success((Number) value);
+            } else if (value instanceof Boolean) {
+                return DataResult.success((boolean) value ? 1 : 0);
+            }
+
+            if (compressMaps()) {
+                final int result = input.getInt(Integer.MIN_VALUE);
+                if (result == Integer.MIN_VALUE) {
+                    return DataResult.error("Value is not a number");
+                }
+                return DataResult.success(result);
             }
         }
 
         return DataResult.error("Not a number: " + input);
     }
 
-    @Override
-    public ConfigurationNode createNumeric(final Number i) {
-        return empty().setValue(i);
-    }
-
-    @Override
-    public ConfigurationNode createBoolean(final boolean value) {
-        return empty().setValue(value);
-    }
-
+    /**
+     * Get the value of the provided node if it is a scalar, converted to
+     * a {@link String}.
+     *
+     * @param input data source
+     * @return String | error
+     */
     @Override
     public DataResult<String> getStringValue(final ConfigurationNode input) {
-        if (input.getString() != null) {
-            return DataResult.success(input.getString());
+        final String value = input.getString();
+        if (value != null) {
+            return DataResult.success(value);
         }
 
         return DataResult.error("Not a string: " + input);
     }
 
+    /**
+     * Create a new node using this ops instance's node factory,
+     * and set its value to the provided number.
+     *
+     * @param value value
+     * @return new node with value
+     */
     @Override
-    public ConfigurationNode createString(final String value) {
+    public ConfigurationNode createNumeric(final Number value) {
+        return empty().setValue(requireNonNull(value, "value"));
+    }
+
+    /**
+     * Create a new node using this ops instance's node factory,
+     * and set its value to the provided boolean.
+     *
+     * @param value value
+     * @return new node with value
+     */
+    @Override
+    public ConfigurationNode createBoolean(final boolean value) {
         return empty().setValue(value);
     }
 
-    @Override public DataResult<ConfigurationNode> mergeToPrimitive(final ConfigurationNode prefix, final ConfigurationNode value) {
+    /**
+     * Create a new node using this ops instance's node factory,
+     * and set its value to the provided string.
+     *
+     * @param value value
+     * @return new node with value
+     */
+    @Override
+    public ConfigurationNode createString(final String value) {
+        return empty().setValue(requireNonNull(value, "value"));
+    }
+
+    /**
+     * Return a result where if {@code prefix} is empty, the node is
+     * {@code value}, but otherwise returns an error.
+     *
+     * @param prefix Starting value
+     * @param value to update base with
+     * @return result of updated node or error
+     */
+    @Override
+    public DataResult<ConfigurationNode> mergeToPrimitive(final ConfigurationNode prefix, final ConfigurationNode value) {
         if (!prefix.isEmpty()) {
             return DataResult.error("Cannot merge " + value + " into non-empty node " + prefix);
         }
-        return DataResult.success(value);
+        return DataResult.success(value.copy());
     }
 
+    /**
+     * Appends element {@code value} to list node {@code input}.
+     *
+     * @param input Base node. Must be empty or of list type
+     * @param value value to add as element to the list
+     * @return success with modified node, or error if {@code input} contains a
+     *          non-{@link ConfigurationNode#isList() list} value
+     */
     @Override
     public DataResult<ConfigurationNode> mergeToList(final ConfigurationNode input, final ConfigurationNode value) {
         if (input.isList() || input.isEmpty()) {
@@ -251,6 +377,38 @@ public final class ConfigurateOps implements DynamicOps<ConfigurationNode> {
         return DataResult.error("mergeToList called on a node which is not a list: " + input, input);
     }
 
+    /**
+     * Appends nodes in {@code values} to copy of list node {@code input}.
+     *
+     * @param input Base node. Must be empty or of list type
+     * @param values List of values to append to base node
+     * @return success with modified node, or error if {@code input} contains a
+     *          non-{@link ConfigurationNode#isList() list} value
+     */
+    @Override
+    public DataResult<ConfigurationNode> mergeToList(final ConfigurationNode input, final List<ConfigurationNode> values) {
+        if (input.isList() || input.isEmpty()) {
+            final ConfigurationNode ret = input.copy();
+            for (ConfigurationNode node : values) {
+                ret.appendListNode().setValue(node);
+            }
+            return DataResult.success(ret);
+        }
+
+        return DataResult.error("mergeToList called on a node which is not a list: " + input, input);
+    }
+
+    /**
+     * Update the child of {@code input} at {@code key} with {@code value}.
+     *
+     * <p>This operation will only affect the returned copy of the input node
+     *
+     * @param input Base node. Must be empty or of map type
+     * @param key Key relative to base node
+     * @param value Value to set at empty node
+     * @return success with modified node, or error if {@code input} contains a
+     *          non-{@link ConfigurationNode#isList() list} value
+     */
     @Override
     public DataResult<ConfigurationNode> mergeToMap(final ConfigurationNode input, final ConfigurationNode key, final ConfigurationNode value) {
         if (input.isMap() || input.isEmpty()) {
@@ -262,9 +420,19 @@ public final class ConfigurateOps implements DynamicOps<ConfigurationNode> {
         return DataResult.error("mergeToMap called on a node which is not a map: " + input, input);
     }
 
+    /**
+     * Return a stream of pairs of (key, value) for map data in the input node.
+     *
+     * <p>If the input node is non-empty and not a map, the result will
+     * be a failure.
+     *
+     * @param input Input node
+     * @return result, if successful, of a stream of pairs (key, value) of
+     *          entries in the input node.
+     */
     @Override
     public DataResult<Stream<Pair<ConfigurationNode, ConfigurationNode>>> getMapValues(final ConfigurationNode input) {
-        if (input.isMap()) {
+        if (input.isEmpty() || input.isMap()) {
             return DataResult.success(input.getChildrenMap().entrySet().stream()
                     .map(entry -> Pair.of(ConfigurationNode.root(input.getOptions()).setValue(entry.getKey()), entry.getValue().copy())));
         }
@@ -272,20 +440,45 @@ public final class ConfigurateOps implements DynamicOps<ConfigurationNode> {
         return DataResult.error("Not a map: " + input);
     }
 
-    @Override public DataResult<MapLike<ConfigurationNode>> getMap(final ConfigurationNode input) {
-        if (input.isMap()) {
-            return DataResult.success(new NodeMaplike(input));
+    /**
+     * Get a map-like view of a copy of the contents of {@code input}.
+     *
+     * <p>If the input node is non-empty and not a map, the result will
+     * be a failure.
+     *
+     * @param input input node
+     * @return result, if successful, of map-like view of a copy of the input
+     */
+    @Override
+    public DataResult<MapLike<ConfigurationNode>> getMap(final ConfigurationNode input) {
+        if (input.isEmpty() || input.isMap()) {
+            return DataResult.success(new NodeMaplike(input.copy()));
         } else {
             return DataResult.error("Input node is not a map");
         }
     }
 
+    /**
+     * Get a consumer that takes an action to perform on every element of
+     * list node {@code input}.
+     *
+     * <p>As an example, to print out every node in a list
+     *      (minus error checking):
+     *     <pre>
+     *         getList(listNode).result().get()
+     *             .accept(element -&gt; System.out.println(element);
+     *     </pre>
+     *
+     * @param input data source
+     * @return result, that if successful will take an action to perform on
+     *          every element
+     */
     @Override
     public DataResult<Consumer<Consumer<ConfigurationNode>>> getList(final ConfigurationNode input) {
         if (input.isList()) {
             return DataResult.success(action -> {
                 for (ConfigurationNode child : input.getChildrenList()) {
-                    action.accept(child);
+                    action.accept(child.copy());
                 }
             });
         } else {
@@ -293,29 +486,15 @@ public final class ConfigurateOps implements DynamicOps<ConfigurationNode> {
         }
     }
 
-    @Override
-    public ConfigurationNode createMap(final Stream<Pair<ConfigurationNode, ConfigurationNode>> map) {
-        final ConfigurationNode ret = empty();
-
-        map.forEach(p -> ret.getNode(keyFrom(p.getFirst())).setValue(p.getSecond().getValue()));
-
-        return ret;
-    }
-
-    @Override
-    public ConfigurationNode createMap(final Map<ConfigurationNode, ConfigurationNode> map) {
-        final ConfigurationNode ret = empty();
-
-        for (Map.Entry<ConfigurationNode, ConfigurationNode> entry : map.entrySet()) {
-            ret.getNode(keyFrom(entry.getKey())).setValue(entry.getValue());
-        }
-
-        return ret;
-    }
-
+    /**
+     * Get the contents of list node {@code input} as a {@link Stream} of nodes.
+     *
+     * @param input data source
+     * @return if node is empty or a list, stream of nodes
+     */
     @Override
     public DataResult<Stream<ConfigurationNode>> getStream(final ConfigurationNode input) {
-        if (input.isList()) {
+        if (input.isEmpty() || input.isList()) {
             final Stream<ConfigurationNode> stream = input.getChildrenList().stream().map(it -> it);
             return DataResult.success(stream);
         }
@@ -323,6 +502,53 @@ public final class ConfigurateOps implements DynamicOps<ConfigurationNode> {
         return DataResult.error("Not a list: " + input);
     }
 
+    /**
+     * Create a new node containing the map entries from the
+     * stream {@code values}.
+     *
+     * <p>Keys will be interpreted as a single Object, and can only
+     * currently access direct children.
+     *
+     * @param values entries in the map
+     * @return Newly created node
+     */
+    @Override
+    public ConfigurationNode createMap(final Stream<Pair<ConfigurationNode, ConfigurationNode>> values) {
+        final ConfigurationNode ret = empty();
+
+        values.forEach(p -> ret.getNode(keyFrom(p.getFirst())).setValue(p.getSecond().getValue()));
+
+        return ret;
+    }
+
+    /**
+     * Create a new node containing the map entries from the
+     * map {@code values}.
+     *
+     * <p>Keys will be interpreted as a single Object, and can only
+     * currently access direct children.
+     *
+     * @param values Unwrapped node map
+     * @return Newly created node
+     */
+    @Override
+    public ConfigurationNode createMap(final Map<ConfigurationNode, ConfigurationNode> values) {
+        final ConfigurationNode ret = empty();
+
+        for (Map.Entry<ConfigurationNode, ConfigurationNode> entry : values.entrySet()) {
+            ret.getNode(keyFrom(entry.getKey())).setValue(entry.getValue());
+        }
+
+        return ret;
+    }
+
+    /**
+     * Create a new node containing values emitted by {@code input} as
+     * list elements.
+     *
+     * @param input data source
+     * @return newly created node
+     */
     @Override
     public ConfigurationNode createList(final Stream<ConfigurationNode> input) {
         final ConfigurationNode ret = empty();
@@ -330,6 +556,16 @@ public final class ConfigurateOps implements DynamicOps<ConfigurationNode> {
         return ret;
     }
 
+    /**
+     * Get a copy of {@code input} without the value at node {@code key}.
+     *
+     * <p>If the input node is not a map, the input node will be returned.
+     *
+     * @param input data source
+     * @param key key to the node to be removed
+     * @return if node removed, a copy of the input without node,
+     *          otherwise input
+     */
     @Override
     public ConfigurationNode remove(final ConfigurationNode input, final String key) {
         if (input.isMap()) {
@@ -341,18 +577,45 @@ public final class ConfigurateOps implements DynamicOps<ConfigurationNode> {
         return input;
     }
 
+    /**
+     * Attempt to get the child of {@code input} at {@code key}.
+     *
+     * @param input data source
+     * @param key child key
+     * @return success containing child if child is non-virtual,
+     *          otherwise failure
+     */
     @Override
     public DataResult<ConfigurationNode> get(final ConfigurationNode input, final String key) {
         final ConfigurationNode ret = input.getNode(key);
         return ret.isVirtual() ? DataResult.error("No element " + key + " in the map " + input) : DataResult.success(ret);
     }
 
+    /**
+     * Get a child of the provided node at {@code key}.
+     *
+     * <p>Keys will be interpreted as a single Object, and can only
+     * currently access direct children.
+     *
+     * @param input parent node
+     * @param key wrapped key of child
+     * @return success containing child if child is non-virtual,
+     *          otherwise failure
+     */
     @Override
     public DataResult<ConfigurationNode> getGeneric(final ConfigurationNode input, final ConfigurationNode key) {
         final ConfigurationNode ret = input.getNode(keyFrom(key));
         return ret.isVirtual() ? DataResult.error("No element " + key + " in the map " + input) : DataResult.success(ret);
     }
 
+    /**
+     * Update a copy of {@code input} with {@code value} at path {@code key}.
+     *
+     * @param input data source
+     * @param key key of child node
+     * @param value value for child node
+     * @return Updated parent node
+     */
     @Override
     public ConfigurationNode set(final ConfigurationNode input, final String key, final ConfigurationNode value) {
         final ConfigurationNode ret = input.copy();
@@ -360,6 +623,20 @@ public final class ConfigurateOps implements DynamicOps<ConfigurationNode> {
         return ret;
     }
 
+    /**
+     * Copies the input node and transform its child at {@code key}.
+     *
+     * <p>Return a copy of the input node with the child at {@code key}
+     * transformed by the provided function
+     *
+     * <p>If there is no value at {@code key}, the input node will be
+     * returned unmodified.
+     *
+     * @param input base value
+     * @param key key to change
+     * @param function Function to process the node at {@code wrappedKey}
+     * @return An updated copy of input node
+     */
     @Override
     public ConfigurationNode update(final ConfigurationNode input, final String key, final Function<ConfigurationNode, ConfigurationNode> function) {
         if (input.getNode(key).isVirtual()) {
@@ -372,6 +649,23 @@ public final class ConfigurateOps implements DynamicOps<ConfigurationNode> {
         return ret;
     }
 
+    /**
+     * Copies the input node and transform the node at {@code wrappedKey}.
+     *
+     * <p>Return a copy of the input node with the child at {@code wrappedKey}
+     * transformed by the provided function
+     *
+     * <p>If there is no value at {@code wrappedKey}, the input node will be
+     * returned unmodified.
+     *
+     * <p>Keys will be interpreted as a single Object, and can only
+     * currently access direct children.
+     *
+     * @param input base value
+     * @param wrappedKey key to change
+     * @param function Function to process the node at {@code wrappedKey}
+     * @return An updated copy of input node
+     */
     @Override
     public ConfigurationNode updateGeneric(final ConfigurationNode input, final ConfigurationNode wrappedKey,
             final Function<ConfigurationNode, ConfigurationNode> function) {

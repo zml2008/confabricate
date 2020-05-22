@@ -26,8 +26,12 @@ import com.mojang.serialization.DynamicOps;
 import ninja.leaping.configurate.ConfigurationNode;
 import ninja.leaping.configurate.objectmapping.ObjectMappingException;
 import ninja.leaping.configurate.objectmapping.serialize.TypeSerializer;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 final class TypeSerializerCodec<V> implements Codec<V> {
+
+    private static final Logger LOGGER = LogManager.getLogger();
 
     private final TypeToken<V> token;
     private final TypeSerializer<V> serializer;
@@ -45,22 +49,19 @@ final class TypeSerializerCodec<V> implements Codec<V> {
      * <p>The type will be converted to a {@link ConfigurationNode}, processed,
      * and returned as a value paired to the empty value.
      *
-     * <p>This does not match the behaviour of DFU's own codecs -- which appear
-     * to return any unprocessed data.
-     *
      * @param ops operations for source type
      * @param holder source data object
      * @param <T> source data type
-     * @return A result with a pair of decoded value to remaining elements in
-     *          the node
+     * @return A result with a pair of decoded value to the node the result was
+     *          extracted from
      */
     @Override
     public <T> DataResult<Pair<V, T>> decode(final DynamicOps<T> ops, final T holder) {
         final ConfigurationNode node = ops.convertTo(this.ops, holder);
         try {
-            return DataResult.success(Pair.of(this.serializer.deserialize(this.token, node), ops.empty()));
+            return DataResult.success(Pair.of(this.serializer.deserialize(this.token, node), holder));
         } catch (final ObjectMappingException ex) {
-            ex.printStackTrace();
+            LOGGER.debug(() -> "Error decoding value of type " + this.token, ex);
             return DataResult.error(ex.getMessage());
         }
     }
@@ -84,7 +85,7 @@ final class TypeSerializerCodec<V> implements Codec<V> {
                 }
             }
         } catch (final ObjectMappingException ex) {
-            ex.printStackTrace();
+            LOGGER.debug(() -> "Error encoding value of type " + this.token, ex);
             return DataResult.error(ex.getMessage());
         }
     }
