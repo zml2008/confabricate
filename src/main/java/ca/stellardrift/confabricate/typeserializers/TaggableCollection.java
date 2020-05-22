@@ -31,6 +31,14 @@ import net.minecraft.util.registry.Registry;
 
 import java.util.Set;
 
+/**
+ * Collection of single elements and tags, that keeps track of which values are
+ * from tags and which are stored on their own.
+ *
+ * <p>This allows tags to be preserved when writing data back to a node.
+ *
+ * @param <T> value type
+ */
 public interface TaggableCollection<T> extends Iterable<T> {
 
     static TaggableCollection<Block> ofBlocks(Set<Block> blocks, Set<Tag<Block>> blockTags) {

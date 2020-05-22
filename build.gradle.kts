@@ -62,6 +62,7 @@ tasks.withType(Javadoc::class).configureEach {
     if (options is StandardJavadocDocletOptions) {
         options.links(
                 "https://configurate.aoeu.xyz/$versionConfigurate/apidocs/",
+                "https://maven.fabricmc.net/docs/yarn-$versionMinecraft+build.$versionMappings/",
                 "https://docs.oracle.com/javase/8/docs/api/"
         )
     }
