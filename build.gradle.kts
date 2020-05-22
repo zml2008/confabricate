@@ -57,6 +57,16 @@ checkstyle {
     )
 }
 
+tasks.withType(Javadoc::class).configureEach {
+    val options = this.options
+    if (options is StandardJavadocDocletOptions) {
+        options.links(
+                "https://configurate.aoeu.xyz/$versionConfigurate/apidocs/",
+                "https://docs.oracle.com/javase/8/docs/api/"
+        )
+    }
+}
+
 dependencies {
     minecraft("com.mojang:minecraft:$versionMinecraft")
     mappings("net.fabricmc:yarn:$versionMinecraft+build.$versionMappings:v2")
@@ -77,7 +87,6 @@ dependencies {
     //     implementationInclude("net.fabricmc.fabric-api:fabric-$it:$versionFabricApi")
     // }
 }
-
 
 opinionated {
     github("zml2008", "confabricate")
