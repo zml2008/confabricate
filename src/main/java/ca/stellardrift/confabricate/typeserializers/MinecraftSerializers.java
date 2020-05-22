@@ -28,6 +28,8 @@ import net.minecraft.block.Block;
 import net.minecraft.entity.EntityType;
 import net.minecraft.fluid.Fluid;
 import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.tag.BlockTags;
 import net.minecraft.tag.EntityTypeTags;
 import net.minecraft.tag.FluidTags;
@@ -147,11 +149,13 @@ public final class MinecraftSerializers {
      * Register Minecraft {@link TypeSerializer}s with the provided collection.
      *
      * <p>This will add serializers for: <ul>
-     *     <li>identifiers</li>
-     *     <li>Text (as a string)</li>
-     *     <li>Any elements in vanilla registries</li>
+     *     <li>{@link net.minecraft.util.Identifier Identifiers}</li>
+     *     <li>{@link net.minecraft.text.Text} (as a string)</li>
+     *     <li>Any elements in vanilla {@link Registry registries}</li>
      *     <li>{@link TaggableCollection} of a combination of identifiers and
-         *     tags for blocks, items, fluids, and entity types</li>
+     *          tags for blocks, items, fluids, and entity types</li>
+     *     <li>{@link ItemStack}</li>
+     *     <li>{@link CompoundTag} instances</li>
      * </ul>
      *
      * @param collection to populate
@@ -165,6 +169,8 @@ public final class MinecraftSerializers {
             registerRegistry(collection, registry.getKey(), registry.getValue());
         }
 
+        collection.register(TypeToken.of(ItemStack.class), forCodec(ItemStack.CODEC));
+        collection.register(TypeToken.of(CompoundTag.class), forCodec(CompoundTag.field_25128));
 
         // All registries here should be in SPECIAL_REGISTRIES
         populateTaggedRegistry(collection, TypeToken.of(Fluid.class), Registry.FLUID, FluidTags.getContainer());
