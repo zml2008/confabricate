@@ -63,6 +63,7 @@ public class MinecraftSerializersTest {
     }
 
     @ConfigSerializable
+    @SuppressWarnings("UnusedVariable")
     static class TestSerializable {
         @Setting
         private String testValue = "hello world";

@@ -23,6 +23,7 @@ import ca.stellardrift.confabricate.mixin.RegistryAccessor;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.reflect.TypeParameter;
 import com.google.common.reflect.TypeToken;
+import com.google.errorprone.annotations.concurrent.LazyInit;
 import com.mojang.serialization.Codec;
 import net.minecraft.block.Block;
 import net.minecraft.entity.EntityType;
@@ -65,7 +66,7 @@ public final class MinecraftSerializers {
     /**
      * Registries that should not be added to a serializer collection.
      */
-    private static final Set<RegistryKey<? extends Registry<?>>> SPECIAL_REGISTRIES =
+    private static final ImmutableSet<RegistryKey<? extends Registry<?>>> SPECIAL_REGISTRIES =
             ImmutableSet.of(Registry.CUSTOM_STAT_KEY, // Type of identifier
                     Registry.FLUID_KEY,
                     Registry.BLOCK_KEY,
@@ -73,13 +74,13 @@ public final class MinecraftSerializers {
                     Registry.ENTITY_TYPE_KEY
             );
 
-    private static Set<Map.Entry<TypeToken<?>, TypeSerializer<?>>> KNOWN_REGISTRIES;
+    private static @LazyInit Set<Map.Entry<TypeToken<?>, TypeSerializer<?>>> KNOWN_REGISTRIES;
 
     private static final TypeToken<Registry<?>> TYPE_REGISTRY_GENERIC = new TypeToken<Registry<?>>() {};
     private static final Type TYPE_REGISTRY_ELEMENT = Registry.class.getTypeParameters()[0];
     private static final Logger LOGGER = LogManager.getLogger();
 
-    private static TypeSerializerCollection MINECRAFT_COLLECTION;
+    private static @LazyInit TypeSerializerCollection MINECRAFT_COLLECTION;
 
     private MinecraftSerializers() {}
 
@@ -122,10 +123,11 @@ public final class MinecraftSerializers {
      * @return minecraft serializers
      */
     public static TypeSerializerCollection collection() {
-        if (MINECRAFT_COLLECTION == null) {
-            MINECRAFT_COLLECTION = populate(TypeSerializerCollection.defaults().newChild());
+        TypeSerializerCollection collection = MINECRAFT_COLLECTION;
+        if (collection == null) {
+            collection = MINECRAFT_COLLECTION = populate(TypeSerializerCollection.defaults().newChild());
         }
-        return MINECRAFT_COLLECTION;
+        return collection;
     }
 
     /**
@@ -191,7 +193,8 @@ public final class MinecraftSerializers {
      * @return Collection of built-in registries
      */
     private static Set<Map.Entry<TypeToken<?>, TypeSerializer<?>>> getKnownRegistries() {
-        if (KNOWN_REGISTRIES == null) {
+        Set<Map.Entry<TypeToken<?>, TypeSerializer<?>>> registries = KNOWN_REGISTRIES;
+        if (registries == null) {
             final ImmutableSet.Builder<Map.Entry<TypeToken<?>, TypeSerializer<?>>> accumulator = ImmutableSet.builder();
             for (Field registryField : Registry.class.getFields()) {
                 // only look at public static fields (excludes the ROOT registry)
@@ -215,9 +218,9 @@ public final class MinecraftSerializers {
                     LOGGER.error("Unable to create serializer for registry of type " + elementType + " due to access error", e);
                 }
             }
-            KNOWN_REGISTRIES = accumulator.build();
+            registries = KNOWN_REGISTRIES = accumulator.build();
         }
-        return KNOWN_REGISTRIES;
+        return registries;
     }
 
     // Limit scope of warning suppression for reflective registry initialization

@@ -33,15 +33,18 @@ final class NodeMaplike implements MapLike<ConfigurationNode> {
         this.node = node;
     }
 
-    @Override public ConfigurationNode get(final ConfigurationNode key) {
+    @Override
+    public ConfigurationNode get(final ConfigurationNode key) {
         return this.node.getNode(ConfigurateOps.keyFrom(key));
     }
 
-    @Override public ConfigurationNode get(final String key) {
+    @Override
+    public ConfigurationNode get(final String key) {
         return this.node.getNode(key);
     }
 
-    @Override public Stream<Pair<ConfigurationNode, ConfigurationNode>> entries() {
+    @Override
+    public Stream<Pair<ConfigurationNode, ConfigurationNode>> entries() {
         return this.node.getChildrenMap().entrySet().stream()
                 .map(ent -> Pair.of(ConfigurationNode.root(this.node.getOptions()).setValue(ent.getKey()), ent.getValue()));
     }

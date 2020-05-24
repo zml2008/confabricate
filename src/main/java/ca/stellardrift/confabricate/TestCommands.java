@@ -57,6 +57,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 final class TestCommands {
 
@@ -75,9 +76,8 @@ final class TestCommands {
     private static RequiredArgumentBuilder<ServerCommandSource, String> path(final String argumentName) {
         return argument(argumentName, StringArgumentType.string()).suggests((src, builder) -> {
             return CompletableFuture.supplyAsync(() -> {
-                try {
-                    Files.list(currentDir)
-                            .filter(it -> it.toString().startsWith(builder.getRemaining()))
+                try (Stream<Path> files = Files.list(currentDir)) {
+                    files.filter(it -> it.toString().startsWith(builder.getRemaining()))
                             .forEach(it -> builder.suggest(it.toString()));
                 } catch (final IOException e) {
                     // no-op
@@ -140,7 +140,7 @@ final class TestCommands {
                         ctx.getSource().sendFeedback(new LiteralText("Successfully dumped data from player ")
                                 .append(entity.getNameAndUuid().copy().styled(s -> s.withColor(Formatting.AQUA))), false);
                     } catch (final Throwable t) {
-                        t.printStackTrace();
+                        Confabricate.LOGGER.error("Unable to write", t);
                     }
                     return 1;
                 })))

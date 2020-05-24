@@ -4,6 +4,7 @@ import ca.stellardrift.build.sponge
 
 plugins {
     id("fabric-loom") version "0.2.7-SNAPSHOT"
+    id("net.ltgt.errorprone") version "1.1.1"
     id("ca.stellardrift.opinionated") version "2.0.1"
     id("ca.stellardrift.opinionated.publish") version "2.0.1"
     checkstyle
@@ -15,6 +16,7 @@ val versionMappings: String by project
 val versionLoader: String by project
 val versionFabricApi: String by project
 val versionConfigurate: String by project
+val versionErrorprone: String by project
 
 group = "ca.stellardrift"
 version = "$versionBase+${versionConfigurate.replace("-SNAPSHOT", "")}"
@@ -69,9 +71,12 @@ tasks.withType(Javadoc::class).configureEach {
 }
 
 dependencies {
+    api("com.google.errorprone:error_prone_annotations:$versionErrorprone")
+    errorprone("com.google.errorprone:error_prone_core:$versionErrorprone")
     minecraft("com.mojang:minecraft:$versionMinecraft")
     mappings("net.fabricmc:yarn:$versionMinecraft+build.$versionMappings:v2")
     modImplementation("net.fabricmc:fabric-loader:$versionLoader")
+    modImplementation("net.fabricmc.fabric-api:fabric-api:$versionFabricApi")
 
     api(enforcedPlatform(configurate("bom", versionConfigurate)))
     apiInclude(configurate("core", versionConfigurate)) {

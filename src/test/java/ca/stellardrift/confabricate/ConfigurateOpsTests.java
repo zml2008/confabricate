@@ -19,6 +19,7 @@ package ca.stellardrift.confabricate;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.google.common.reflect.TypeToken;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
@@ -28,6 +29,7 @@ import com.mojang.serialization.Dynamic;
 import com.mojang.serialization.DynamicOps;
 import com.mojang.serialization.JsonOps;
 import ninja.leaping.configurate.ConfigurationNode;
+import ninja.leaping.configurate.objectmapping.ObjectMappingException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -141,7 +143,7 @@ public final class ConfigurateOpsTests {
 
     @Test
     @DisplayName("Gson (JsonObject) -> Configurate")
-    public void fromGsonToMap() {
+    public void fromGsonToMap() throws ObjectMappingException {
         final Map<String, String> expectedValues = new HashMap<>();
         expectedValues.put("foo", "bar");
         expectedValues.put("bar", "baz");
@@ -154,7 +156,7 @@ public final class ConfigurateOpsTests {
 
         assertTrue(output.isMap(), "Resulting configuration node was not a map");
         assertEquals(2, output.getChildrenMap().size(), "Resulting configuration node had wrong amount of child elements");
-        // TODO: Verify the values in the resulting maps are equal
+        assertEquals(expectedValues, output.getValue(new TypeToken<Map<String, String>>() {}));
     }
 
     @Test
