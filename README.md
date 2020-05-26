@@ -30,6 +30,13 @@ Thanks to @i509VCB for providing an initial implementation of DynamicOps
 
 Confabricate versions are in the format `<confabricate version>+<configurate version>` for easy identification
 
+**Version compatibility**
+
+Minecraft | Confabricate
+------------- | ------------------
+1.15         | 1.0+3.6.1
+1.16 (snapshots) | 1.2-SNAPSHOT+3.7
+
 It is recommended to use this project in jar-in-jar packaging
 
 Releases of Confabricate are on jCenter, and Configurate is on the Sponge repository, so we need to declare both at the moment. Snapshots are published on the PermissionsEx repository.
