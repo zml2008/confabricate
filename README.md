@@ -25,6 +25,7 @@ Thanks to @i509VCB for providing an initial implementation of DynamicOps
 ### Configuration per-mod
 
 - Utility methods in `Confabricate` to get a HOCON-format configuration for a mod
+- Common watch service and methods to get an automatically reloading HOCON-format configuration for a mod.
 
 ## How to use
 
@@ -34,7 +35,7 @@ Confabricate versions are in the format `<confabricate version>+<configurate ver
 
 Minecraft | Confabricate
 ------------- | ------------------
-1.15         | 1.0+3.6.1
+1.15         | 1.1+3.7
 1.16 (snapshots) | 1.2-SNAPSHOT+3.7
 
 It is recommended to use this project in jar-in-jar packaging
