@@ -31,28 +31,9 @@ import net.fabricmc.api.ModInitializer;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.ModContainer;
 import net.minecraft.block.Block;
-import net.minecraft.block.entity.BlockEntityType;
-import net.minecraft.container.ContainerType;
-import net.minecraft.enchantment.Enchantment;
 import net.minecraft.entity.EntityType;
-import net.minecraft.entity.ai.brain.Activity;
-import net.minecraft.entity.ai.brain.MemoryModuleType;
-import net.minecraft.entity.ai.brain.Schedule;
-import net.minecraft.entity.ai.brain.sensor.SensorType;
-import net.minecraft.entity.decoration.painting.PaintingMotive;
-import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.fluid.Fluid;
 import net.minecraft.item.Item;
-import net.minecraft.particle.ParticleType;
-import net.minecraft.potion.Potion;
-import net.minecraft.recipe.RecipeSerializer;
-import net.minecraft.recipe.RecipeType;
-import net.minecraft.sound.SoundEvent;
-import net.minecraft.stat.StatType;
-import net.minecraft.structure.StructurePieceType;
-import net.minecraft.structure.pool.StructurePoolElementType;
-import net.minecraft.structure.processor.StructureProcessorType;
-import net.minecraft.structure.rule.RuleTestType;
 import net.minecraft.tag.BlockTags;
 import net.minecraft.tag.EntityTypeTags;
 import net.minecraft.tag.FluidTags;
@@ -61,23 +42,6 @@ import net.minecraft.tag.TagContainer;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.registry.MutableRegistry;
 import net.minecraft.util.registry.Registry;
-import net.minecraft.village.VillagerProfession;
-import net.minecraft.village.VillagerType;
-import net.minecraft.world.biome.Biome;
-import net.minecraft.world.biome.source.BiomeSourceType;
-import net.minecraft.world.chunk.ChunkStatus;
-import net.minecraft.world.dimension.DimensionType;
-import net.minecraft.world.gen.carver.Carver;
-import net.minecraft.world.gen.chunk.ChunkGeneratorType;
-import net.minecraft.world.gen.decorator.Decorator;
-import net.minecraft.world.gen.decorator.TreeDecoratorType;
-import net.minecraft.world.gen.feature.Feature;
-import net.minecraft.world.gen.feature.StructureFeature;
-import net.minecraft.world.gen.foliage.FoliagePlacerType;
-import net.minecraft.world.gen.placer.BlockPlacerType;
-import net.minecraft.world.gen.stateprovider.BlockStateProviderType;
-import net.minecraft.world.gen.surfacebuilder.SurfaceBuilder;
-import net.minecraft.world.poi.PointOfInterestType;
 import ninja.leaping.configurate.ConfigurationNode;
 import ninja.leaping.configurate.commented.CommentedConfigurationNode;
 import ninja.leaping.configurate.hocon.HoconConfigurationLoader;
@@ -92,7 +56,11 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+import java.lang.reflect.Type;
 import java.nio.file.Path;
+import java.util.HashSet;
 import java.util.Set;
 
 /**
@@ -106,9 +74,15 @@ public class Confabricate implements ModInitializer {
     private static Confabricate instance;
     static final Logger LOGGER = LogManager.getLogger();
 
+    private static final TypeToken<Registry<?>> TYPE_REGISTRY_GENERIC = new TypeToken<Registry<?>>() {};
+    private static final Type TYPE_REGISTRY_ELEMENT = Registry.class.getTypeParameters()[0];
+
     private WatchServiceListener listener;
     private TypeSerializerCollection mcTypeSerializers;
-    private final Set<Registry<?>> brokenRegistries = Sets.newHashSet();
+    /**
+     * Registries that should not be added to a serializer collection.
+     */
+    private final Set<Registry<?>> specialRegistries = new HashSet<>();
     private final Set<Registry<?>> registeredRegistries = Sets.newHashSet();
 
     public Confabricate() {
@@ -143,51 +117,38 @@ public class Confabricate implements ModInitializer {
                 .register(IdentifierSerializer.TOKEN, IdentifierSerializer.INSTANCE)
                 .register(TextSerializer.TOKEN, TextSerializer.INSTANCE);
 
-        registerRegistry(SoundEvent.class, Registry.SOUND_EVENT);
         registerTaggedRegistry(TypeToken.of(Fluid.class), Registry.FLUID, FluidTags.getContainer());
-        registerRegistry(StatusEffect.class, Registry.STATUS_EFFECT);
         registerTaggedRegistry(TypeToken.of(Block.class), Registry.BLOCK, BlockTags.getContainer());
-        registerRegistry(Enchantment.class, Registry.ENCHANTMENT);
         registerTaggedRegistry(new TypeToken<EntityType<?>>() {}, Registry.ENTITY_TYPE, EntityTypeTags.getContainer());
         registerTaggedRegistry(TypeToken.of(Item.class), Registry.ITEM, ItemTags.getContainer());
-        registerRegistry(Potion.class, Registry.POTION);
-        registerRegistry(new TypeToken<Carver<?>>() {}, Registry.CARVER);
-        registerRegistry(new TypeToken<SurfaceBuilder<?>>() {}, Registry.SURFACE_BUILDER);
-        registerRegistry(new TypeToken<Feature<?>>() {}, Registry.FEATURE);
-        registerRegistry(new TypeToken<Decorator<?>>() {}, Registry.DECORATOR);
-        registerRegistry(Biome.class, Registry.BIOME);
-        registerRegistry(new TypeToken<BlockStateProviderType<?>>() {}, Registry.BLOCK_STATE_PROVIDER_TYPE);
-        registerRegistry(new TypeToken<BlockPlacerType<?>>() {}, Registry.BLOCK_PLACER_TYPE);
-        registerRegistry(new TypeToken<FoliagePlacerType<?>>() {}, Registry.FOLIAGE_PLACER_TYPE);
-        registerRegistry(new TypeToken<TreeDecoratorType<?>>() {}, Registry.TREE_DECORATOR_TYPE);
-        registerRegistry(new TypeToken<ParticleType<?>>() {}, Registry.PARTICLE_TYPE);
-        registerRegistry(new TypeToken<BiomeSourceType<?, ?>>() {}, Registry.BIOME_SOURCE_TYPE);
-        registerRegistry(new TypeToken<BlockEntityType<?>>() {}, Registry.BLOCK_ENTITY_TYPE);
-        registerRegistry(new TypeToken<ChunkGeneratorType<?, ?>>() {}, Registry.CHUNK_GENERATOR_TYPE);
-        registerRegistry(DimensionType.class, Registry.DIMENSION_TYPE);
-        registerRegistry(PaintingMotive.class, Registry.PAINTING_MOTIVE);
-        brokenRegistries.add(Registry.CUSTOM_STAT);
+        specialRegistries.add(Registry.CUSTOM_STAT);
         //registerRegistry(Identifier, Registry.CUSTOM_STAT); // can't register -- doesn't have its own type
-        registerRegistry(ChunkStatus.class, Registry.CHUNK_STATUS);
-        registerRegistry(new TypeToken<StructureFeature<?>>() {}, Registry.STRUCTURE_FEATURE);
-        registerRegistry(StructurePieceType.class, Registry.STRUCTURE_PIECE);
-        registerRegistry(RuleTestType.class, Registry.RULE_TEST);
-        registerRegistry(StructureProcessorType.class, Registry.STRUCTURE_PROCESSOR);
-        registerRegistry(StructurePoolElementType.class, Registry.STRUCTURE_POOL_ELEMENT);
-        registerRegistry(new TypeToken<ContainerType<?>>() {}, Registry.CONTAINER);
-        registerRegistry(new TypeToken<RecipeType<?>>() {}, Registry.RECIPE_TYPE);
-        registerRegistry(new TypeToken<RecipeSerializer<?>>() {}, Registry.RECIPE_SERIALIZER);
-        registerRegistry(new TypeToken<StatType<?>>() {}, Registry.STAT_TYPE);
-        registerRegistry(VillagerType.class, Registry.VILLAGER_TYPE);
-        registerRegistry(VillagerProfession.class, Registry.VILLAGER_PROFESSION);
-        registerRegistry(PointOfInterestType.class, Registry.POINT_OF_INTEREST_TYPE);
-        registerRegistry(new TypeToken<MemoryModuleType<?>>() {}, Registry.MEMORY_MODULE_TYPE);
-        registerRegistry(new TypeToken<SensorType<?>>() {}, Registry.SENSOR_TYPE);
-        registerRegistry(Schedule.class, Registry.SCHEDULE);
-        registerRegistry(Activity.class, Registry.ACTIVITY);
+
+        for (Field registryField : Registry.class.getFields()) {
+            // only look at public static fields (excludes the ROOT registry)
+            if ((registryField.getModifiers() & (Modifier.STATIC | Modifier.PUBLIC)) != (Modifier.STATIC | Modifier.PUBLIC)) {
+                continue;
+            }
+
+            final TypeToken<?> fieldType = TypeToken.of(registryField.getGenericType());
+            if (!fieldType.isSubtypeOf(TYPE_REGISTRY_GENERIC)) { // if not a registry (keys)
+                continue;
+            }
+
+            final TypeToken<?> elementType = fieldType.resolveType(TYPE_REGISTRY_ELEMENT);
+            try {
+                final Registry<?> registry = (Registry<?>) registryField.get(null);
+                if (!specialRegistries.contains(registry)) {
+                    registerRegistry(elementType, registry);
+                    LOGGER.debug("Created serializer for Minecraft registry {} with element type {}", registry, elementType);
+                }
+            } catch (final IllegalAccessException e) {
+                LOGGER.error("Unable to create serializer for registry of type " + elementType + " due to access error", e);
+            }
+        }
 
         for (MutableRegistry<?> reg : Registry.REGISTRIES) {
-            if (!registeredRegistries.contains(reg) && !brokenRegistries.contains(reg)) {
+            if (!registeredRegistries.contains(reg) && !specialRegistries.contains(reg)) {
                 LOGGER.warn("Registry " + Registry.REGISTRIES.getId(reg) + " does not have an associated TypeSerializer!");
             }
         }
@@ -201,6 +162,7 @@ public class Confabricate implements ModInitializer {
         final TypeToken<TaggableCollection<T>> fullToken = new TypeToken<TaggableCollection<T>>() {
         }.where(tParam, token);
 
+        specialRegistries.add(registry);
         if (registeredRegistries.add(registry)) {
             mcTypeSerializers.register(fullToken, new TaggableCollectionSerializer<>(registry, tagRegistry));
             mcTypeSerializers.register(token, new RegistrySerializer<>(registry));
@@ -212,11 +174,11 @@ public class Confabricate implements ModInitializer {
      *
      * @param token A token for the type contained within the registry
      * @param registry The registry
-     * @param <T> The type registered by the registry
      */
-    private <T> void registerRegistry(TypeToken<T> token, Registry<T> registry) {
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    private void registerRegistry(TypeToken<?> token, Registry<?> registry) {
         if (registeredRegistries.add(registry)) {
-            mcTypeSerializers.register(token, new RegistrySerializer<>(registry));
+            mcTypeSerializers.register(token, new RegistrySerializer(registry));
         }
     }
 
