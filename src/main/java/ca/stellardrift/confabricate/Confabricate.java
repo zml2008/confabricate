@@ -17,6 +17,7 @@
 package ca.stellardrift.confabricate;
 
 import ca.stellardrift.confabricate.typeserializers.MinecraftSerializers;
+import com.google.errorprone.annotations.RestrictedApi;
 import com.mojang.datafixers.DSL;
 import com.mojang.datafixers.DataFixer;
 import com.mojang.serialization.Dynamic;
@@ -66,7 +67,9 @@ public class Confabricate implements ModInitializer {
         instance = this;
     }
 
-    static Identifier id(final String item) {
+    @RestrictedApi(explanation = "confabricate namespace is not open to others",
+            link = "", allowedOnPath = ".*/ca/stellardrift/confabricate/.*")
+    public static Identifier id(final String item) {
         return new Identifier(MOD_ID, item);
     }
 
