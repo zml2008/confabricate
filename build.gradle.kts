@@ -22,9 +22,9 @@ group = "ca.stellardrift"
 version = "$versionBase+${versionConfigurate.replace("-SNAPSHOT", "")}"
 description = ext["longDescription"] as String
 
-minecraft {
+/*minecraft {
     refmapName = "${rootProject.name.toLowerCase()}-refmap.json"
-}
+}*/
 
 license {
     header = rootProject.file("LICENSE_HEADER")

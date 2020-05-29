@@ -19,7 +19,6 @@ package ca.stellardrift.confabricate.typeserializers;
 import static java.util.Objects.requireNonNull;
 
 import ca.stellardrift.confabricate.ConfigurateOps;
-import ca.stellardrift.confabricate.mixin.RegistryAccessor;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.reflect.TypeParameter;
 import com.google.common.reflect.TypeToken;
@@ -37,7 +36,6 @@ import net.minecraft.tag.FluidTags;
 import net.minecraft.tag.ItemTags;
 import net.minecraft.tag.TagContainer;
 import net.minecraft.util.registry.Registry;
-import net.minecraft.util.registry.RegistryKey;
 import ninja.leaping.configurate.objectmapping.serialize.TypeSerializer;
 import ninja.leaping.configurate.objectmapping.serialize.TypeSerializerCollection;
 import org.apache.logging.log4j.LogManager;
@@ -66,12 +64,12 @@ public final class MinecraftSerializers {
     /**
      * Registries that should not be added to a serializer collection.
      */
-    private static final ImmutableSet<RegistryKey<? extends Registry<?>>> SPECIAL_REGISTRIES =
-            ImmutableSet.of(Registry.CUSTOM_STAT_KEY, // Type of identifier
-                    Registry.FLUID_KEY,
-                    Registry.BLOCK_KEY,
-                    Registry.ITEM_KEY,
-                    Registry.ENTITY_TYPE_KEY
+    private static final ImmutableSet<Registry<?>> SPECIAL_REGISTRIES =
+            ImmutableSet.of(Registry.CUSTOM_STAT, // Type of identifier
+                    Registry.FLUID,
+                    Registry.BLOCK,
+                    Registry.ITEM,
+                    Registry.ENTITY_TYPE
             );
 
     private static @LazyInit Set<Map.Entry<TypeToken<?>, TypeSerializer<?>>> KNOWN_REGISTRIES;
@@ -143,8 +141,10 @@ public final class MinecraftSerializers {
         return requireNonNull(collection, "collection").equals(MINECRAFT_COLLECTION);
     }
 
+    @SuppressWarnings({"unchecked", "rawtypes"})
     private static boolean shouldRegister(final Registry<?> registry) {
-        return !SPECIAL_REGISTRIES.contains(((RegistryAccessor) registry).getRegistryKey());
+        // Don't register root registry -- its key can't be looked up :(
+        return !SPECIAL_REGISTRIES.contains(registry);
     }
 
     /**
