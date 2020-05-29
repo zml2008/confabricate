@@ -227,6 +227,22 @@ public final class ConfigurateOps implements DynamicOps<ConfigurationNode> {
     }
 
     /**
+     * Guard source node according to ops instance's copying policy.
+     *
+     * @implNote Currently, this will make a deep copy of the node.
+     *
+     * @param origin Original node
+     * @return a node with equivalent data
+     */
+    ConfigurationNode guardOutputRead(final ConfigurationNode origin) {
+        return origin.copy();
+    }
+
+    ConfigurationNode guardInputWrite(final ConfigurationNode untrusted) {
+        return untrusted.copy();
+    }
+
+    /**
      * Create a new empty node using this ops instance's factory.
      *
      * @return The new node
@@ -407,7 +423,7 @@ public final class ConfigurateOps implements DynamicOps<ConfigurationNode> {
         if (!prefix.isEmpty()) {
             return DataResult.error("Cannot merge " + value + " into non-empty node " + prefix);
         }
-        return DataResult.success(value.copy());
+        return DataResult.success(guardOutputRead(value));
     }
 
     /**
@@ -421,7 +437,7 @@ public final class ConfigurateOps implements DynamicOps<ConfigurationNode> {
     @Override
     public DataResult<ConfigurationNode> mergeToList(final ConfigurationNode input, final ConfigurationNode value) {
         if (input.isList() || input.isEmpty()) {
-            final ConfigurationNode ret = input.copy();
+            final ConfigurationNode ret = guardOutputRead(input);
             ret.appendListNode().setValue(value);
             return DataResult.success(ret);
         }
@@ -440,7 +456,7 @@ public final class ConfigurateOps implements DynamicOps<ConfigurationNode> {
     @Override
     public DataResult<ConfigurationNode> mergeToList(final ConfigurationNode input, final List<ConfigurationNode> values) {
         if (input.isList() || input.isEmpty()) {
-            final ConfigurationNode ret = input.copy();
+            final ConfigurationNode ret = guardInputWrite(input);
             for (ConfigurationNode node : values) {
                 ret.appendListNode().setValue(node);
             }
@@ -464,7 +480,7 @@ public final class ConfigurateOps implements DynamicOps<ConfigurationNode> {
     @Override
     public DataResult<ConfigurationNode> mergeToMap(final ConfigurationNode input, final ConfigurationNode key, final ConfigurationNode value) {
         if (input.isMap() || input.isEmpty()) {
-            final ConfigurationNode copied = input.copy();
+            final ConfigurationNode copied = guardInputWrite(input);
             copied.getNode(keyFrom(key)).setValue(value);
             return DataResult.success(copied);
         }
@@ -486,7 +502,7 @@ public final class ConfigurateOps implements DynamicOps<ConfigurationNode> {
     public DataResult<Stream<Pair<ConfigurationNode, ConfigurationNode>>> getMapValues(final ConfigurationNode input) {
         if (input.isEmpty() || input.isMap()) {
             return DataResult.success(input.getChildrenMap().entrySet().stream()
-                    .map(entry -> Pair.of(ConfigurationNode.root(input.getOptions()).setValue(entry.getKey()), entry.getValue().copy())));
+                    .map(entry -> Pair.of(ConfigurationNode.root(input.getOptions()).setValue(entry.getKey()), guardOutputRead(entry.getValue()))));
         }
 
         return DataResult.error("Not a map: " + input);
@@ -504,7 +520,7 @@ public final class ConfigurateOps implements DynamicOps<ConfigurationNode> {
     @Override
     public DataResult<MapLike<ConfigurationNode>> getMap(final ConfigurationNode input) {
         if (input.isEmpty() || input.isMap()) {
-            return DataResult.success(new NodeMaplike(input.copy()));
+            return DataResult.success(new NodeMaplike(this, input.getOptions(), input.getChildrenMap()));
         } else {
             return DataResult.error("Input node is not a map");
         }
@@ -530,7 +546,7 @@ public final class ConfigurateOps implements DynamicOps<ConfigurationNode> {
         if (input.isList()) {
             return DataResult.success(action -> {
                 for (ConfigurationNode child : input.getChildrenList()) {
-                    action.accept(child.copy());
+                    action.accept(guardOutputRead(child));
                 }
             });
         } else {
@@ -547,7 +563,7 @@ public final class ConfigurateOps implements DynamicOps<ConfigurationNode> {
     @Override
     public DataResult<Stream<ConfigurationNode>> getStream(final ConfigurationNode input) {
         if (input.isEmpty() || input.isList()) {
-            final Stream<ConfigurationNode> stream = input.getChildrenList().stream().map(it -> it);
+            final Stream<ConfigurationNode> stream = input.getChildrenList().stream().map(this::guardOutputRead);
             return DataResult.success(stream);
         }
 
@@ -568,7 +584,7 @@ public final class ConfigurateOps implements DynamicOps<ConfigurationNode> {
     public ConfigurationNode createMap(final Stream<Pair<ConfigurationNode, ConfigurationNode>> values) {
         final ConfigurationNode ret = empty();
 
-        values.forEach(p -> ret.getNode(keyFrom(p.getFirst())).setValue(p.getSecond().getValue()));
+        values.forEach(p -> ret.getNode(keyFrom(p.getFirst())).setValue(p.getSecond()));
 
         return ret;
     }
@@ -621,7 +637,7 @@ public final class ConfigurateOps implements DynamicOps<ConfigurationNode> {
     @Override
     public ConfigurationNode remove(final ConfigurationNode input, final String key) {
         if (input.isMap()) {
-            final ConfigurationNode ret = input.copy();
+            final ConfigurationNode ret = guardInputWrite(input);
             ret.getNode(key).setValue(null);
             return ret;
         }
@@ -640,7 +656,7 @@ public final class ConfigurateOps implements DynamicOps<ConfigurationNode> {
     @Override
     public DataResult<ConfigurationNode> get(final ConfigurationNode input, final String key) {
         final ConfigurationNode ret = input.getNode(key);
-        return ret.isVirtual() ? DataResult.error("No element " + key + " in the map " + input) : DataResult.success(ret);
+        return ret.isVirtual() ? DataResult.error("No element " + key + " in the map " + input) : DataResult.success(guardOutputRead(ret));
     }
 
     /**
@@ -657,7 +673,7 @@ public final class ConfigurateOps implements DynamicOps<ConfigurationNode> {
     @Override
     public DataResult<ConfigurationNode> getGeneric(final ConfigurationNode input, final ConfigurationNode key) {
         final ConfigurationNode ret = input.getNode(keyFrom(key));
-        return ret.isVirtual() ? DataResult.error("No element " + key + " in the map " + input) : DataResult.success(ret);
+        return ret.isVirtual() ? DataResult.error("No element " + key + " in the map " + input) : DataResult.success(guardOutputRead(ret));
     }
 
     /**
@@ -670,7 +686,7 @@ public final class ConfigurateOps implements DynamicOps<ConfigurationNode> {
      */
     @Override
     public ConfigurationNode set(final ConfigurationNode input, final String key, final ConfigurationNode value) {
-        final ConfigurationNode ret = input.copy();
+        final ConfigurationNode ret = guardInputWrite(input);
         ret.getNode(key).setValue(value);
         return ret;
     }
@@ -695,7 +711,7 @@ public final class ConfigurateOps implements DynamicOps<ConfigurationNode> {
             return input;
         }
 
-        final ConfigurationNode ret = input.copy();
+        final ConfigurationNode ret = guardInputWrite(input);
         final ConfigurationNode child = ret.getNode(key);
         child.setValue(function.apply(child));
         return ret;
@@ -726,7 +742,7 @@ public final class ConfigurateOps implements DynamicOps<ConfigurationNode> {
             return input;
         }
 
-        final ConfigurationNode ret = input.copy();
+        final ConfigurationNode ret = guardInputWrite(input);
 
         final ConfigurationNode child = ret.getNode(key);
         child.setValue(function.apply(child));

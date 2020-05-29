@@ -19,7 +19,10 @@ package ca.stellardrift.confabricate;
 import com.mojang.datafixers.util.Pair;
 import com.mojang.serialization.MapLike;
 import ninja.leaping.configurate.ConfigurationNode;
+import ninja.leaping.configurate.ConfigurationOptions;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
+import java.util.Map;
 import java.util.stream.Stream;
 
 /**
@@ -27,26 +30,32 @@ import java.util.stream.Stream;
  */
 final class NodeMaplike implements MapLike<ConfigurationNode> {
 
-    private final ConfigurationNode node;
+    private final ConfigurateOps ops;
+    private final ConfigurationOptions options;
+    private final Map<Object, ? extends ConfigurationNode> node;
 
-    NodeMaplike(final ConfigurationNode node) {
+    NodeMaplike(final ConfigurateOps ops, final ConfigurationOptions options, final Map<Object, ? extends ConfigurationNode> node) {
+        this.ops = ops;
+        this.options = options;
         this.node = node;
     }
 
     @Override
-    public ConfigurationNode get(final ConfigurationNode key) {
-        return this.node.getNode(ConfigurateOps.keyFrom(key));
+    public @Nullable ConfigurationNode get(final ConfigurationNode key) {
+        final @Nullable ConfigurationNode ret = this.node.get(ConfigurateOps.keyFrom(key));
+        return ret == null ? null : this.ops.guardOutputRead(ret);
     }
 
     @Override
-    public ConfigurationNode get(final String key) {
-        return this.node.getNode(key);
+    public @Nullable ConfigurationNode get(final String key) {
+        final @Nullable ConfigurationNode ret = this.node.get(key);
+        return ret == null ? null : this.ops.guardOutputRead(ret);
     }
 
     @Override
     public Stream<Pair<ConfigurationNode, ConfigurationNode>> entries() {
-        return this.node.getChildrenMap().entrySet().stream()
-                .map(ent -> Pair.of(ConfigurationNode.root(this.node.getOptions()).setValue(ent.getKey()), ent.getValue()));
+        return this.node.entrySet().stream()
+                .map(ent -> Pair.of(ConfigurationNode.root(this.options).setValue(ent.getKey()), this.ops.guardOutputRead(ent.getValue())));
     }
 
 }
