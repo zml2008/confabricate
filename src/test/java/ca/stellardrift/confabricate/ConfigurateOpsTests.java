@@ -65,13 +65,17 @@ public final class ConfigurateOpsTests {
      * We cannot use Minecraft's Type Serializers in JUnit testing due to loom
      * not liking JUnit.
      */
-    private static final DynamicOps<ConfigurationNode> CONFIGURATE_OPS = ConfigurateOps.getWithNodeFactory(ConfigurationNode::root);
+    private static final DynamicOps<ConfigurationNode> CONFIGURATE_OPS =
+            ConfigurateOps.builder().factory(ConfigurationNode::root).build();
 
     /**
      * We cannot use Minecraft's Type Serializers in JUnit testing due to loom
      * not liking JUnit.
      */
-    private static final DynamicOps<ConfigurationNode> CONFIGURATE_OPS_COMPRESSED = ConfigurateOps.getWithNodeFactory(ConfigurationNode::root, true);
+    private static final DynamicOps<ConfigurationNode> CONFIGURATE_OPS_COMPRESSED = ConfigurateOps.builder()
+                                                                                        .factory(ConfigurationNode::root)
+                                                                                        .compressed(true)
+                                                                                        .build();
 
     private static void compareToJson(final ConfigurationNode node, final JsonElement element) throws IOException {
         final StringWriter configurate = new StringWriter();
@@ -161,8 +165,8 @@ public final class ConfigurateOpsTests {
         assertEquals(3, output.getChildrenList().size(),
                 "Resulting configuration node had wrong amount of child elements in list");
         assertTrue(output.getChildrenList().stream()
-                .map(ConfigurationNode::getInt)
-                .collect(Collectors.toList()).containsAll(expectedElements),
+                        .map(ConfigurationNode::getInt)
+                        .collect(Collectors.toList()).containsAll(expectedElements),
                 "Resulting configuration node did not contain every element in original JsonArray");
     }
 
@@ -204,7 +208,8 @@ public final class ConfigurateOpsTests {
 
         assertTrue(output.isMap(), "Resulting configuration node was not a map");
         assertEquals(2, output.getChildrenMap().size(), "Resulting configuration node had wrong amount of child elements");
-        assertEquals(expectedValues, output.getValue(new TypeToken<Map<String, String>>() {}));
+        assertEquals(expectedValues, output.getValue(new TypeToken<Map<String, String>>() {
+        }));
     }
 
     @Test

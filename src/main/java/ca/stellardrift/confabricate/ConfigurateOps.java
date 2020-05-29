@@ -102,7 +102,7 @@ public final class ConfigurateOps implements DynamicOps<ConfigurationNode> {
     private final Supplier<? extends ConfigurationNode> factory;
     private final boolean compressed;
 
-    private static ConfigurationNode createDefaultNode() {
+    static ConfigurationNode createDefaultNode() {
         return CommentedConfigurationNode.root(ConfigurationOptions.defaults()
                 .withSerializers(MinecraftSerializers.collection()));
     }
@@ -133,27 +133,6 @@ public final class ConfigurateOps implements DynamicOps<ConfigurationNode> {
     }
 
     /**
-     * Create a new instance of the ops, with a custom node factory.
-     *
-     * @param factory The factory function
-     * @return A new ops instance
-     */
-    public static DynamicOps<ConfigurationNode> getWithNodeFactory(final Supplier<? extends ConfigurationNode> factory) {
-        return new ConfigurateOps(factory, false);
-    }
-
-    /**
-     * Create a new instance of the ops, with a custom node factory.
-     *
-     * @param compressed Whether keys should be compressed
-     * @param factory The factory function
-     * @return A new ops instance
-     */
-    public static DynamicOps<ConfigurationNode> getWithNodeFactory(final Supplier<? extends ConfigurationNode> factory, final boolean compressed) {
-        return new ConfigurateOps(factory, compressed);
-    }
-
-    /**
      * Get an ops instance that will create nodes using the provided collection.
      *
      * @param collection Collection to provide through created nodes' options
@@ -163,7 +142,7 @@ public final class ConfigurateOps implements DynamicOps<ConfigurationNode> {
         if (MinecraftSerializers.isCommonCollection(collection)) {
             return UNCOMPRESSED;
         } else {
-            return getWithNodeFactory(() -> ConfigurationNode.root(ConfigurationOptions.defaults().withSerializers(collection)));
+            return builder().factoryFromSerializers(collection).build();
         }
     }
 
@@ -179,8 +158,7 @@ public final class ConfigurateOps implements DynamicOps<ConfigurationNode> {
         if (MinecraftSerializers.isCommonCollection(node.getOptions().getSerializers())) {
             return new Dynamic<>(getInstance(), node);
         } else {
-            final ConfigurationOptions opts = node.getOptions();
-            return new Dynamic<>(getWithNodeFactory(() -> CommentedConfigurationNode.root(opts)), node);
+            return builder().factoryFromNode(node).buildWrapping(node);
         }
     }
 
@@ -191,25 +169,19 @@ public final class ConfigurateOps implements DynamicOps<ConfigurationNode> {
      * @return values
      */
     public static DynamicOps<ConfigurationNode> fromNode(final ConfigurationNode value) {
-        return fromNode(value, false);
+        return builder().factoryFromNode(value).build();
     }
 
     /**
-     * Configure an ops instance using the options of an existing node.
+     * Create a new builder for an ops instance.
      *
-     * @param compressed whether values should be {@linkplain #compressMaps() compressed}
-     * @param value The value type
-     * @return values
+     * @return builder
      */
-    public static DynamicOps<ConfigurationNode> fromNode(final ConfigurationNode value, final boolean compressed) {
-        if (MinecraftSerializers.isCommonCollection(value.getOptions().getSerializers())) {
-            return getInstance(compressed);
-        } else {
-            return new ConfigurateOps(() -> ConfigurationNode.root(value.getOptions()), compressed);
-        }
+    public static ConfigurateOpsBuilder builder() {
+        return new ConfigurateOpsBuilder();
     }
 
-    protected ConfigurateOps(final Supplier<? extends ConfigurationNode> factory, final boolean compressed) {
+    ConfigurateOps(final Supplier<? extends ConfigurationNode> factory, final boolean compressed) {
         this.factory = factory;
         this.compressed = compressed;
     }
