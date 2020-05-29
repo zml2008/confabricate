@@ -19,20 +19,32 @@ package ca.stellardrift.confabricate;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.reflect.TypeToken;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
+import com.google.gson.internal.Streams;
+import com.google.gson.stream.JsonWriter;
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.DataResult;
 import com.mojang.serialization.Dynamic;
 import com.mojang.serialization.DynamicOps;
 import com.mojang.serialization.JsonOps;
+import net.minecraft.Bootstrap;
+import net.minecraft.block.Block;
+import net.minecraft.util.registry.Registry;
 import ninja.leaping.configurate.ConfigurationNode;
+import ninja.leaping.configurate.gson.GsonConfigurationLoader;
 import ninja.leaping.configurate.objectmapping.ObjectMappingException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -45,11 +57,47 @@ import java.util.stream.StreamSupport;
  */
 public final class ConfigurateOpsTests {
 
+    static {
+        Bootstrap.initialize();
+    }
+
     /**
      * We cannot use Minecraft's Type Serializers in JUnit testing due to loom
      * not liking JUnit.
      */
     private static final DynamicOps<ConfigurationNode> CONFIGURATE_OPS = ConfigurateOps.getWithNodeFactory(ConfigurationNode::root);
+
+    /**
+     * We cannot use Minecraft's Type Serializers in JUnit testing due to loom
+     * not liking JUnit.
+     */
+    private static final DynamicOps<ConfigurationNode> CONFIGURATE_OPS_COMPRESSED = ConfigurateOps.getWithNodeFactory(ConfigurationNode::root, true);
+
+    private static void compareToJson(final ConfigurationNode node, final JsonElement element) throws IOException {
+        final StringWriter configurate = new StringWriter();
+        final GsonConfigurationLoader loader = GsonConfigurationLoader.builder()
+                .setSink(() -> new BufferedWriter(configurate)).build();
+        loader.save(node);
+
+        final StringWriter json = new StringWriter();
+        try (JsonWriter jw = new JsonWriter(json)) {
+            jw.setIndent("  ");
+            Streams.write(element, jw);
+            jw.flush();
+            json.append(System.lineSeparator());
+        }
+
+        assertEquals(configurate.toString(), json.toString());
+    }
+
+    private static <V> V assertResult(final DataResult<V> result) {
+        final V success = result.result().orElse(null);
+        if (success == null) {
+            throw new IllegalArgumentException(result.error()
+                    .orElseThrow(() -> new IllegalStateException("Neither success nor failure were present")).message());
+        }
+        return success;
+    }
 
     @Test
     @DisplayName("Configurate (Empty) -> Gson (Null)")
@@ -174,6 +222,21 @@ public final class ConfigurateOpsTests {
         assertTrue(element.isJsonObject(), "Resulting element was not a json object");
         assertEquals(2, element.getAsJsonObject().size(), "Resulting json object had wrong amount of child elements");
         // TODO: Verify the values in the resulting maps are equal
+    }
+
+    @Test
+    public void testCompressed() throws IOException {
+        final List<Block> blocks = ImmutableList.copyOf(Registry.BLOCK);
+        final Codec<List<Block>> listCodec = Codec.list(Registry.BLOCK);
+
+
+        final JsonElement compressedBlocks = assertResult(listCodec.encode(blocks, JsonOps.COMPRESSED, JsonOps.COMPRESSED.empty()));
+        final JsonElement regularBlocks = assertResult(listCodec.encode(blocks, JsonOps.INSTANCE, JsonOps.INSTANCE.empty()));
+        final ConfigurationNode compressedNode = assertResult(listCodec.encode(blocks, CONFIGURATE_OPS_COMPRESSED, ConfigurationNode.root()));
+        final ConfigurationNode uncompressedNode = assertResult(listCodec.encode(blocks, CONFIGURATE_OPS, ConfigurationNode.root()));
+
+        compareToJson(compressedNode, compressedBlocks);
+        compareToJson(uncompressedNode, regularBlocks);
     }
 
 }

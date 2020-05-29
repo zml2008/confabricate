@@ -19,6 +19,8 @@ package ca.stellardrift.confabricate;
 import static java.util.Objects.requireNonNull;
 
 import ca.stellardrift.confabricate.typeserializers.MinecraftSerializers;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.mojang.datafixers.util.Pair;
 import com.mojang.serialization.DataResult;
 import com.mojang.serialization.Dynamic;
@@ -94,20 +96,40 @@ import java.util.stream.Stream;
  */
 public final class ConfigurateOps implements DynamicOps<ConfigurationNode> {
 
-    private static final ConfigurateOps INSTANCE = new ConfigurateOps(() ->
-            CommentedConfigurationNode.root(ConfigurationOptions.defaults()
-                    .withSerializers(MinecraftSerializers.collection())));
+    private static final ConfigurateOps UNCOMPRESSED = new ConfigurateOps(ConfigurateOps::createDefaultNode, false);
+    private static final ConfigurateOps COMPRESSED = new ConfigurateOps(ConfigurateOps::createDefaultNode, true);
 
     private final Supplier<? extends ConfigurationNode> factory;
+    private final boolean compressed;
+
+    private static ConfigurationNode createDefaultNode() {
+        return CommentedConfigurationNode.root(ConfigurationOptions.defaults()
+                .withSerializers(MinecraftSerializers.collection()));
+    }
+
+    /**
+     * Get the shared instance of this class, which creates new nodes using
+     * the default factory. The returned instance will not be compressed
+     *
+     * @return The shared instance
+     */
+    public static DynamicOps<ConfigurationNode> getInstance() {
+        return getInstance(false);
+    }
 
     /**
      * Get the shared instance of this class, which creates new nodes using
      * the default factory.
      *
+     * <p>See {@link #compressMaps()} for a description of what the
+     * <pre>compressed</pre> parameter does.
+     *
+     * @param compressed Whether keys should be compressed in the output of
+     *     this serializer
      * @return The shared instance
      */
-    public static DynamicOps<ConfigurationNode> getInstance() {
-        return INSTANCE;
+    public static DynamicOps<ConfigurationNode> getInstance(final boolean compressed) {
+        return compressed ? COMPRESSED : UNCOMPRESSED;
     }
 
     /**
@@ -117,7 +139,18 @@ public final class ConfigurateOps implements DynamicOps<ConfigurationNode> {
      * @return A new ops instance
      */
     public static DynamicOps<ConfigurationNode> getWithNodeFactory(final Supplier<? extends ConfigurationNode> factory) {
-        return new ConfigurateOps(factory);
+        return new ConfigurateOps(factory, false);
+    }
+
+    /**
+     * Create a new instance of the ops, with a custom node factory.
+     *
+     * @param compressed Whether keys should be compressed
+     * @param factory The factory function
+     * @return A new ops instance
+     */
+    public static DynamicOps<ConfigurationNode> getWithNodeFactory(final Supplier<? extends ConfigurationNode> factory, final boolean compressed) {
+        return new ConfigurateOps(factory, compressed);
     }
 
     /**
@@ -128,7 +161,7 @@ public final class ConfigurateOps implements DynamicOps<ConfigurationNode> {
      */
     public static DynamicOps<ConfigurationNode> getForSerializers(final TypeSerializerCollection collection) {
         if (MinecraftSerializers.isCommonCollection(collection)) {
-            return INSTANCE;
+            return UNCOMPRESSED;
         } else {
             return getWithNodeFactory(() -> ConfigurationNode.root(ConfigurationOptions.defaults().withSerializers(collection)));
         }
@@ -158,15 +191,50 @@ public final class ConfigurateOps implements DynamicOps<ConfigurationNode> {
      * @return values
      */
     public static DynamicOps<ConfigurationNode> fromNode(final ConfigurationNode value) {
+        return fromNode(value, false);
+    }
+
+    /**
+     * Configure an ops instance using the options of an existing node.
+     *
+     * @param compressed whether values should be {@linkplain #compressMaps() compressed}
+     * @param value The value type
+     * @return values
+     */
+    public static DynamicOps<ConfigurationNode> fromNode(final ConfigurationNode value, final boolean compressed) {
         if (MinecraftSerializers.isCommonCollection(value.getOptions().getSerializers())) {
-            return getInstance();
+            return getInstance(compressed);
         } else {
-            return new ConfigurateOps(() -> ConfigurationNode.root(value.getOptions()));
+            return new ConfigurateOps(() -> ConfigurationNode.root(value.getOptions()), compressed);
         }
     }
 
-    protected ConfigurateOps(final Supplier<? extends ConfigurationNode> factory) {
+    protected ConfigurateOps(final Supplier<? extends ConfigurationNode> factory, final boolean compressed) {
         this.factory = factory;
+        this.compressed = compressed;
+    }
+
+    /**
+     * Whether data passed through this ops will be compressed or not.
+     *
+     * <p>In the context of DFU, <pre>compressed</pre> means that in situations
+     * where values are of a {@link com.mojang.serialization.Keyable} type
+     * (as is with types like {@linkplain net.minecraft.util.registry.Registry Registries})
+     * rather than fully encoding each value, its index into the container
+     * is encoded.
+     *
+     * <p>While data encoded this way may take less space to store, the
+     * compressed data will also require an explicit mapping of indices to
+     * values. If this is not stored with the node, the indices of values must
+     * be preserved to correctly deserialize compressed values.
+     *
+     * <p>For example, for an enum new values could only be appended, not added
+     * in the middle of the constants.
+     * @return whether maps are compressed
+     */
+    @Override
+    public boolean compressMaps() {
+        return this.compressed;
     }
 
     /**
@@ -180,6 +248,9 @@ public final class ConfigurateOps implements DynamicOps<ConfigurationNode> {
      * @return a key, asserted non-null
      */
     static Object keyFrom(final ConfigurationNode node) {
+        if (node.isList() || node.isMap()) {
+            throw new IllegalArgumentException("Key nodes must have scalar values");
+        }
         return requireNonNull(node.getValue(), "The provided key node must have a value");
     }
 
@@ -191,6 +262,16 @@ public final class ConfigurateOps implements DynamicOps<ConfigurationNode> {
     @Override
     public ConfigurationNode empty() {
         return this.factory.get();
+    }
+
+    @Override
+    public ConfigurationNode emptyMap() {
+        return empty().setValue(ImmutableMap.of());
+    }
+
+    @Override
+    public ConfigurationNode emptyList() {
+        return empty().setValue(ImmutableList.of());
     }
 
     // If the destination ops is another Configurate ops instance, just directly pass the node through
@@ -216,7 +297,6 @@ public final class ConfigurateOps implements DynamicOps<ConfigurationNode> {
      */
     @Override
     public <U> U convertTo(final DynamicOps<U> targetOps, final ConfigurationNode source) {
-
         final U self = convertSelf(requireNonNull(targetOps, "targetOps"), requireNonNull(source, "source"));
         if (self != null) {
             return self;
