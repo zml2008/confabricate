@@ -18,6 +18,7 @@ package ca.stellardrift.confabricate;
 
 import static java.util.Objects.requireNonNull;
 
+import ca.stellardrift.confabricate.typeserializers.MinecraftSerializers;
 import com.mojang.serialization.Dynamic;
 import ninja.leaping.configurate.ConfigurationNode;
 import ninja.leaping.configurate.ConfigurationOptions;
@@ -31,10 +32,17 @@ import java.util.function.Supplier;
  */
 public final class ConfigurateOpsBuilder {
 
-    private Supplier<ConfigurationNode> nodeSupplier = ConfigurateOps::createDefaultNode;
+    private Supplier<ConfigurationNode> nodeSupplier = ConfigurateOpsBuilder::createDefaultNode;
     private boolean compressed = false;
+    private ConfigurateOps.Protection readProtection = ConfigurateOps.Protection.COPY_DEEP;
+    private ConfigurateOps.Protection writeProtection = ConfigurateOps.Protection.COPY_DEEP;
 
     ConfigurateOpsBuilder() {}
+
+    static ConfigurationNode createDefaultNode() {
+        return CommentedConfigurationNode.root(ConfigurationOptions.defaults()
+                .withSerializers(MinecraftSerializers.collection()));
+    }
 
     /**
      * Set the node factory for the returned ops.
@@ -82,6 +90,55 @@ public final class ConfigurateOpsBuilder {
     }
 
     /**
+     * Set how nodes returned from read methods will be protected
+     * from modification.
+     *
+     * <p>For read protection, the protection level refers to how the attached
+     * node will be affected by modifications made to the nodes returned from
+     * {@code get*} methods.
+     *
+     * @param readProtection protection level
+     * @return this
+     */
+    public ConfigurateOpsBuilder readProtection(final ConfigurateOps.Protection readProtection) {
+        this.readProtection = requireNonNull(readProtection, "readProtection");
+        return this;
+    }
+
+    /**
+     * Set how nodes provided to mutator methods will be protected
+     * from modification.
+     *
+     * <p>For write protection, the protection level refers to how the provided
+     * {@code prefix} node will be protected from seeing changes to the
+     * operation
+     *
+     * @param writeProtection protection level
+     * @return this
+     */
+    public ConfigurateOpsBuilder writeProtection(final ConfigurateOps.Protection writeProtection) {
+        this.writeProtection = requireNonNull(writeProtection, "writeProtection");
+        return this;
+    }
+
+    /**
+     * Set how nodes will be protected from both read and write modifications.
+     *
+     * @see #readProtection(ConfigurateOps.Protection) for how this level
+     *      affects value reads
+     * @see #writeProtection(ConfigurateOps.Protection) for how this level
+     *      affects value writes
+     * @param protection protection level
+     * @return this
+     */
+    public ConfigurateOpsBuilder readWriteProtection(final ConfigurateOps.Protection protection) {
+        requireNonNull(protection, "protection");
+        this.readProtection = protection;
+        this.writeProtection = protection;
+        return this;
+    }
+
+    /**
      * Create a new ops instance.
      *
      * <p>All options have defaults provided and all setters validate their
@@ -91,7 +148,7 @@ public final class ConfigurateOpsBuilder {
      * @return The new instance
      */
     public ConfigurateOps build() {
-        return new ConfigurateOps(this.nodeSupplier, this.compressed);
+        return new ConfigurateOps(this.nodeSupplier, this.compressed, this.readProtection, this.writeProtection);
     }
 
     /**

@@ -27,7 +27,6 @@ import com.mojang.serialization.Dynamic;
 import com.mojang.serialization.DynamicOps;
 import com.mojang.serialization.MapLike;
 import ninja.leaping.configurate.ConfigurationNode;
-import ninja.leaping.configurate.ConfigurationOptions;
 import ninja.leaping.configurate.commented.CommentedConfigurationNode;
 import ninja.leaping.configurate.objectmapping.serialize.TypeSerializerCollection;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -96,16 +95,13 @@ import java.util.stream.Stream;
  */
 public final class ConfigurateOps implements DynamicOps<ConfigurationNode> {
 
-    private static final ConfigurateOps UNCOMPRESSED = new ConfigurateOps(ConfigurateOps::createDefaultNode, false);
-    private static final ConfigurateOps COMPRESSED = new ConfigurateOps(ConfigurateOps::createDefaultNode, true);
+    private static final ConfigurateOps UNCOMPRESSED = ConfigurateOps.builder().build();
+    private static final ConfigurateOps COMPRESSED = ConfigurateOps.builder().compressed(true).build();
 
     private final Supplier<? extends ConfigurationNode> factory;
     private final boolean compressed;
-
-    static ConfigurationNode createDefaultNode() {
-        return CommentedConfigurationNode.root(ConfigurationOptions.defaults()
-                .withSerializers(MinecraftSerializers.collection()));
-    }
+    private final Protection readProtection;
+    private final Protection writeProtection;
 
     /**
      * Get the shared instance of this class, which creates new nodes using
@@ -181,9 +177,12 @@ public final class ConfigurateOps implements DynamicOps<ConfigurationNode> {
         return new ConfigurateOpsBuilder();
     }
 
-    ConfigurateOps(final Supplier<? extends ConfigurationNode> factory, final boolean compressed) {
+    ConfigurateOps(final Supplier<? extends ConfigurationNode> factory, final boolean compressed,
+            final Protection readProtection, final Protection writeProtection) {
         this.factory = factory;
         this.compressed = compressed;
+        this.readProtection = readProtection;
+        this.writeProtection = writeProtection;
     }
 
     /**
@@ -231,15 +230,23 @@ public final class ConfigurateOps implements DynamicOps<ConfigurationNode> {
      *
      * @implNote Currently, this will make a deep copy of the node.
      *
-     * @param origin Original node
+     * @param untrusted Original node
      * @return a node with equivalent data
      */
-    ConfigurationNode guardOutputRead(final ConfigurationNode origin) {
-        return origin.copy();
+    ConfigurationNode guardOutputRead(final ConfigurationNode untrusted) {
+        switch (this.readProtection) {
+            case COPY_DEEP: return untrusted.copy();
+            case NONE: return untrusted;
+            default: throw new IllegalArgumentException("Unexpected state");
+        }
     }
 
     ConfigurationNode guardInputWrite(final ConfigurationNode untrusted) {
-        return untrusted.copy();
+        switch (this.writeProtection) {
+            case COPY_DEEP: return untrusted.copy();
+            case NONE: return untrusted;
+            default: throw new IllegalArgumentException("Unexpected state");
+        }
     }
 
     /**
@@ -752,6 +759,23 @@ public final class ConfigurateOps implements DynamicOps<ConfigurationNode> {
     @Override
     public String toString() {
         return "Configurate";
+    }
+
+    /**
+     * Protection level for configuration node accesses through ops instance.
+     */
+    public enum Protection {
+        /**
+         * When an operation is executed on the node, make a deep copy of the
+         * result.
+         */
+        COPY_DEEP,
+
+        /**
+         * Directly pass on nodes, still attached to their original structure.
+         */
+        NONE;
+
     }
 
 }

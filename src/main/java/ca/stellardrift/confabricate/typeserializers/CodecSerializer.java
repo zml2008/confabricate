@@ -23,6 +23,7 @@ import com.google.common.reflect.TypeToken;
 import com.mojang.datafixers.util.Pair;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
+import com.mojang.serialization.DynamicOps;
 import ninja.leaping.configurate.ConfigurationNode;
 import ninja.leaping.configurate.objectmapping.ObjectMappingException;
 import ninja.leaping.configurate.objectmapping.serialize.TypeSerializer;
@@ -37,6 +38,18 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 final class CodecSerializer<V> implements TypeSerializer<V> {
 
     private static final Logger LOGGER = LogManager.getLogger();
+    private static final ConfigurateOps DEFAULT_OPS = ConfigurateOps.builder().readWriteProtection(ConfigurateOps.Protection.NONE).build();
+
+    private static DynamicOps<ConfigurationNode> opsFor(final ConfigurationNode node) {
+        if (node.getOptions().getSerializers().equals(MinecraftSerializers.collection())) {
+            return DEFAULT_OPS;
+        } else {
+            return ConfigurateOps.builder()
+                    .factoryFromNode(node)
+                    .readWriteProtection(ConfigurateOps.Protection.NONE)
+                    .build();
+        }
+    }
 
     private final Codec<V> codec;
 
@@ -46,7 +59,7 @@ final class CodecSerializer<V> implements TypeSerializer<V> {
 
     @Override
     public @Nullable V deserialize(@NonNull final TypeToken<?> type, @NonNull final ConfigurationNode value) throws ObjectMappingException {
-        final DataResult<Pair<V, ConfigurationNode>> result = this.codec.decode(ConfigurateOps.fromNode(value), value);
+        final DataResult<Pair<V, ConfigurationNode>> result = this.codec.decode(opsFor(value), value);
         final DataResult.PartialResult<Pair<V, ConfigurationNode>> error = result.error().orElse(null);
         if (error != null) {
             LOGGER.debug("Unable to decode value using {} due to {}", this.codec, error.message());
@@ -58,7 +71,7 @@ final class CodecSerializer<V> implements TypeSerializer<V> {
     @Override
     public void serialize(@NonNull final TypeToken<?> type, @Nullable final V obj, @NonNull final ConfigurationNode value)
             throws ObjectMappingException {
-        final DataResult<ConfigurationNode> result = this.codec.encode(obj, ConfigurateOps.fromNode(value), value);
+        final DataResult<ConfigurationNode> result = this.codec.encode(obj, opsFor(value), value);
         final DataResult.PartialResult<ConfigurationNode> error = result.error().orElse(null);
         if (error != null) {
             LOGGER.debug("Unable to encode value using {} due to {}", this.codec, error.message());
