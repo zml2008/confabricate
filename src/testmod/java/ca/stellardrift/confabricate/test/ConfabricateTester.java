@@ -1,3 +1,19 @@
+/*
+ * Copyright 2020 zml
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package ca.stellardrift.confabricate.test;
 
 import ca.stellardrift.confabricate.Confabricate;
@@ -25,7 +41,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * A test mod that uses an auto-reloadable configuration
+ * A test mod that uses an auto-reloadable configuration.
  */
 public class ConfabricateTester implements ModInitializer {
 
@@ -35,6 +51,12 @@ public class ConfabricateTester implements ModInitializer {
     private @MonotonicNonNull ConfigurationReference<CommentedConfigurationNode> configFile;
     private @MonotonicNonNull ValueReference<TestmodConfig> config;
 
+    /**
+     * Get the active mod instance, throwing an {@link IllegalStateException} if
+     * called too early in mod initialization.
+     *
+     * @return mod singleton
+     */
     public static ConfabricateTester instance() {
         final ConfabricateTester ret = instance;
         if (ret == null) {
@@ -57,9 +79,9 @@ public class ConfabricateTester implements ModInitializer {
 
         // Load config
         try {
-            configFile = Confabricate.createConfigurationFor(container);
-            config = configFile.referenceTo(TestmodConfig.class);
-            configFile.save();
+            this.configFile = Confabricate.createConfigurationFor(container);
+            this.config = this.configFile.referenceTo(TestmodConfig.class);
+            this.configFile.save();
         } catch (IOException | ObjectMappingException e) {
             throw new RuntimeException("Unable to load configuration for " + container.getMetadata().getId(), e);
         }
@@ -81,7 +103,7 @@ public class ConfabricateTester implements ModInitializer {
         {
             final ItemStack stack = new ItemStack(Items.STONE_SWORD, 3);
             stack.addEnchantment(Enchantments.SHARPNESS, 3);
-            items.add(stack);
+            this.items.add(stack);
         }
 
         public Text getMessage() {

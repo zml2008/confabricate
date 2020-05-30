@@ -76,38 +76,38 @@ final class TestCommands {
     private static final TextColor MESSAGE_COLOR = TextColor.fromRgb(0x2268ab);
 
     public static void register(final ConfabricateTester mod, final CommandDispatcher<ServerCommandSource> src) {
-        final LiteralCommandNode<ServerCommandSource> root = src.register(literal("confabricate")
+        src.register(literal("confabricate")
                 .requires(scs -> scs.hasPermissionLevel(4))
                 .then(dumpCommand())
                 .then(parseObjectCommand()));
         //src.register(literal("confab").redirect(root));
 
         src.register(literal("test-kit")
-        .requires(scs -> scs.hasPermissionLevel(2))
-        .executes(ctx -> {
-            final List<ItemStack> itemsToGive = mod.getConfiguration().getItems();
-            if (itemsToGive == null || itemsToGive.isEmpty()) {
-                ctx.getSource().sendError(new LiteralText("No items are defined in the kit!"));
-                return 0;
-            }
+                .requires(scs -> scs.hasPermissionLevel(2))
+                .executes(ctx -> {
+                    final List<ItemStack> itemsToGive = mod.getConfiguration().getItems();
+                    if (itemsToGive == null || itemsToGive.isEmpty()) {
+                        ctx.getSource().sendError(new LiteralText("No items are defined in the kit!"));
+                        return 0;
+                    }
 
-            final ServerPlayerEntity target = ctx.getSource().getPlayer();
-            final MutableText output = new LiteralText("You have been given: ");
-            output.styled(style -> style.withColor(MESSAGE_COLOR));
+                    final ServerPlayerEntity target = ctx.getSource().getPlayer();
+                    final MutableText output = new LiteralText("You have been given: ");
+                    output.styled(style -> style.withColor(MESSAGE_COLOR));
 
-            boolean first = true;
-            for (ItemStack stack : itemsToGive) {
-                target.inventory.offerOrDrop(target.world, stack.copy());
-                if (!first) {
-                    output.append(COMMA);
-                }
-                output.append(stack.toHoverableText());
-                first = false;
-            }
+                    boolean first = true;
+                    for (ItemStack stack : itemsToGive) {
+                        target.inventory.offerOrDrop(target.world, stack.copy());
+                        if (!first) {
+                            output.append(COMMA);
+                        }
+                        output.append(stack.toHoverableText());
+                        first = false;
+                    }
 
-            target.sendSystemMessage(output, Util.field_25140);
-            return 1;
-        }));
+                    target.sendSystemMessage(output, Util.field_25140);
+                    return 1;
+                }));
     }
 
     private static RequiredArgumentBuilder<ServerCommandSource, String> path(final String argumentName) {
