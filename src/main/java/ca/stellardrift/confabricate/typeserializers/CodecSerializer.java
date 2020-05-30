@@ -40,7 +40,7 @@ final class CodecSerializer<V> implements TypeSerializer<V> {
     private static final Logger LOGGER = LogManager.getLogger();
     private static final ConfigurateOps DEFAULT_OPS = ConfigurateOps.builder().readWriteProtection(ConfigurateOps.Protection.NONE).build();
 
-    private static DynamicOps<ConfigurationNode> opsFor(final ConfigurationNode node) {
+    static DynamicOps<ConfigurationNode> opsFor(final ConfigurationNode node) {
         if (node.getOptions().getSerializers().equals(MinecraftSerializers.collection())) {
             return DEFAULT_OPS;
         } else {

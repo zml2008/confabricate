@@ -165,7 +165,7 @@ public final class MinecraftSerializers {
      */
     public static TypeSerializerCollection populate(final TypeSerializerCollection collection) {
         collection.register(IdentifierSerializer.TOKEN, IdentifierSerializer.INSTANCE)
-                .register(TextSerializer.INSTANCE);
+                .register(TextSerializer.TYPE, TextSerializer.INSTANCE);
 
         for (Map.Entry<TypeToken<?>, TypeSerializer<?>> registry : getKnownRegistries()) {
             registerRegistry(collection, registry.getKey(), registry.getValue());
