@@ -39,6 +39,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 
 /**
@@ -65,16 +66,7 @@ public class Confabricate implements ModInitializer {
             throw new ExceptionInInitializerError("Confabricate can only be initialized by the Fabric mod loader");
         }
         instance = this;
-    }
 
-    @RestrictedApi(explanation = "confabricate namespace is not open to others",
-            link = "", allowedOnPath = ".*/ca/stellardrift/confabricate/.*")
-    public static Identifier id(final String item) {
-        return new Identifier(MOD_ID, item);
-    }
-
-    @Override
-    public void onInitialize() {
         try {
             this.listener = WatchServiceListener.create();
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
@@ -87,12 +79,18 @@ public class Confabricate implements ModInitializer {
         } catch (final IOException e) {
             LOGGER.error("Could not initialize file listener", e);
         }
+    }
 
+    @RestrictedApi(explanation = "confabricate namespace is not open to others",
+            link = "", allowedOnPath = ".*/ca/stellardrift/confabricate/.*")
+    public static Identifier id(final String item) {
+        return new Identifier(MOD_ID, item);
+    }
+
+    @Override
+    public void onInitialize() {
         // initialize serializers early, fail fast
         MinecraftSerializers.collection();
-
-        // Commands for testing
-        // CommandRegistry.INSTANCE.register(false, TestCommands::register);
     }
 
     /**
@@ -215,6 +213,9 @@ public class Confabricate implements ModInitializer {
         if (ownDirectory) {
             configRoot = configRoot.resolve(mod.getMetadata().getId());
         }
+        try {
+            Files.createDirectories(configRoot);
+        } catch (IOException ignore) { } // we tried
         return configRoot.resolve(mod.getMetadata().getId() + ".conf");
     }
 
