@@ -26,6 +26,15 @@ description = ext["longDescription"] as String
     refmapName = "${rootProject.name.toLowerCase()}-refmap.json"
 }*/
 
+sourceSets.register("testmod") {
+    compileClasspath += sourceSets.main.get().compileClasspath
+    runtimeClasspath += sourceSets.main.get().runtimeClasspath
+}
+
+dependencies {
+    "testmodCompile"(sourceSets.main.get().output)
+}
+
 license {
     header = rootProject.file("LICENSE_HEADER")
 }
@@ -48,6 +57,10 @@ tasks.withType(Jar::class).configureEach {
 }
 
 tasks.processResources {
+    expand("project" to project)
+}
+
+tasks.named("processTestmodResources", ProcessResources::class).configure {
     expand("project" to project)
 }
 
@@ -88,10 +101,7 @@ dependencies {
 
     include("com.typesafe:config:1.4.0")
     apiInclude(configurate("gson", versionConfigurate)) { isTransitive = false }
-    // For test commands
-    // listOf("commands-v0", "api-base").forEach {
-    //     implementationInclude("net.fabricmc.fabric-api:fabric-$it:$versionFabricApi")
-    // }
+    //modRuntime("net.fabricmc.fabric-api:fabricapi:$versionFabricApi")
 }
 
 opinionated {

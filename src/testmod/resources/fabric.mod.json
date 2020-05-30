@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "id": "${project.rootProject.name.toLowerCase()}-testmod",
+  "version": "${project.version}",
+
+  "name": "${project.rootProject.name} Testing Mod",
+  "description": "Test mod for ${project.ext.longDescription}",
+  "authors": [
+    "zml"
+  ],
+
+  "license": "Apache v2.0",
+
+  "entrypoints": {
+    "main": [
+      {
+        "value": "ca.stellardrift.confabricate.test.ConfabricateTester"
+      }
+    ]
+  },
+    "mixins": [
+        "confabricate-testmod.mixins.json"
+    ],
+  "depends": {
+    "fabricloader": ">=0.4.0",
+    "confabricate": "*"
+  },
+  "suggests": {
+  }
+}
