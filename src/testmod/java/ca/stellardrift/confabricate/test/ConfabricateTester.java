@@ -16,16 +16,21 @@
 
 package ca.stellardrift.confabricate.test;
 
+import static ninja.leaping.configurate.transformation.ConfigurationTransformation.WILDCARD_OBJECT;
+
 import ca.stellardrift.confabricate.Confabricate;
+import ca.stellardrift.confabricate.DataFixerTransformation;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v1.CommandRegistrationCallback;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.ModContainer;
+import net.minecraft.datafixer.TypeReferences;
 import net.minecraft.enchantment.Enchantments;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
+import ninja.leaping.configurate.ConfigurationNode;
 import ninja.leaping.configurate.commented.CommentedConfigurationNode;
 import ninja.leaping.configurate.objectmapping.ObjectMappingException;
 import ninja.leaping.configurate.objectmapping.Setting;
@@ -80,6 +85,20 @@ public class ConfabricateTester implements ModInitializer {
         // Load config
         try {
             this.configFile = Confabricate.createConfigurationFor(container);
+            // Handle updating with game changes
+            final ConfigurationNode node = this.configFile.getNode();
+            final DataFixerTransformation xform = DataFixerTransformation.minecraftDfuBuilder()
+                    .type(TypeReferences.ITEM_STACK, "items", WILDCARD_OBJECT) // every child of "items" should be upgraded as an ItemStack
+                    .build();
+
+            final boolean wasEmpty = node.isEmpty();
+            final int oldVersion = xform.getVersion(node);
+            xform.apply(node);
+            final int newVersion = xform.getVersion(node);
+            if (newVersion > oldVersion && !wasEmpty) {
+                LOGGER.info("Updated configuration from version {} to {}", oldVersion, newVersion);
+            }
+
             this.config = this.configFile.referenceTo(TestmodConfig.class);
             this.configFile.save();
         } catch (IOException | ObjectMappingException e) {
