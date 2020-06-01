@@ -1,13 +1,12 @@
-import ca.stellardrift.build.apiInclude
-import ca.stellardrift.build.configurate
-import ca.stellardrift.build.sponge
+
+import ca.stellardrift.build.common.configurate
+import ca.stellardrift.build.common.pex
+import ca.stellardrift.build.common.sponge
 
 plugins {
-    id("fabric-loom") version "0.2.7-SNAPSHOT"
     id("net.ltgt.errorprone") version "1.1.1"
-    id("ca.stellardrift.opinionated") version "2.0.1"
-    id("ca.stellardrift.opinionated.publish") version "2.0.1"
-    checkstyle
+    id("ca.stellardrift.opinionated.fabric") version "3.0"
+    id("ca.stellardrift.opinionated.publish") version "3.0"
 }
 
 val versionBase = "1.2-SNAPSHOT"
@@ -22,28 +21,9 @@ group = "ca.stellardrift"
 version = "$versionBase+${versionConfigurate.replace("-SNAPSHOT", "")}"
 description = ext["longDescription"] as String
 
-/*minecraft {
-    refmapName = "${rootProject.name.toLowerCase()}-refmap.json"
-}*/
-
-sourceSets.register("testmod") {
-    compileClasspath += sourceSets.main.get().compileClasspath
-    runtimeClasspath += sourceSets.main.get().runtimeClasspath
-}
-
-dependencies {
-    "testmodCompile"(sourceSets.main.get().output)
-}
-
-license {
-    header = rootProject.file("LICENSE_HEADER")
-}
-
 repositories {
     jcenter()
-    maven(url="https://repo.glaremasters.me/repository/permissionsex") {
-        name = "pex"
-    }
+    pex()
     sponge()
 }
 
@@ -56,29 +36,17 @@ tasks.withType(Jar::class).configureEach {
     }
 }
 
-tasks.processResources {
-    expand("project" to project)
-}
-
-tasks.named("processTestmodResources", ProcessResources::class).configure {
-    expand("project" to project)
-}
-
-checkstyle {
-    toolVersion = "8.32"
-    configDirectory.set(project.projectDir.resolve("etc/checkstyle"))
-    configProperties = mapOf(
-            "severity" to "error"
-    )
+tasks.withType(ProcessResources::class.java).configureEach {
+    filesMatching("fabric.mod.json") {
+        expand("project" to project)
+    }
 }
 
 tasks.withType(Javadoc::class).configureEach {
     val options = this.options
     if (options is StandardJavadocDocletOptions) {
         options.links(
-                "https://configurate.aoeu.xyz/$versionConfigurate/apidocs/",
-                "https://maven.fabricmc.net/docs/yarn-$versionMinecraft+build.$versionMappings/",
-                "https://docs.oracle.com/javase/8/docs/api/"
+                "https://configurate.aoeu.xyz/$versionConfigurate/apidocs/"
         )
     }
 }
@@ -92,16 +60,16 @@ dependencies {
     modImplementation("net.fabricmc.fabric-api:fabric-api:$versionFabricApi")
 
     api(enforcedPlatform(configurate("bom", versionConfigurate)))
-    apiInclude(configurate("core", versionConfigurate)) {
+    api(include(configurate("core", versionConfigurate)) {
         exclude("com.google.guava")
-    }
-    apiInclude(configurate("hocon", versionConfigurate)) {
+    })
+    api(include(configurate("hocon", versionConfigurate)) {
         exclude("com.google.guava")
-    }
+    })
 
     include("com.typesafe:config:1.4.0")
-    apiInclude(configurate("gson", versionConfigurate)) { isTransitive = false }
-    //modRuntime("net.fabricmc.fabric-api:fabricapi:$versionFabricApi")
+    api(include(configurate("gson", versionConfigurate)) { isTransitive = false })
+    // modRuntime("net.fabricmc.fabric-api:fabricapi:$versionFabricApi")
 }
 
 opinionated {
@@ -129,19 +97,6 @@ opinionated {
             }
         }
     }
-}
 
-publishing {
-    repositories {
-        if (project.hasProperty("pexUsername") && project.hasProperty("pexPassword")) {
-            maven {
-                name = "pex"
-                url = uri("https://repo.glaremasters.me/repository/permissionsex")
-                credentials {
-                    username = project.property("pexUsername").toString()
-                    password = project.property("pexPassword").toString()
-                }
-            }
-        }
-    }
+    publishTo("pex", "https://repo.glaremasters.me/repository/permissionsex")
 }
