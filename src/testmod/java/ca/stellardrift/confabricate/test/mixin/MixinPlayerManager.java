@@ -36,7 +36,7 @@ public final class MixinPlayerManager {
     private void handlePlayerJoin(final ClientConnection connection, final ServerPlayerEntity entity, final CallbackInfo ci) {
         final Text joinMessage = ConfabricateTester.instance().getConfiguration().getMessage();
         if (joinMessage != null) { // our own MOTD
-            entity.sendSystemMessage(joinMessage, Util.field_25140);
+            entity.sendSystemMessage(joinMessage, Util.NIL_UUID);
         }
     }
 

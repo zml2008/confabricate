@@ -3,8 +3,7 @@
     "package": "ca.stellardrift.confabricate.test.mixin",
     "compatibilityLevel": "JAVA_8",
     "mixins": [
-        "MixinPlayerManager",
-        "MixinMinecraftClient"
+        "MixinPlayerManager"
     ],
     "injectors": {
         "defaultRequire": 1
