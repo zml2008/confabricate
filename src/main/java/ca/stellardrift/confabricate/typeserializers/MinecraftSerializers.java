@@ -24,6 +24,7 @@ import com.google.common.reflect.TypeParameter;
 import com.google.common.reflect.TypeToken;
 import com.google.errorprone.annotations.concurrent.LazyInit;
 import com.mojang.serialization.Codec;
+import com.mojang.serialization.Lifecycle;
 import net.minecraft.block.Block;
 import net.minecraft.entity.EntityType;
 import net.minecraft.fluid.Fluid;
@@ -40,6 +41,7 @@ import ninja.leaping.configurate.objectmapping.serialize.TypeSerializer;
 import ninja.leaping.configurate.objectmapping.serialize.TypeSerializerCollection;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -86,13 +88,25 @@ public final class MinecraftSerializers {
         return new CodecSerializer<>(codec);
     }
 
-    public static <V, S extends V> Codec<S> forSerializer(final TypeToken<S> type) {
+    public static <V, S extends V> @Nullable Codec<S> forSerializer(final TypeToken<S> type) {
         return forSerializer(type, collection());
     }
 
-    public static <V> Codec<V> forSerializer(final TypeToken<V> type, final TypeSerializerCollection collection) {
+    /**
+     * Create a new codec based on a Configurate {@link TypeSerializer}.
+     *
+     * @param type type to serialize
+     * @param collection source for values
+     * @param <V> value type
+     * @return a codec, or null if an appropriate {@link TypeSerializer}
+     *      could not be found for the TypeToken.
+     */
+    public static <V> @Nullable Codec<V> forSerializer(final TypeToken<V> type, final TypeSerializerCollection collection) {
         final TypeSerializer<V> serial = collection.get(type);
-        return new TypeSerializerCodec<>(type, serial, ConfigurateOps.getForSerializers(collection));
+        if (serial == null) {
+            return null;
+        }
+        return new TypeSerializerCodec<>(type, serial, ConfigurateOps.getForSerializers(collection)).withLifecycle(Lifecycle.stable());
     }
 
     /**
