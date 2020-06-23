@@ -9,6 +9,7 @@ A mod that provides Configurate's core, gson and hocon serializers, and useful u
 - `Identifier`s
 - Any item stored in a `Registry`
 - `Text` (as json)
+- `ItemStack`s
 - Mixed lists of items and tags (represented by `TaggableCollection`s), currently for blocks, items, entity types, and fluids
 
 ### NBTNodeAdapter
@@ -19,8 +20,9 @@ Translates back and forth between Configurate nodes and Minecraft's own NBT `Tag
 
 Thanks to @i509VCB for providing an initial implementation of DynamicOps
 
-- DynamicOps implementation for ConfigurationNodes
+- DynamicOps implementation for ConfigurationNodes in `ConfigurateOps`
 - Basic integration between ConfigurationTransformations and DataFixers
+- Support for accessing `Codec`s as `TypeSerializer`s (and vice versa!)
 
 ### Configuration per-mod
 
@@ -34,9 +36,9 @@ Confabricate versions are in the format `<confabricate version>+<configurate ver
 **Version compatibility**
 
 Minecraft | Confabricate
-------------- | ------------------
-1.15         | 1.1+3.7
-1.16 (snapshots) | 1.2-SNAPSHOT+3.7
+--------- | ------------------
+1.15      | 1.1+3.7
+1.16      | 1.2+3.7
 
 It is recommended to use this project in jar-in-jar packaging
 
@@ -55,8 +57,8 @@ repositories {
 }
 
 dependencies {
-    include("ca.stellardrift:confabricate:1.0+3.6.1")
-    modImplementation("ca.stellardrift:confabricate:1.0+3.6.1")
+    include("ca.stellardrift:confabricate:1.2+3.7")
+    modImplementation("ca.stellardrift:confabricate:1.2+3.7")
 }
 ```
 
