@@ -5,8 +5,8 @@ import ca.stellardrift.build.common.sponge
 
 plugins {
     id("net.ltgt.errorprone") version "1.1.1"
-    id("ca.stellardrift.opinionated.fabric") version "3.0"
-    id("ca.stellardrift.opinionated.publish") version "3.0"
+    id("ca.stellardrift.opinionated.fabric") version "3.1"
+    id("ca.stellardrift.opinionated.publish") version "3.1"
 }
 
 val versionBase = "1.2-SNAPSHOT"
@@ -78,16 +78,6 @@ opinionated {
     useJUnit5()
 
     publication?.apply {
-        artifact(tasks.jar.get()) {
-            classifier = "dev"
-        }
-        artifact(tasks.remapJar.get())
-
-        artifact(tasks.getByName("sourcesJar")) {
-            builtBy(tasks.remapSourcesJar.get())
-        }
-        artifact(tasks.getByName("javadocJar"))
-
         pom {
             developers {
                 developer {
