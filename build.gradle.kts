@@ -78,7 +78,7 @@ opinionated {
     useJUnit5()
 
     publication?.apply {
-        //from(components["java"])
+        // from(components["java"])
         pom {
             developers {
                 developer {
