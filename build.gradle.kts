@@ -59,16 +59,16 @@ dependencies {
     modImplementation("net.fabricmc:fabric-loader:$versionLoader")
     modImplementation("net.fabricmc.fabric-api:fabric-api:$versionFabricApi")
 
-    api(enforcedPlatform(configurate("bom", versionConfigurate)))
-    api(include(configurate("core", versionConfigurate)) {
+    modApi(enforcedPlatform(configurate("bom", versionConfigurate)))
+    include(modApi(configurate("core", versionConfigurate)) {
         exclude("com.google.guava")
     })
-    api(include(configurate("hocon", versionConfigurate)) {
+    include(modApi(configurate("hocon", versionConfigurate)) {
         exclude("com.google.guava")
     })
 
     include("com.typesafe:config:1.4.0")
-    api(include(configurate("gson", versionConfigurate)) { isTransitive = false })
+    include(modApi(configurate("gson", versionConfigurate)) { isTransitive = false })
     // modRuntime("net.fabricmc.fabric-api:fabricapi:$versionFabricApi")
 }
 
@@ -78,6 +78,7 @@ opinionated {
     useJUnit5()
 
     publication?.apply {
+        //from(components["java"])
         pom {
             developers {
                 developer {
