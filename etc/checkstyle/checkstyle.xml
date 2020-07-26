@@ -99,7 +99,7 @@
         </module>
 
         <module name="IllegalType">
-            <property name="illegalClassNames" value="java.util.Optional"/>
+            <property name="illegalClassNames" value="java.org.spongepowered.configurate.util.Optional"/>
         </module>
 
         <!-- Standard Google style checks -->

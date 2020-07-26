@@ -20,7 +20,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.google.common.collect.ImmutableSet;
 import net.minecraft.tag.Tag;
-import net.minecraft.tag.TagContainer;
+import net.minecraft.tag.TagGroup;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.registry.Registry;
 
@@ -30,12 +30,12 @@ import java.util.Set;
 class TaggableCollectionImpl<T> implements TaggableCollection<T> {
 
     private final Registry<T> registry;
-    private final TagContainer<T> tags;
+    private final TagGroup<T> tags;
 
     private final Set<T> elements;
     private final Set<Tag<T>> tagElements;
 
-    TaggableCollectionImpl(final Registry<T> registry, final TagContainer<T> tags, final Set<T> elements, final Set<Tag<T>> tagElements) {
+    TaggableCollectionImpl(final Registry<T> registry, final TagGroup<T> tags, final Set<T> elements, final Set<Tag<T>> tagElements) {
         this.registry = requireNonNull(registry, "registry");
         this.tags = requireNonNull(tags, "tags");
         this.elements = ImmutableSet.copyOf(elements);
@@ -48,7 +48,7 @@ class TaggableCollectionImpl<T> implements TaggableCollection<T> {
     }
 
     @Override
-    public TagContainer<T> getTagContainer() {
+    public TagGroup<T> getTagContainer() {
         return this.tags;
     }
 
@@ -73,7 +73,7 @@ class TaggableCollectionImpl<T> implements TaggableCollection<T> {
 
     @Override
     public TaggableCollection<T> addingTag(final Identifier tag) {
-        final Tag<T> element = requireNonNull(this.tags.get(tag), "no such member of registry!");
+        final Tag<T> element = requireNonNull(this.tags.getTag(tag), "no such member of registry!");
         if (!this.tagElements.contains(element)) {
             return newCollection(null, ImmutableSet.<Tag<T>>builder().addAll(this.tagElements).add(element).build());
         }
@@ -98,7 +98,7 @@ class TaggableCollectionImpl<T> implements TaggableCollection<T> {
         final ImmutableSet.Builder<Tag<T>> newBuild = ImmutableSet.builder();
         boolean changed = false;
         for (Tag<T> element : this.tagElements) {
-            if (!tag.equals(this.tags.getId(element))) {
+            if (!tag.equals(this.tags.getTagId(element))) {
                 newBuild.add(element);
                 changed = true;
             }

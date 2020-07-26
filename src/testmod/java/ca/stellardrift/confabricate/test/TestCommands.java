@@ -30,8 +30,8 @@ import com.mojang.brigadier.context.CommandContext;
 import net.minecraft.block.Block;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.command.CommandException;
-import net.minecraft.command.arguments.BlockPosArgumentType;
-import net.minecraft.command.arguments.EntityArgumentType;
+import net.minecraft.command.argument.BlockPosArgumentType;
+import net.minecraft.command.argument.EntityArgumentType;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.item.ItemStack;
@@ -171,7 +171,7 @@ final class TestCommands {
                         ctx.getSource().sendFeedback(roundtripped, false);
 
                         ctx.getSource().sendFeedback(new LiteralText("Successfully dumped data from player ")
-                                .append(entity.getNameAndUuid().copy().styled(s -> s.withColor(Formatting.AQUA))), false);
+                                .append(entity.getDisplayName().copy().styled(s -> s.withColor(Formatting.AQUA))), false);
                     } catch (final Throwable t) {
                         ConfabricateTester.LOGGER.error("Unable to write", t);
                     }

@@ -35,7 +35,7 @@ import net.minecraft.tag.BlockTags;
 import net.minecraft.tag.EntityTypeTags;
 import net.minecraft.tag.FluidTags;
 import net.minecraft.tag.ItemTags;
-import net.minecraft.tag.TagContainer;
+import net.minecraft.tag.TagGroup;
 import net.minecraft.util.registry.Registry;
 import ninja.leaping.configurate.objectmapping.serialize.TypeSerializer;
 import ninja.leaping.configurate.objectmapping.serialize.TypeSerializerCollection;
@@ -189,10 +189,10 @@ public final class MinecraftSerializers {
         collection.register(TypeToken.of(CompoundTag.class), forCodec(CompoundTag.field_25128));
 
         // All registries here should be in SPECIAL_REGISTRIES
-        populateTaggedRegistry(collection, TypeToken.of(Fluid.class), Registry.FLUID, FluidTags.getContainer());
-        populateTaggedRegistry(collection, TypeToken.of(Block.class), Registry.BLOCK, BlockTags.getContainer());
-        populateTaggedRegistry(collection, new TypeToken<EntityType<?>>() {}, Registry.ENTITY_TYPE, EntityTypeTags.getContainer());
-        populateTaggedRegistry(collection, TypeToken.of(Item.class), Registry.ITEM, ItemTags.getContainer());
+        populateTaggedRegistry(collection, TypeToken.of(Fluid.class), Registry.FLUID, FluidTags.getTagGroup());
+        populateTaggedRegistry(collection, TypeToken.of(Block.class), Registry.BLOCK, BlockTags.getTagGroup());
+        populateTaggedRegistry(collection, new TypeToken<EntityType<?>>() {}, Registry.ENTITY_TYPE, EntityTypeTags.getTagGroup());
+        populateTaggedRegistry(collection, TypeToken.of(Item.class), Registry.ITEM, ItemTags.getTagGroup());
 
         return collection;
     }
@@ -253,7 +253,7 @@ public final class MinecraftSerializers {
      * @param <T> element type
      */
     private static <T> void populateTaggedRegistry(final TypeSerializerCollection collection, final TypeToken<T> token, final Registry<T> registry,
-            final TagContainer<T> tagRegistry) {
+            final TagGroup<T> tagRegistry) {
         final TypeParameter<T> tParam = new TypeParameter<T>() {};
         final TypeToken<TaggableCollection<T>> taggableType = new TypeToken<TaggableCollection<T>>() {}.where(tParam, token);
 

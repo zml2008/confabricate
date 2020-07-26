@@ -22,7 +22,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.reflect.TypeToken;
 import net.minecraft.tag.Tag;
-import net.minecraft.tag.TagContainer;
+import net.minecraft.tag.TagGroup;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.registry.Registry;
 import ninja.leaping.configurate.ConfigurationNode;
@@ -35,9 +35,9 @@ public class TaggableCollectionSerializer<T> implements TypeSerializer<TaggableC
 
     private static final String TAG_PREFIX = "#";
     private final Registry<T> registry;
-    private final TagContainer<T> tagRegistry;
+    private final TagGroup<T> tagRegistry;
 
-    public TaggableCollectionSerializer(final Registry<T> registry, final TagContainer<T> tagRegistry) {
+    public TaggableCollectionSerializer(final Registry<T> registry, final TagGroup<T> tagRegistry) {
         this.registry = registry;
         this.tagRegistry = tagRegistry;
     }
@@ -73,7 +73,7 @@ public class TaggableCollectionSerializer<T> implements TypeSerializer<TaggableC
         final Identifier id = createIdentifier(ident);
 
         if (isTag) {
-            final Tag<T> tag = this.tagRegistry.get(id);
+            final Tag<T> tag = this.tagRegistry.getTag(id);
             if (tag == null) {
                 throw new ObjectMappingException("Unknown tag #" + id);
             }
@@ -102,7 +102,7 @@ public class TaggableCollectionSerializer<T> implements TypeSerializer<TaggableC
             }
 
             for (Tag<T> tag : obj.getTaggedElements()) {
-                value.appendListNode().setValue(TAG_PREFIX + this.tagRegistry.getId(tag));
+                value.appendListNode().setValue(TAG_PREFIX + this.tagRegistry.getTagId(tag));
             }
         }
     }

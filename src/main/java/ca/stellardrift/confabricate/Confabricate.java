@@ -209,7 +209,7 @@ public class Confabricate implements ModInitializer {
      * @return path to a configuration file
      */
     public static Path getConfigurationFile(final ModContainer mod, final boolean ownDirectory) {
-        Path configRoot = FabricLoader.getInstance().getConfigDirectory().toPath();
+        Path configRoot = FabricLoader.getInstance().getConfigDir();
         if (ownDirectory) {
             configRoot = configRoot.resolve(mod.getMetadata().getId());
         }
