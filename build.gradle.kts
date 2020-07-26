@@ -1,7 +1,5 @@
 
 import ca.stellardrift.build.common.configurate
-import ca.stellardrift.build.common.pex
-import ca.stellardrift.build.common.sponge
 
 plugins {
     id("net.ltgt.errorprone") version "1.1.1"
@@ -9,7 +7,7 @@ plugins {
     id("ca.stellardrift.opinionated.publish") version "3.1"
 }
 
-val versionBase = "1.3-SNAPSHOT"
+val versionBase = "1.2.1-SNAPSHOT"
 val versionMinecraft: String by project
 val versionMappings: String by project
 val versionLoader: String by project
@@ -23,8 +21,6 @@ description = ext["longDescription"] as String
 
 repositories {
     jcenter()
-    pex()
-    sponge()
 }
 
 tasks.withType(Jar::class).configureEach {
