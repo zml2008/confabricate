@@ -42,15 +42,13 @@ Minecraft | Confabricate
 
 It is recommended to use this project in jar-in-jar packaging
 
-Releases of Confabricate are on jCenter, and Configurate is on the Sponge repository, so we need to declare both at the moment. Snapshots are published on the PermissionsEx repository.
+Releases of Confabricate are on jCenter, and Configurate is on Maven Central which is mirrored to jCenter. Snapshots of Confabricate and Configurate are published on the PEX repo and Sonatype OSS respectively.
 
 ```kotlin
 
 repositories {
     jcenter()
-    maven(url = "https://repo.spongepowered.org/maven") {
-        name = "sponge"
-    }
+    // Snapshots only
     maven(url= "https://repo.glaremasters.me/repository/permissionsex") {
         name = "pex"
     }
