@@ -1,7 +1,5 @@
 
 import ca.stellardrift.build.common.configurate
-import ca.stellardrift.build.common.pex
-import ca.stellardrift.build.common.sponge
 
 plugins {
     id("net.ltgt.errorprone") version "1.1.1"
@@ -23,8 +21,6 @@ description = ext["longDescription"] as String
 
 repositories {
     jcenter()
-    pex()
-    sponge()
 }
 
 tasks.withType(Jar::class).configureEach {
@@ -69,7 +65,6 @@ dependencies {
 
     include("com.typesafe:config:1.4.0")
     include(modApi(configurate("gson", versionConfigurate)) { isTransitive = false })
-    // modRuntime("net.fabricmc.fabric-api:fabricapi:$versionFabricApi")
 }
 
 opinionated {
@@ -78,7 +73,6 @@ opinionated {
     useJUnit5()
 
     publication?.apply {
-        // from(components["java"])
         pom {
             developers {
                 developer {
