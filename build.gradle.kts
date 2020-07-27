@@ -48,7 +48,7 @@ tasks.withType(Javadoc::class).configureEach {
 }
 
 dependencies {
-    api("com.google.errorprone:error_prone_annotations:$versionErrorprone")
+    compileOnly("com.google.errorprone:error_prone_annotations:$versionErrorprone")
     errorprone("com.google.errorprone:error_prone_core:$versionErrorprone")
     minecraft("com.mojang:minecraft:$versionMinecraft")
     mappings("net.fabricmc:yarn:$versionMinecraft+build.$versionMappings:v2")
@@ -74,7 +74,6 @@ opinionated {
     useJUnit5()
 
     publication?.apply {
-        // from(components["java"])
         pom {
             developers {
                 developer {
@@ -87,3 +86,4 @@ opinionated {
 
     publishTo("pex", "https://repo.glaremasters.me/repository/permissionsex")
 }
+
