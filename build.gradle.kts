@@ -86,4 +86,3 @@ opinionated {
 
     publishTo("pex", "https://repo.glaremasters.me/repository/permissionsex")
 }
-
