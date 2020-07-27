@@ -42,23 +42,23 @@ Minecraft | Confabricate
 
 It is recommended to use this project in jar-in-jar packaging
 
-Releases of Confabricate are on jCenter, and Configurate is on the Sponge repository, so we need to declare both at the moment. Snapshots are published on the PermissionsEx repository.
+Releases of Confabricate are on jCenter, as are releases of Configurate. Snapshots of Confabricate and Configurate are published on the PermissionsEx repository and Sonatype OSS respectively.
 
 ```kotlin
 
 repositories {
     jcenter()
-    maven(url = "https://repo.spongepowered.org/maven") {
-        name = "sponge"
+    // Snapshots only
+    maven(url = "https://oss.sonatype.org/content/repositories/snapshots/") {
+        name = "sonatype"
     }
-    maven(url= "https://repo.glaremasters.me/repository/permissionsex") {
+    maven(url = "https://repo.glaremasters.me/repository/permissionsex") {
         name = "pex"
     }
 }
 
 dependencies {
-    include("ca.stellardrift:confabricate:1.2+3.7")
-    modImplementation("ca.stellardrift:confabricate:1.2+3.7")
+    modImplementation(include("ca.stellardrift:confabricate:1.2+3.7")!!)
 }
 ```
 
