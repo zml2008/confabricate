@@ -26,16 +26,18 @@ import net.minecraft.util.registry.Registry;
 
 import java.util.Iterator;
 import java.util.Set;
+import java.util.function.Supplier;
 
+@Deprecated
 class TaggableCollectionImpl<T> implements TaggableCollection<T> {
 
     private final Registry<T> registry;
-    private final TagGroup<T> tags;
+    private final Supplier<TagGroup<T>> tags;
 
     private final Set<T> elements;
     private final Set<Tag<T>> tagElements;
 
-    TaggableCollectionImpl(final Registry<T> registry, final TagGroup<T> tags, final Set<T> elements, final Set<Tag<T>> tagElements) {
+    TaggableCollectionImpl(final Registry<T> registry, final Supplier<TagGroup<T>> tags, final Set<T> elements, final Set<Tag<T>> tagElements) {
         this.registry = requireNonNull(registry, "registry");
         this.tags = requireNonNull(tags, "tags");
         this.elements = ImmutableSet.copyOf(elements);
@@ -49,7 +51,7 @@ class TaggableCollectionImpl<T> implements TaggableCollection<T> {
 
     @Override
     public TagGroup<T> getTagContainer() {
-        return this.tags;
+        return this.tags.get();
     }
 
     @Override
@@ -73,7 +75,7 @@ class TaggableCollectionImpl<T> implements TaggableCollection<T> {
 
     @Override
     public TaggableCollection<T> addingTag(final Identifier tag) {
-        final Tag<T> element = requireNonNull(this.tags.getTag(tag), "no such member of registry!");
+        final Tag<T> element = requireNonNull(this.tags.get().getTag(tag), "no such member of registry!");
         if (!this.tagElements.contains(element)) {
             return newCollection(null, ImmutableSet.<Tag<T>>builder().addAll(this.tagElements).add(element).build());
         }
@@ -98,12 +100,27 @@ class TaggableCollectionImpl<T> implements TaggableCollection<T> {
         final ImmutableSet.Builder<Tag<T>> newBuild = ImmutableSet.builder();
         boolean changed = false;
         for (Tag<T> element : this.tagElements) {
-            if (!tag.equals(this.tags.getTagId(element))) {
+            if (!tag.equals(this.tags.get().getTagId(element))) {
                 newBuild.add(element);
                 changed = true;
             }
         }
         return changed ? newCollection(null, newBuild.build()) : this;
+    }
+
+    @Override
+    public boolean contains(final T item) {
+        if (this.elements.contains(item)) {
+            return true;
+        }
+
+        for (final Tag<T> element : this.tagElements) {
+            if (element.contains(item)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private TaggableCollectionImpl<T> newCollection(final Set<T> elements, final Set<Tag<T>> tagElements) {

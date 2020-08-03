@@ -25,18 +25,24 @@ import com.google.common.reflect.TypeToken;
 import com.google.errorprone.annotations.concurrent.LazyInit;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.Lifecycle;
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
 import net.minecraft.block.Block;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.entity.EntityType;
 import net.minecraft.fluid.Fluid;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.tag.BlockTags;
 import net.minecraft.tag.EntityTypeTags;
 import net.minecraft.tag.FluidTags;
 import net.minecraft.tag.ItemTags;
+import net.minecraft.tag.Tag;
 import net.minecraft.tag.TagGroup;
 import net.minecraft.util.registry.Registry;
+import net.minecraft.world.dimension.DimensionType;
 import ninja.leaping.configurate.objectmapping.serialize.TypeSerializer;
 import ninja.leaping.configurate.objectmapping.serialize.TypeSerializerCollection;
 import org.apache.logging.log4j.LogManager;
@@ -49,6 +55,7 @@ import java.lang.reflect.Type;
 import java.util.AbstractMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
 
 /**
  * Access serializers for Minecraft types.
@@ -189,11 +196,23 @@ public final class MinecraftSerializers {
         collection.register(TypeToken.of(CompoundTag.class), forCodec(CompoundTag.field_25128));
 
         // All registries here should be in SPECIAL_REGISTRIES
-        populateTaggedRegistry(collection, TypeToken.of(Fluid.class), Registry.FLUID, FluidTags.getTagGroup());
-        populateTaggedRegistry(collection, TypeToken.of(Block.class), Registry.BLOCK, BlockTags.getTagGroup());
-        populateTaggedRegistry(collection, new TypeToken<EntityType<?>>() {}, Registry.ENTITY_TYPE, EntityTypeTags.getTagGroup());
-        populateTaggedRegistry(collection, TypeToken.of(Item.class), Registry.ITEM, ItemTags.getTagGroup());
+        populateTaggedRegistry(collection, TypeToken.of(Fluid.class), Registry.FLUID, FluidTags::getTagGroup);
+        populateTaggedRegistry(collection, TypeToken.of(Block.class), Registry.BLOCK, BlockTags::getTagGroup);
+        populateTaggedRegistry(collection, new TypeToken<EntityType<?>>() {}, Registry.ENTITY_TYPE, EntityTypeTags::getTagGroup);
+        populateTaggedRegistry(collection, TypeToken.of(Item.class), Registry.ITEM, ItemTags::getTagGroup);
 
+        return collection;
+    }
+
+    // Type serializers that use the server resource manager
+    public static TypeSerializerCollection populateServer(final MinecraftServer server, final TypeSerializerCollection collection) {
+        registerRegistry(collection, TypeToken.of(DimensionType.class), forRegistry(server.getRegistryManager().getDimensionTypes()));
+        return collection;
+    }
+
+    // Type serializers that source registry + tag information from the client
+    @Environment(EnvType.CLIENT)
+    public static TypeSerializerCollection populateClient(final MinecraftClient client, final TypeSerializerCollection collection) {
         return collection;
     }
 
@@ -252,13 +271,18 @@ public final class MinecraftSerializers {
      * @param tagRegistry Tag container for values in the registry
      * @param <T> element type
      */
+    @SuppressWarnings("deprecation")
     private static <T> void populateTaggedRegistry(final TypeSerializerCollection collection, final TypeToken<T> token, final Registry<T> registry,
-            final TagGroup<T> tagRegistry) {
+            final Supplier<TagGroup<T>> tagRegistry) {
         final TypeParameter<T> tParam = new TypeParameter<T>() {};
         final TypeToken<TaggableCollection<T>> taggableType = new TypeToken<TaggableCollection<T>>() {}.where(tParam, token);
+        final TypeToken<Tag<T>> tagType = new TypeToken<Tag<T>>() {}.where(tParam, token);
 
-        collection.register(taggableType, new TaggableCollectionSerializer<>(registry, tagRegistry));
+
+        collection.register(tagType, new TagSerializer<>(registry, tagRegistry));
         collection.register(token, new RegistrySerializer<>(registry));
+        // deprecated
+        collection.register(taggableType, new TaggableCollectionSerializer<>(registry, tagRegistry));
     }
 
 }
