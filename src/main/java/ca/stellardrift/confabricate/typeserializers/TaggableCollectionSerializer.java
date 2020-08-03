@@ -31,13 +31,16 @@ import ninja.leaping.configurate.objectmapping.serialize.TypeSerializer;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import java.util.function.Supplier;
+
+@Deprecated
 public class TaggableCollectionSerializer<T> implements TypeSerializer<TaggableCollection<T>> {
 
     private static final String TAG_PREFIX = "#";
     private final Registry<T> registry;
-    private final TagGroup<T> tagRegistry;
+    private final Supplier<TagGroup<T>> tagRegistry;
 
-    public TaggableCollectionSerializer(final Registry<T> registry, final TagGroup<T> tagRegistry) {
+    public TaggableCollectionSerializer(final Registry<T> registry, final Supplier<TagGroup<T>> tagRegistry) {
         this.registry = registry;
         this.tagRegistry = tagRegistry;
     }
@@ -73,7 +76,7 @@ public class TaggableCollectionSerializer<T> implements TypeSerializer<TaggableC
         final Identifier id = createIdentifier(ident);
 
         if (isTag) {
-            final Tag<T> tag = this.tagRegistry.getTag(id);
+            final Tag<T> tag = this.tagRegistry.get().getTag(id);
             if (tag == null) {
                 throw new ObjectMappingException("Unknown tag #" + id);
             }
@@ -102,7 +105,7 @@ public class TaggableCollectionSerializer<T> implements TypeSerializer<TaggableC
             }
 
             for (Tag<T> tag : obj.getTaggedElements()) {
-                value.appendListNode().setValue(TAG_PREFIX + this.tagRegistry.getTagId(tag));
+                value.appendListNode().setValue(TAG_PREFIX + this.tagRegistry.get().getTagId(tag));
             }
         }
     }

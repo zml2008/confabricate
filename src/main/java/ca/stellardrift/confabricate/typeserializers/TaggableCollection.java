@@ -39,26 +39,28 @@ import java.util.Set;
  *
  * @param <T> value type
  */
+@Deprecated
 public interface TaggableCollection<T> extends Iterable<T> {
 
     static TaggableCollection<Block> ofBlocks(Set<Block> blocks, Set<Tag<Block>> blockTags) {
-        return new TaggableCollectionImpl<>(Registry.BLOCK, BlockTags.getTagGroup(), blocks, blockTags);
+        return new TaggableCollectionImpl<>(Registry.BLOCK, BlockTags::getTagGroup, blocks, blockTags);
     }
 
     static TaggableCollection<EntityType<?>> ofEntityTypes(Set<EntityType<?>> single, Set<Tag<EntityType<?>>> tags) {
-        return new TaggableCollectionImpl<>(Registry.ENTITY_TYPE, EntityTypeTags.getTagGroup(), single, tags);
+        return new TaggableCollectionImpl<>(Registry.ENTITY_TYPE, EntityTypeTags::getTagGroup, single, tags);
     }
 
     static TaggableCollection<Fluid> ofFluids(Set<Fluid> single, Set<Tag<Fluid>> tags) {
-        return new TaggableCollectionImpl<>(Registry.FLUID, FluidTags.getTagGroup(), single, tags);
+        return new TaggableCollectionImpl<>(Registry.FLUID, FluidTags::getTagGroup, single, tags);
     }
 
     static TaggableCollection<Item> ofItems(Set<Item> single, Set<Tag<Item>> tags) {
-        return new TaggableCollectionImpl<>(Registry.ITEM, ItemTags.getTagGroup(), single, tags);
+        return new TaggableCollectionImpl<>(Registry.ITEM, ItemTags::getTagGroup, single, tags);
     }
 
+    @Deprecated
     static <T> TaggableCollection<T> of(Registry<T> registry, TagGroup<T> tagRegistry, Set<T> single, Set<Tag<T>> tags) {
-        return new TaggableCollectionImpl<>(registry, tagRegistry, single, tags);
+        return new TaggableCollectionImpl<>(registry, () -> tagRegistry, single, tags);
     }
 
     Registry<T> getContainingRegistry();
@@ -76,5 +78,7 @@ public interface TaggableCollection<T> extends Iterable<T> {
     TaggableCollection<T> removingSingle(Identifier ident);
 
     TaggableCollection<T> removingTag(Identifier tag);
+
+    boolean contains(T item);
 
 }

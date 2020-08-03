@@ -24,12 +24,9 @@ import net.minecraft.text.Style;
 import net.minecraft.text.Text;
 import ninja.leaping.configurate.ConfigurationNode;
 import ninja.leaping.configurate.objectmapping.ObjectMappingException;
-import ninja.leaping.configurate.objectmapping.serialize.ScalarSerializer;
 import ninja.leaping.configurate.objectmapping.serialize.TypeSerializer;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
-
-import java.util.function.Predicate;
 
 public final class TextSerializer implements TypeSerializer<Text> {
 

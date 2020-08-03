@@ -215,7 +215,9 @@ public class Confabricate implements ModInitializer {
         }
         try {
             Files.createDirectories(configRoot);
-        } catch (final IOException ignore) { } // we tried
+        } catch (final IOException ignore) {
+            // we tried
+        }
         return configRoot.resolve(mod.getMetadata().getId() + ".conf");
     }
 
