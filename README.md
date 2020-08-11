@@ -60,7 +60,7 @@ repositories {
 }
 
 dependencies {
-    modImplementation(include("ca.stellardrift:confabricate:1.2+3.7")!!)
+    modImplementation(include("ca.stellardrift:confabricate:1.3+3.7.1")!!)
 }
 ```
 

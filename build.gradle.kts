@@ -7,7 +7,7 @@ plugins {
     id("ca.stellardrift.opinionated.publish") version "3.1"
 }
 
-val versionBase = "1.3-SNAPSHOT"
+val versionBase = "1.3"
 val versionMinecraft: String by project
 val versionMappings: String by project
 val versionLoader: String by project
@@ -48,7 +48,7 @@ tasks.withType(Javadoc::class).configureEach {
 }
 
 dependencies {
-    api("com.google.errorprone:error_prone_annotations:$versionErrorprone")
+    compileOnly("com.google.errorprone:error_prone_annotations:$versionErrorprone")
     errorprone("com.google.errorprone:error_prone_core:$versionErrorprone")
     minecraft("com.mojang:minecraft:$versionMinecraft")
     mappings("net.fabricmc:yarn:$versionMinecraft+build.$versionMappings:v2")
