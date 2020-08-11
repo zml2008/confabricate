@@ -41,7 +41,7 @@ final class CodecSerializer<V> implements TypeSerializer<V> {
     private static final ConfigurateOps DEFAULT_OPS = ConfigurateOps.builder().readWriteProtection(ConfigurateOps.Protection.NONE).build();
 
     static DynamicOps<ConfigurationNode> opsFor(final ConfigurationNode node) {
-        if (node.getOptions().getSerializers().equals(MinecraftSerializers.collection())) {
+        if (MinecraftSerializers.isCommonCollection(node.getOptions().getSerializers())) {
             return DEFAULT_OPS;
         } else {
             return ConfigurateOps.builder()
