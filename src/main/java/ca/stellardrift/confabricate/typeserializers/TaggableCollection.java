@@ -16,13 +16,13 @@
 
 package ca.stellardrift.confabricate.typeserializers;
 
+import ca.stellardrift.confabricate.mixin.FluidTagsAccessor;
 import net.minecraft.block.Block;
 import net.minecraft.entity.EntityType;
 import net.minecraft.fluid.Fluid;
 import net.minecraft.item.Item;
 import net.minecraft.tag.BlockTags;
 import net.minecraft.tag.EntityTypeTags;
-import net.minecraft.tag.FluidTags;
 import net.minecraft.tag.ItemTags;
 import net.minecraft.tag.Tag;
 import net.minecraft.tag.TagGroup;
@@ -52,7 +52,7 @@ public interface TaggableCollection<T> extends Iterable<T> {
     }
 
     static TaggableCollection<Fluid> ofFluids(Set<Fluid> single, Set<Tag<Fluid>> tags) {
-        return new TaggableCollectionImpl<>(Registry.FLUID, FluidTags::getTagGroup, single, tags);
+        return new TaggableCollectionImpl<>(Registry.FLUID, FluidTagsAccessor.getRequiredTags()::getGroup, single, tags);
     }
 
     static TaggableCollection<Item> ofItems(Set<Item> single, Set<Tag<Item>> tags) {

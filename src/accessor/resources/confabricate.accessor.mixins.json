@@ -1,0 +1,12 @@
+{
+    "required": true,
+    "package": "ca.stellardrift.confabricate.mixin",
+    "compatibilityLevel": "JAVA_8",
+    "refmap": "confabricate-accessor-refmap.json",
+    "mixins": [
+        "FluidTagsAccessor"
+    ],
+    "injectors": {
+        "defaultRequire": 1
+    }
+}

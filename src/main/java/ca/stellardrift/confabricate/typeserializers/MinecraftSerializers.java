@@ -19,6 +19,7 @@ package ca.stellardrift.confabricate.typeserializers;
 import static java.util.Objects.requireNonNull;
 
 import ca.stellardrift.confabricate.ConfigurateOps;
+import ca.stellardrift.confabricate.mixin.FluidTagsAccessor;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.reflect.TypeParameter;
 import com.google.common.reflect.TypeToken;
@@ -37,7 +38,6 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.tag.BlockTags;
 import net.minecraft.tag.EntityTypeTags;
-import net.minecraft.tag.FluidTags;
 import net.minecraft.tag.ItemTags;
 import net.minecraft.tag.Tag;
 import net.minecraft.tag.TagGroup;
@@ -196,7 +196,7 @@ public final class MinecraftSerializers {
         collection.register(TypeToken.of(CompoundTag.class), forCodec(CompoundTag.field_25128));
 
         // All registries here should be in SPECIAL_REGISTRIES
-        populateTaggedRegistry(collection, TypeToken.of(Fluid.class), Registry.FLUID, FluidTags::getTagGroup);
+        populateTaggedRegistry(collection, TypeToken.of(Fluid.class), Registry.FLUID, FluidTagsAccessor.getRequiredTags()::getGroup);
         populateTaggedRegistry(collection, TypeToken.of(Block.class), Registry.BLOCK, BlockTags::getTagGroup);
         populateTaggedRegistry(collection, new TypeToken<EntityType<?>>() {}, Registry.ENTITY_TYPE, EntityTypeTags::getTagGroup);
         populateTaggedRegistry(collection, TypeToken.of(Item.class), Registry.ITEM, ItemTags::getTagGroup);

@@ -27,6 +27,9 @@ import net.fabricmc.fabric.api.event.player.AttackBlockCallback;
 import net.fabricmc.fabric.api.event.player.AttackEntityCallback;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.fabricmc.fabric.api.event.player.UseItemCallback;
+import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
+import net.fabricmc.fabric.api.resource.ResourceReloadListenerKeys;
+import net.fabricmc.fabric.api.resource.SimpleResourceReloadListener;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.ModContainer;
 import net.minecraft.block.Block;
@@ -37,6 +40,8 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.network.packet.s2c.play.ScreenHandlerSlotUpdateS2CPacket;
+import net.minecraft.resource.ResourceManager;
+import net.minecraft.resource.ResourceType;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.tag.Tag;
 import net.minecraft.text.LiteralText;
@@ -44,8 +49,10 @@ import net.minecraft.text.Text;
 import net.minecraft.text.TextColor;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.TypedActionResult;
 import net.minecraft.util.Util;
+import net.minecraft.util.profiler.Profiler;
 import ninja.leaping.configurate.ConfigurationNode;
 import ninja.leaping.configurate.commented.CommentedConfigurationNode;
 import ninja.leaping.configurate.objectmapping.ObjectMappingException;
@@ -59,7 +66,11 @@ import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 
 /**
  * A test mod that uses an auto-reloadable configuration.
@@ -112,6 +123,37 @@ public class ConfabricateTester implements ModInitializer {
             }
 
             this.config = this.configFile.referenceTo(TestmodConfig.class);
+            ResourceManagerHelper.get(ResourceType.SERVER_DATA).registerReloadListener(new SimpleResourceReloadListener<Void>() {
+                @Override
+                public Identifier getFabricId() {
+                    return new Identifier("confabricate-testmod", "config");
+                }
+
+                @Override
+                public CompletableFuture<Void> load(final ResourceManager manager, final Profiler profiler, final Executor executor) {
+                    final CompletableFuture<Void> ret = new CompletableFuture<>();
+                    executor.execute(() -> {
+                        try {
+                            ConfabricateTester.this.configFile.load();
+                            ret.complete(null);
+                        } catch (final IOException e) {
+                            ret.completeExceptionally(e);
+                        }
+                    });
+                    return ret;
+                }
+
+                @Override
+                public CompletableFuture<Void> apply(final Void data, final ResourceManager manager, final Profiler profiler,
+                        final Executor executor) {
+                    return CompletableFuture.completedFuture(data);
+                }
+
+                @Override
+                public Collection<Identifier> getFabricDependencies() {
+                    return Collections.singletonList(ResourceReloadListenerKeys.TAGS);
+                }
+            });
             this.configFile.save();
         } catch (IOException | ObjectMappingException e) {
             throw new RuntimeException("Unable to load configuration for " + container.getMetadata().getId(), e);
