@@ -1,5 +1,7 @@
 # Confabricate
 
+[![javadoc](https://javadoc.io/badge2/ca.stellardrift/confabricate/javadoc.svg)](https://javadoc.io/doc/ca.stellardrift/confabricate) | ![build status](https://img.shields.io/github/workflow/status/zml2008/confabricate/Publish) | [![CurseForge page](http://cf.way2muchnoise.eu/versions/confabricate.svg)](https://www.curseforge.com/minecraft/mc-mods/confabricate)
+
 A mod that provides Configurate's core, gson and hocon serializers, and useful utilities for a Fabric environment.
 
 ## Fabric-specific features
