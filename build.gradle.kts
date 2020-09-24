@@ -7,7 +7,7 @@ plugins {
     id("ca.stellardrift.opinionated.publish") version "3.1"
 }
 
-val versionBase = "1.3"
+val versionBase = "1.4-SNAPSHOT"
 val versionMinecraft: String by project
 val versionMappings: String by project
 val versionLoader: String by project
