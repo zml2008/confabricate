@@ -16,30 +16,32 @@
 
 package ca.stellardrift.confabricate.typeserializers;
 
-import com.google.common.reflect.TypeToken;
+import static ca.stellardrift.confabricate.typeserializers.MinecraftSerializers.opsFor;
+
 import com.google.gson.JsonElement;
 import com.mojang.serialization.JsonOps;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Style;
 import net.minecraft.text.Text;
-import ninja.leaping.configurate.ConfigurationNode;
-import ninja.leaping.configurate.objectmapping.ObjectMappingException;
-import ninja.leaping.configurate.objectmapping.serialize.TypeSerializer;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.spongepowered.configurate.ConfigurationNode;
+import org.spongepowered.configurate.ConfigurationOptions;
+import org.spongepowered.configurate.serialize.SerializationException;
+import org.spongepowered.configurate.serialize.TypeSerializer;
 
-public final class TextSerializer implements TypeSerializer<Text> {
+import java.lang.reflect.Type;
 
-    public static final TypeToken<Text> TYPE = TypeToken.of(Text.class);
-    public static final TypeSerializer<Text> INSTANCE = new TextSerializer();
+final class TextSerializer implements TypeSerializer<Text> {
+
+    static final TypeSerializer<Text> INSTANCE = new TextSerializer();
 
     private TextSerializer() {}
 
-    @Nullable
     @Override
-    public Text deserialize(@NonNull final TypeToken<?> type, @NonNull final ConfigurationNode value) throws ObjectMappingException {
+    public Text deserialize(final @NonNull Type type, final @NonNull ConfigurationNode value) throws SerializationException {
         if (value.isMap() || value.isList()) {
-            final JsonElement element = CodecSerializer.opsFor(value).convertTo(JsonOps.INSTANCE, value);
+            final JsonElement element = opsFor(value).convertTo(JsonOps.INSTANCE, value);
             return Text.Serializer.fromJson(element);
         } else {
             final String text = value.getString();
@@ -55,22 +57,26 @@ public final class TextSerializer implements TypeSerializer<Text> {
     }
 
     @Override
-    public void serialize(@NonNull final TypeToken<?> type, @Nullable final Text obj, @NonNull final ConfigurationNode value)
-            throws ObjectMappingException {
+    public void serialize(final @NonNull Type type, final @Nullable Text obj, final @NonNull ConfigurationNode value) throws SerializationException {
         if (obj == null) {
-            value.setValue(null);
+            value.raw(null);
             return;
         }
 
         if (obj instanceof LiteralText) {
             final LiteralText literal = (LiteralText) obj;
             if (literal.getSiblings().isEmpty() && literal.getStyle().equals(Style.EMPTY)) {
-                value.setValue(literal.getRawString());
+                value.raw(literal.getRawString());
                 return;
             }
         }
 
-        value.setValue(JsonOps.INSTANCE.convertTo(CodecSerializer.opsFor(value), Text.Serializer.toJsonTree(obj)));
+        value.from(JsonOps.INSTANCE.convertTo(opsFor(value), Text.Serializer.toJsonTree(obj)));
+    }
+
+    @Override
+    public Text emptyValue(final Type specificType, final ConfigurationOptions options) {
+        return new LiteralText("");
     }
 
 }

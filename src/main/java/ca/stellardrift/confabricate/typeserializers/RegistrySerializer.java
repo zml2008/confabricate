@@ -16,25 +16,26 @@
 
 package ca.stellardrift.confabricate.typeserializers;
 
-import com.google.common.reflect.TypeToken;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.registry.Registry;
-import ninja.leaping.configurate.ConfigurationNode;
-import ninja.leaping.configurate.objectmapping.ObjectMappingException;
-import ninja.leaping.configurate.objectmapping.serialize.TypeSerializer;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.spongepowered.configurate.ConfigurationNode;
+import org.spongepowered.configurate.serialize.SerializationException;
+import org.spongepowered.configurate.serialize.TypeSerializer;
 
-public final class RegistrySerializer<T> implements TypeSerializer<T> {
+import java.lang.reflect.Type;
+
+final class RegistrySerializer<T> implements TypeSerializer<T> {
 
     private final Registry<T> registry;
 
-    public RegistrySerializer(final Registry<T> registry) {
+    RegistrySerializer(final Registry<T> registry) {
         this.registry = registry;
     }
 
     @Override
-    public @Nullable T deserialize(final @NonNull TypeToken<?> type, final @NonNull ConfigurationNode value) throws ObjectMappingException {
+    public @Nullable T deserialize(final @NonNull Type type, final @NonNull ConfigurationNode value) throws SerializationException {
         final Identifier ident = IdentifierSerializer.fromNode(value);
         if (ident == null) {
             return null;
@@ -44,15 +45,15 @@ public final class RegistrySerializer<T> implements TypeSerializer<T> {
     }
 
     @Override
-    public void serialize(final @NonNull TypeToken<?> type, final @Nullable T obj,
-            final @NonNull ConfigurationNode value) throws ObjectMappingException {
+    public void serialize(final @NonNull Type type, final @Nullable T obj,
+            final @NonNull ConfigurationNode value) throws SerializationException {
         if (obj == null) {
-            value.setValue(null);
+            value.raw(null);
         }
 
         final Identifier ident = this.registry.getId(obj);
         if (ident == null) {
-            throw new ObjectMappingException("Unknown registry element " + obj);
+            throw new SerializationException("Unknown registry element " + obj);
         }
         IdentifierSerializer.toNode(ident, value);
     }

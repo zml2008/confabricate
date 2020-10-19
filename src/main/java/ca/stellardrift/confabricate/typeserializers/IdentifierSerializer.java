@@ -16,15 +16,15 @@
 
 package ca.stellardrift.confabricate.typeserializers;
 
-import com.google.common.reflect.TypeToken;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.InvalidIdentifierException;
-import ninja.leaping.configurate.ConfigurationNode;
-import ninja.leaping.configurate.objectmapping.ObjectMappingException;
-import ninja.leaping.configurate.objectmapping.serialize.TypeSerializer;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.spongepowered.configurate.ConfigurationNode;
+import org.spongepowered.configurate.serialize.SerializationException;
+import org.spongepowered.configurate.serialize.TypeSerializer;
 
+import java.lang.reflect.Type;
 import java.util.List;
 
 /**
@@ -44,29 +44,27 @@ import java.util.List;
  *     format, where the default namespace is <pre>minecraft</pre></li>
  * </ul>
  */
-public class IdentifierSerializer implements TypeSerializer<Identifier> {
+final class IdentifierSerializer implements TypeSerializer<Identifier> {
 
     //private static final String NAMESPACE_MINECRAFT = "minecraft";
     public static final IdentifierSerializer INSTANCE = new IdentifierSerializer();
-    public static final TypeToken<Identifier> TOKEN = TypeToken.of(Identifier.class);
 
-    @Nullable
     @Override
-    public Identifier deserialize(final @NonNull TypeToken<?> type, final @NonNull ConfigurationNode value) throws ObjectMappingException {
+    public Identifier deserialize(final @NonNull Type type, final @NonNull ConfigurationNode value) throws SerializationException {
         return fromNode(value);
     }
 
     @Override
-    public void serialize(final @NonNull TypeToken<?> type, final @Nullable Identifier obj, final @NonNull ConfigurationNode value) {
+    public void serialize(final @NonNull Type type, final @Nullable Identifier obj, final @NonNull ConfigurationNode value) {
         toNode(obj, value);
     }
 
-    static Identifier fromNode(final ConfigurationNode node) throws ObjectMappingException {
-        if (node.isVirtual()) {
+    static Identifier fromNode(final ConfigurationNode node) throws SerializationException {
+        if (node.virtual()) {
             return null;
         }
         if (node.isList()) {
-            final List<? extends ConfigurationNode> children = node.getChildrenList();
+            final List<? extends ConfigurationNode> children = node.childrenList();
             switch (children.size()) {
                 case 2:
                     final String key = children.get(0).getString();
@@ -94,31 +92,31 @@ public class IdentifierSerializer implements TypeSerializer<Identifier> {
         }
     }
 
-    static Identifier createIdentifier(final String key, final String value) throws ObjectMappingException {
+    static Identifier createIdentifier(final String key, final String value) throws SerializationException {
         try {
             return new Identifier(key, value);
         } catch (final InvalidIdentifierException ex) {
-            throw new ObjectMappingException(ex);
+            throw new SerializationException(ex);
         }
     }
 
-    static Identifier createIdentifier(final String data) throws ObjectMappingException {
+    static Identifier createIdentifier(final String data) throws SerializationException {
         try {
             return new Identifier(data);
         } catch (final InvalidIdentifierException ex) {
-            throw new ObjectMappingException(ex.getMessage());
+            throw new SerializationException(ex.getMessage());
         }
     }
 
-    private static ObjectMappingException listAcceptedFormats() {
-        return new ObjectMappingException("The provided item must be in [<namespace>:]<path> format");
+    private static SerializationException listAcceptedFormats() {
+        return new SerializationException("The provided item must be in [<namespace>:]<path> format");
     }
 
     static void toNode(final Identifier ident, final ConfigurationNode node) {
         if (ident == null) {
-            node.setValue(null);
+            node.raw(null);
         } else {
-            node.setValue(ident.toString());
+            node.raw(ident.toString());
         }
     }
 

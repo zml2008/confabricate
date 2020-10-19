@@ -34,7 +34,7 @@ public final class MixinPlayerManager {
             target = "Lnet/minecraft/server/PlayerManager;broadcastChatMessage(Lnet/minecraft/text/Text;Lnet/minecraft/network/MessageType;"
                     + "Ljava/util/UUID;)V"))
     private void handlePlayerJoin(final ClientConnection connection, final ServerPlayerEntity entity, final CallbackInfo ci) {
-        final Text joinMessage = ConfabricateTester.instance().getConfiguration().getMessage();
+        final Text joinMessage = ConfabricateTester.instance().configuration().message();
         if (joinMessage != null) { // our own MOTD
             entity.sendSystemMessage(joinMessage, Util.NIL_UUID);
         }

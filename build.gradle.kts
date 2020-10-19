@@ -1,13 +1,15 @@
 
 import ca.stellardrift.build.common.configurate
+import ca.stellardrift.build.common.sonatypeOss
 
 plugins {
     id("net.ltgt.errorprone") version "1.3.0"
+    id("fabric-loom") version "0.5-SNAPSHOT"
     id("ca.stellardrift.opinionated.fabric") version "3.1"
     id("ca.stellardrift.opinionated.publish") version "3.1"
 }
 
-val versionBase = "1.4-SNAPSHOT"
+val versionBase = "2.0-SNAPSHOT"
 val versionMinecraft: String by project
 val versionMappings: String by project
 val versionLoader: String by project
@@ -21,6 +23,7 @@ description = ext["longDescription"] as String
 
 repositories {
     jcenter()
+    sonatypeOss()
 }
 
 tasks.withType(Jar::class).configureEach {
@@ -50,20 +53,23 @@ tasks.withType(Javadoc::class).configureEach {
 dependencies {
     compileOnly("com.google.errorprone:error_prone_annotations:$versionErrorprone")
     errorprone("com.google.errorprone:error_prone_core:$versionErrorprone")
+    compileOnlyApi("org.checkerframework:checker-qual:3.7.0")
+
     minecraft("com.mojang:minecraft:$versionMinecraft")
     mappings("net.fabricmc:yarn:$versionMinecraft+build.$versionMappings:v2")
     modImplementation("net.fabricmc:fabric-loader:$versionLoader")
     modImplementation("net.fabricmc.fabric-api:fabric-api:$versionFabricApi")
 
     modApi(enforcedPlatform(configurate("bom", versionConfigurate)))
-    include(modApi(configurate("core", versionConfigurate)) {
-        exclude("com.google.guava")
-    })
-    include(modApi(configurate("hocon", versionConfigurate)) {
-        exclude("com.google.guava")
+    include(modApi(configurate("core", versionConfigurate))!!)
+    include(modApi(configurate("hocon", versionConfigurate))!!)
+    include(modApi(configurate("extra-dfu4", versionConfigurate)) {
+        exclude("com.mojang") // Use the game's DFU version
     })
 
     include("com.typesafe:config:1.4.0")
+    include("io.leangen.geantyref:geantyref:1.3.11")
+
     include(modApi(configurate("gson", versionConfigurate)) { isTransitive = false })
 }
 

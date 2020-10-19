@@ -30,18 +30,18 @@ import java.util.function.Supplier;
  *
  * @param <V> element type
  */
-class ConfabricateTag<V> implements Tag<V> {
+final class ConfabricateTag<V> implements Tag<V> {
 
     private final List<Tag.Entry> serializedForm;
     private final Supplier<Registry<V>> elementResolver;
     private final Supplier<TagGroup<V>> tagResolver;
-    private @LazyInit volatile List<V> values;
+    @LazyInit private volatile List<V> values;
 
     /**
      * Create a new lazily initialized tag.
      *
-     * @param serializedForm Serialized form of the tag
-     * @param elementResolver Element-based resolver
+     * @param serializedForm serialized form of the tag
+     * @param elementResolver element-based resolver
      * @param tagResolver tag-based resolver
      */
     ConfabricateTag(final List<Entry> serializedForm, final Supplier<Registry<V>> elementResolver, final Supplier<TagGroup<V>> tagResolver) {

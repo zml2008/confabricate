@@ -32,9 +32,10 @@ import net.minecraft.nbt.LongTag;
 import net.minecraft.nbt.ShortTag;
 import net.minecraft.nbt.StringTag;
 import net.minecraft.nbt.Tag;
-import ninja.leaping.configurate.ConfigurationNode;
-import ninja.leaping.configurate.ConfigurationOptions;
 import org.checkerframework.checker.nullness.qual.NonNull;
+import org.spongepowered.configurate.BasicConfigurationNode;
+import org.spongepowered.configurate.ConfigurationNode;
+import org.spongepowered.configurate.ConfigurationOptions;
 
 import java.io.IOException;
 import java.util.List;
@@ -55,60 +56,60 @@ public final class NbtNodeAdapter {
      * may lose some data when roundtripped back. For example, array tags may
      * be converted to lists if the node provided does not support arrays.
      *
-     * @param tag The tag to convert
-     * @param node The node to pupulate
-     * @throws IOException If invalid tags are provided
+     * @param tag the tag to convert
+     * @param node the node to populate
+     * @throws IOException if invalid tags are provided
      */
     public static void tagToNode(final Tag tag, final ConfigurationNode node) throws IOException {
         if (tag instanceof CompoundTag) {
             final CompoundTag compoundTag = (CompoundTag) tag;
             for (String key : compoundTag.getKeys()) {
-                tagToNode(compoundTag.get(key), node.getNode(key));
+                tagToNode(compoundTag.get(key), node.node(key));
             }
         } else if (tag instanceof ListTag) {
             for (Tag value : (ListTag) tag) {
                 tagToNode(value, node.appendListNode());
             }
         } else if (tag instanceof StringTag) {
-            node.setValue(tag.asString());
+            node.raw(tag.asString());
         } else if (tag instanceof ByteTag) {
-            node.setValue(((ByteTag) tag).getByte());
+            node.raw(((ByteTag) tag).getByte());
         } else if (tag instanceof ShortTag) {
-            node.setValue(((ShortTag) tag).getShort());
+            node.raw(((ShortTag) tag).getShort());
         } else if (tag instanceof IntTag) {
-            node.setValue(((IntTag) tag).getInt());
+            node.raw(((IntTag) tag).getInt());
         } else if (tag instanceof LongTag) {
-            node.setValue(((LongTag) tag).getLong());
+            node.raw(((LongTag) tag).getLong());
         } else if (tag instanceof FloatTag) {
-            node.setValue(((FloatTag) tag).getFloat());
+            node.raw(((FloatTag) tag).getFloat());
         } else if (tag instanceof DoubleTag) {
-            node.setValue(((DoubleTag) tag).getDouble());
+            node.raw(((DoubleTag) tag).getDouble());
         } else if (tag instanceof ByteArrayTag) {
-            if (node.getOptions().acceptsType(byte[].class)) {
-                node.setValue(((ByteArrayTag) tag).getByteArray());
+            if (node.options().acceptsType(byte[].class)) {
+                node.raw(((ByteArrayTag) tag).getByteArray());
             } else {
-                node.setValue(null);
+                node.raw(null);
                 for (byte b : ((ByteArrayTag) tag).getByteArray()) {
-                    node.appendListNode().setValue(b);
+                    node.appendListNode().raw(b);
                 }
             }
         } else if (tag instanceof IntArrayTag) {
-            if (node.getOptions().acceptsType(int[].class)) {
-                node.setValue(((IntArrayTag) tag).getIntArray());
+            if (node.options().acceptsType(int[].class)) {
+                node.raw(((IntArrayTag) tag).getIntArray());
             } else {
-                node.setValue(null);
+                node.raw(null);
                 for (int i : ((IntArrayTag) tag).getIntArray()) {
-                    node.appendListNode().setValue(i);
+                    node.appendListNode().raw(i);
                 }
             }
 
         } else if (tag instanceof LongArrayTag) {
-            if (node.getOptions().acceptsType(long[].class)) {
-                node.setValue(((LongArrayTag) tag).getLongArray());
+            if (node.options().acceptsType(long[].class)) {
+                node.raw(((LongArrayTag) tag).getLongArray());
             } else {
-                node.setValue(null);
+                node.raw(null);
                 for (long l : ((LongArrayTag) tag).getLongArray()) {
-                    node.appendListNode().setValue(l);
+                    node.appendListNode().raw(l);
                 }
             }
         } else if (tag instanceof EndTag) {
@@ -123,29 +124,29 @@ public final class NbtNodeAdapter {
      * lists with mixed types, some configuration nodes will not be convertible
      * to Tags.
      *
-     * @param node The configuration node
-     * @return The converted tag object
+     * @param node the configuration node
+     * @return the converted tag object
      * @throws IOException if an IO error occurs while converting the tag
      */
     public static Tag nodeToTag(final ConfigurationNode node) throws IOException {
         if (node.isMap()) {
             final CompoundTag tag = new CompoundTag();
-            for (Map.Entry<Object, ? extends ConfigurationNode> ent : node.getChildrenMap().entrySet()) {
+            for (Map.Entry<Object, ? extends ConfigurationNode> ent : node.childrenMap().entrySet()) {
                 tag.put(ent.getKey().toString(), nodeToTag(ent.getValue()));
             }
             return tag;
         } else if (node.isList()) {
             final ListTag list = new ListTag();
-            for (ConfigurationNode child : node.getChildrenList()) {
+            for (ConfigurationNode child : node.childrenList()) {
                 list.add(nodeToTag(child));
             }
             return list;
         } else {
-            final Object obj = node.getValue();
+            final Object obj = node.raw();
             if (obj instanceof byte[]) {
                 return new ByteArrayTag((byte[]) obj);
             } else if (obj instanceof int[]) {
-                return new IntArrayTag(((int[]) obj));
+                return new IntArrayTag((int[]) obj);
             } else if (obj instanceof long[]) {
                 return new LongArrayTag((long[]) obj);
             } else if (obj instanceof Byte) {
@@ -174,18 +175,18 @@ public final class NbtNodeAdapter {
      * @return the new node
      */
     public static ConfigurationNode createEmptyNode() {
-        return createEmptyNode(ConfigurationOptions.defaults().withSerializers(MinecraftSerializers.collection()));
+        return createEmptyNode(ConfigurationOptions.defaults().serializers(MinecraftSerializers.collection()));
     }
 
     /**
      * Create an empty node with options appropriate for handling NBT data.
      *
-     * @param options Options to work with
+     * @param options options to work with
      * @return the new node
      */
     public static ConfigurationNode createEmptyNode(final @NonNull ConfigurationOptions options) {
-        return ConfigurationNode.root(options
-                .withNativeTypes(ImmutableSet.of(Map.class, List.class, Byte.class,
+        return BasicConfigurationNode.root(options
+                .nativeTypes(ImmutableSet.of(Map.class, List.class, Byte.class,
                         Short.class, Integer.class, Long.class, Float.class, Double.class,
                         long[].class, byte[].class, int[].class, String.class)));
     }

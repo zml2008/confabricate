@@ -16,10 +16,9 @@
 
 package ca.stellardrift.confabricate.test;
 
-import static ninja.leaping.configurate.transformation.ConfigurationTransformation.WILDCARD_OBJECT;
+import static org.spongepowered.configurate.transformation.ConfigurationTransformation.WILDCARD_OBJECT;
 
 import ca.stellardrift.confabricate.Confabricate;
-import ca.stellardrift.confabricate.DataFixerTransformation;
 import com.google.common.collect.ImmutableSet;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v1.CommandRegistrationCallback;
@@ -53,18 +52,18 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.TypedActionResult;
 import net.minecraft.util.Util;
 import net.minecraft.util.profiler.Profiler;
-import ninja.leaping.configurate.ConfigurationNode;
-import ninja.leaping.configurate.commented.CommentedConfigurationNode;
-import ninja.leaping.configurate.objectmapping.ObjectMappingException;
-import ninja.leaping.configurate.objectmapping.Setting;
-import ninja.leaping.configurate.objectmapping.serialize.ConfigSerializable;
-import ninja.leaping.configurate.reference.ConfigurationReference;
-import ninja.leaping.configurate.reference.ValueReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
+import org.spongepowered.configurate.CommentedConfigurationNode;
+import org.spongepowered.configurate.ConfigurateException;
+import org.spongepowered.configurate.ConfigurationNode;
+import org.spongepowered.configurate.extra.dfu.v4.DataFixerTransformation;
+import org.spongepowered.configurate.objectmapping.ConfigSerializable;
+import org.spongepowered.configurate.objectmapping.meta.Comment;
+import org.spongepowered.configurate.reference.ConfigurationReference;
+import org.spongepowered.configurate.reference.ValueReference;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -81,7 +80,7 @@ public class ConfabricateTester implements ModInitializer {
     private static ConfabricateTester instance;
 
     private @MonotonicNonNull ConfigurationReference<CommentedConfigurationNode> configFile;
-    private @MonotonicNonNull ValueReference<TestmodConfig> config;
+    private @MonotonicNonNull ValueReference<TestmodConfig, CommentedConfigurationNode> config;
 
     /**
      * Get the active mod instance, throwing an {@link IllegalStateException} if
@@ -107,17 +106,17 @@ public class ConfabricateTester implements ModInitializer {
 
         // Load config
         try {
-            this.configFile = Confabricate.createConfigurationFor(container);
+            this.configFile = Confabricate.configurationFor(container);
             // Handle updating with game changes
-            final ConfigurationNode node = this.configFile.getNode();
-            final DataFixerTransformation xform = DataFixerTransformation.minecraftDfuBuilder()
-                    .type(TypeReferences.ITEM_STACK, "items", WILDCARD_OBJECT) // every child of "items" should be upgraded as an ItemStack
+            final CommentedConfigurationNode node = this.configFile.node();
+            final DataFixerTransformation<CommentedConfigurationNode> xform = Confabricate.<CommentedConfigurationNode>minecraftDfuBuilder()
+                    .addType(TypeReferences.ITEM_STACK, "items", WILDCARD_OBJECT) // every child of "items" should be upgraded as an ItemStack
                     .build();
 
-            final boolean wasEmpty = node.isEmpty();
-            final int oldVersion = xform.getVersion(node);
+            final boolean wasEmpty = node.empty();
+            final int oldVersion = xform.version(node);
             xform.apply(node);
-            final int newVersion = xform.getVersion(node);
+            final int newVersion = xform.version(node);
             if (newVersion > oldVersion && !wasEmpty) {
                 LOGGER.info("Updated configuration from version {} to {}", oldVersion, newVersion);
             }
@@ -136,7 +135,7 @@ public class ConfabricateTester implements ModInitializer {
                         try {
                             ConfabricateTester.this.configFile.load();
                             ret.complete(null);
-                        } catch (final IOException e) {
+                        } catch (final ConfigurateException e) {
                             ret.completeExceptionally(e);
                         }
                     });
@@ -155,7 +154,7 @@ public class ConfabricateTester implements ModInitializer {
                 }
             });
             this.configFile.save();
-        } catch (IOException | ObjectMappingException e) {
+        } catch (final ConfigurateException e) {
             throw new RuntimeException("Unable to load configuration for " + container.getMetadata().getId(), e);
         }
 
@@ -167,28 +166,28 @@ public class ConfabricateTester implements ModInitializer {
         // Register protection events
         AttackBlockCallback.EVENT.register((player, world, hand, blockPos, direction) -> {
             if (!world.isClient && player instanceof ServerPlayerEntity && hand == Hand.MAIN_HAND) {
-                final ActionResult testAttack = this.getConfiguration().getProtection().testAttackWith((ServerPlayerEntity) player,
-                        player.getMainHandStack());
+                final ActionResult testAttack = this.configuration().protection().testAttackWith((ServerPlayerEntity) player,
+                                                                                                 player.getMainHandStack());
 
                 if (testAttack != ActionResult.PASS) {
                     return testAttack;
                 }
 
-                return this.getConfiguration().getProtection().testBreak((ServerPlayerEntity) player,
-                        world.getBlockState(blockPos).getBlock());
+                return this.configuration().protection().testBreak((ServerPlayerEntity) player,
+                                                                   world.getBlockState(blockPos).getBlock());
             }
             return ActionResult.PASS;
         });
         AttackEntityCallback.EVENT.register((player, world, hand, entity, result) -> {
             if (!world.isClient && player instanceof ServerPlayerEntity && hand == Hand.MAIN_HAND) {
-                return this.getConfiguration().getProtection().testAttackWith((ServerPlayerEntity) player, player.getMainHandStack());
+                return this.configuration().protection().testAttackWith((ServerPlayerEntity) player, player.getMainHandStack());
             }
             return ActionResult.PASS;
         });
         UseItemCallback.EVENT.register((player, world, hand) -> {
             if (!world.isClient && player instanceof ServerPlayerEntity && hand == Hand.MAIN_HAND) {
-                return new TypedActionResult<>(this.getConfiguration().getProtection().testUseItem((ServerPlayerEntity) player,
-                        player.getMainHandStack()), player.getMainHandStack());
+                return new TypedActionResult<>(this.configuration().protection().testUseItem((ServerPlayerEntity) player,
+                                                                                             player.getMainHandStack()), player.getMainHandStack());
             }
             return TypedActionResult.pass(player.getStackInHand(hand));
         });
@@ -196,8 +195,8 @@ public class ConfabricateTester implements ModInitializer {
             if (!world.isClient && player instanceof ServerPlayerEntity && hand == Hand.MAIN_HAND) {
                 final ItemStack heldItem = player.getMainHandStack();
                 if (heldItem.getItem() instanceof BlockItem) {
-                    final ActionResult result = this.getConfiguration().getProtection().testPlace((ServerPlayerEntity) player,
-                            ((BlockItem) heldItem.getItem()).getBlock());
+                    final ActionResult result = this.configuration().protection().testPlace((ServerPlayerEntity) player,
+                                                                                            ((BlockItem) heldItem.getItem()).getBlock());
                     if (result == ActionResult.FAIL) { // if we can't place, then let's restore inventory
                         ((ServerPlayerEntity) player).networkHandler.sendPacket(
                                 new ScreenHandlerSlotUpdateS2CPacket(-2,
@@ -211,19 +210,15 @@ public class ConfabricateTester implements ModInitializer {
 
     }
 
-    public TestmodConfig getConfiguration() {
+    public TestmodConfig configuration() {
         return this.config.get();
     }
 
     @ConfigSerializable
     public static class TestmodConfig {
-        @Setting
         private Text message = new LiteralText("Welcome to the server!");
-
-        @Setting
         private List<ItemStack> items = new ArrayList<>();
-
-        @Setting(comment = "Protection configuration. Entries for each type will be "
+        @Comment("Protection configuration. Entries for each type will be "
                 + "processed in order, and will be denied based on the first matching.")
         private ProtectionSection protection = new ProtectionSection();
 
@@ -233,15 +228,15 @@ public class ConfabricateTester implements ModInitializer {
             this.items.add(stack);
         }
 
-        public Text getMessage() {
+        public Text message() {
             return this.message;
         }
 
-        public List<ItemStack> getItems() {
+        public List<ItemStack> items() {
             return this.items;
         }
 
-        public ProtectionSection getProtection() {
+        public ProtectionSection protection() {
             return this.protection;
         }
 
@@ -249,15 +244,15 @@ public class ConfabricateTester implements ModInitializer {
 
     @ConfigSerializable
     static class ProtectionSection {
-        @Setting(comment = "Log checks performed")
+        @Comment("Log checks performed")
         private boolean debug = false;
-        @Setting(value = "block-break", comment = "Check for breaking blocks")
+        @Comment("Check for breaking blocks")
         private List<ProtectionEntry<Block>> blockBreak = new ArrayList<>();
-        @Setting(value = "block-place", comment = "Check for placing blocks")
+        @Comment("Check for placing blocks")
         private List<ProtectionEntry<Block>> blockPlace = new ArrayList<>();
-        @Setting(value = "use-item", comment = "Checked for using (i.e. right clicking with) an item")
+        @Comment("Checked for using (i.e. right clicking with) an item")
         private List<ProtectionEntry<Item>> useItem = new ArrayList<>();
-        @Setting(value = "attack-with-item", comment = "Checked for attacking (i.e. left clicking) with an item")
+        @Comment("Checked for attacking (i.e. left clicking) with an item")
         private List<ProtectionEntry<Item>> attackWithItem = new ArrayList<>();
 
         ProtectionSection() {
@@ -303,19 +298,19 @@ public class ConfabricateTester implements ModInitializer {
 
     @ConfigSerializable
     static class ProtectionEntry<V> {
-        @Setting(value = "exempt-level", comment = "Operator level to exempt users from this protection")
+        @Comment("Operator level to exempt users from this protection")
         private int exemptLevel = 2;
-        @Setting(value = "deny-message", comment = "Message to send when a user is forbidden from this action")
+        @Comment("Message to send when a user is forbidden from this action")
         private Text denyMessage = new LiteralText("You cannot do that!").styled(s -> s.withColor(TextColor.fromRgb(0xFF0000)));
-        @Setting(value = "types", comment = "Types to catch in this entry")
-        private Tag<V> type = Tag.of(ImmutableSet.of());
+        @Comment("Types to catch in this entry")
+        private Tag<V> types = Tag.of(ImmutableSet.of());
 
         public ActionResult test(final ServerPlayerEntity player, final V value) {
             if (player.hasPermissionLevel(this.exemptLevel)) { // we are exempt
                 return ActionResult.PASS;
             }
 
-            if (this.type == null || !this.type.contains(value)) { // not an applicable item
+            if (this.types == null || !this.types.contains(value)) { // not an applicable item
                 return ActionResult.PASS;
             }
 

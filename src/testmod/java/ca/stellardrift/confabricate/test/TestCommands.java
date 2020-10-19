@@ -21,7 +21,6 @@ import static net.minecraft.server.command.CommandManager.literal;
 
 import ca.stellardrift.confabricate.NbtNodeAdapter;
 import ca.stellardrift.confabricate.typeserializers.MinecraftSerializers;
-import com.google.common.reflect.TypeToken;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
@@ -46,11 +45,11 @@ import net.minecraft.text.TextColor;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
-import ninja.leaping.configurate.ConfigurationNode;
-import ninja.leaping.configurate.gson.GsonConfigurationLoader;
-import ninja.leaping.configurate.objectmapping.ObjectMappingException;
-import ninja.leaping.configurate.objectmapping.Setting;
-import ninja.leaping.configurate.objectmapping.serialize.ConfigSerializable;
+import org.spongepowered.configurate.BasicConfigurationNode;
+import org.spongepowered.configurate.ConfigurateException;
+import org.spongepowered.configurate.ConfigurationNode;
+import org.spongepowered.configurate.gson.GsonConfigurationLoader;
+import org.spongepowered.configurate.objectmapping.ConfigSerializable;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -81,7 +80,7 @@ final class TestCommands {
         src.register(literal("test-kit")
                 .requires(scs -> scs.hasPermissionLevel(2))
                 .executes(ctx -> {
-                    final List<ItemStack> itemsToGive = mod.getConfiguration().getItems();
+                    final List<ItemStack> itemsToGive = mod.configuration().items();
                     if (itemsToGive == null || itemsToGive.isEmpty()) {
                         ctx.getSource().sendError(new LiteralText("No items are defined in the kit!"));
                         return 0;
@@ -120,19 +119,14 @@ final class TestCommands {
         });
     }
 
-    private static Path getPath(final String argumentName, final CommandContext<?> ctx) {
+    private static Path path(final String argumentName, final CommandContext<?> ctx) {
         return FileSystems.getDefault().getPath(StringArgumentType.getString(ctx, argumentName)).toAbsolutePath();
     }
 
     @ConfigSerializable
     static class DataTest {
-        @Setting
         public Block material;
-
-        @Setting
         public EntityType<?> entity;
-
-        @Setting
         public Identifier ident = new Identifier("test", "demo");
 
         @Override
@@ -149,13 +143,13 @@ final class TestCommands {
         return literal("parse").then(argument("json", StringArgumentType.greedyString()).executes(ctx -> {
             final String jsonText = StringArgumentType.getString(ctx, "json");
             final GsonConfigurationLoader loader = GsonConfigurationLoader.builder()
-                    .setDefaultOptions(o -> o.withSerializers(MinecraftSerializers.collection()))
-                    .setSource(() -> new BufferedReader(new StringReader(jsonText))).build();
+                    .defaultOptions(o -> o.serializers(MinecraftSerializers.collection()))
+                    .source(() -> new BufferedReader(new StringReader(jsonText))).build();
 
             try {
-                ctx.getSource().sendFeedback(new LiteralText("Parsed as: " + loader.load().getValue(TypeToken.of(DataTest.class))), false);
-            } catch (ObjectMappingException | IOException e) {
-                throw new RuntimeException(e);
+                ctx.getSource().sendFeedback(new LiteralText("Parsed as: " + loader.load().get(DataTest.class)), false);
+            } catch (final ConfigurateException ex) {
+                throw new RuntimeException(ex);
             }
             return 1;
         }));
@@ -167,7 +161,7 @@ final class TestCommands {
                     try {
                         final ServerPlayerEntity entity = EntityArgumentType.getPlayer(ctx, "ply");
 
-                        final Text roundtripped = dumpToFile(entity::toTag, getPath("file", ctx)).toText();
+                        final Text roundtripped = dumpToFile(entity::toTag, path("file", ctx)).toText();
                         ctx.getSource().sendFeedback(roundtripped, false);
 
                         ctx.getSource().sendFeedback(new LiteralText("Successfully dumped data from player ")
@@ -180,7 +174,7 @@ final class TestCommands {
                 .then(literal("entity").then(argument("ent", EntityArgumentType.entity()).executes(ctx -> {
                     final Entity entity = EntityArgumentType.getEntity(ctx, "ent");
 
-                    final Text roundtripped = dumpToFile(entity::toTag, getPath("file", ctx)).toText();
+                    final Text roundtripped = dumpToFile(entity::toTag, path("file", ctx)).toText();
                     ctx.getSource().sendFeedback(roundtripped, false);
 
                     ctx.getSource().sendFeedback(new LiteralText("Successfully dumped data from ")
@@ -195,7 +189,7 @@ final class TestCommands {
                         throw new CommandException(new LiteralText("No block entity found!"));
                     }
 
-                    final Text roundtripped = dumpToFile(entity::toTag, getPath("file", ctx)).toText();
+                    final Text roundtripped = dumpToFile(entity::toTag, path("file", ctx)).toText();
                     ctx.getSource().sendFeedback(roundtripped, false);
                     ctx.getSource().sendFeedback(new LiteralText("Successfully dumped data from ")
                             .append(new LiteralText(pos.toString()).styled(s -> s.withColor(Formatting.AQUA))), false);
@@ -208,15 +202,15 @@ final class TestCommands {
             final CompoundTag out = new CompoundTag();
             dumpFunc.accept(out);
 
-            final ConfigurationNode node = ConfigurationNode.root();
+            final ConfigurationNode node = BasicConfigurationNode.root();
             NbtNodeAdapter.tagToNode(out, node);
 
             Files.createDirectories(file.getParent());
-            final GsonConfigurationLoader output = GsonConfigurationLoader.builder().setPath(file).build();
+            final GsonConfigurationLoader output = GsonConfigurationLoader.builder().path(file).build();
             output.save(node);
 
             return NbtNodeAdapter.nodeToTag(output.load());
-        } catch (final Throwable e) {
+        } catch (final ConfigurateException | IOException e) {
             e.printStackTrace();
             throw new CommandException(new LiteralText(e.getMessage()));
         }
