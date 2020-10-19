@@ -2,7 +2,7 @@
 import ca.stellardrift.build.common.configurate
 
 plugins {
-    id("net.ltgt.errorprone") version "1.2.1"
+    id("net.ltgt.errorprone") version "1.3.0"
     id("ca.stellardrift.opinionated.fabric") version "3.1"
     id("ca.stellardrift.opinionated.publish") version "3.1"
 }
