@@ -210,7 +210,7 @@ final class TestCommands {
             output.save(node);
 
             return NbtNodeAdapter.nodeToTag(output.load());
-        } catch (final ConfigurateException | IOException e) {
+        } catch (final IOException e) {
             e.printStackTrace();
             throw new CommandException(new LiteralText(e.getMessage()));
         }

@@ -57,7 +57,6 @@ import org.apache.logging.log4j.Logger;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.spongepowered.configurate.CommentedConfigurationNode;
 import org.spongepowered.configurate.ConfigurateException;
-import org.spongepowered.configurate.ConfigurationNode;
 import org.spongepowered.configurate.extra.dfu.v4.DataFixerTransformation;
 import org.spongepowered.configurate.objectmapping.ConfigSerializable;
 import org.spongepowered.configurate.objectmapping.meta.Comment;
@@ -109,7 +108,7 @@ public class ConfabricateTester implements ModInitializer {
             this.configFile = Confabricate.configurationFor(container);
             // Handle updating with game changes
             final CommentedConfigurationNode node = this.configFile.node();
-            final DataFixerTransformation<CommentedConfigurationNode> xform = Confabricate.<CommentedConfigurationNode>minecraftDfuBuilder()
+            final DataFixerTransformation xform = Confabricate.minecraftDfuBuilder()
                     .addType(TypeReferences.ITEM_STACK, "items", WILDCARD_OBJECT) // every child of "items" should be upgraded as an ItemStack
                     .build();
 

@@ -22,8 +22,8 @@ version = "$versionBase+${versionConfigurate.replace("-SNAPSHOT", "")}"
 description = ext["longDescription"] as String
 
 repositories {
-    jcenter()
     sonatypeOss()
+    jcenter()
 }
 
 tasks.withType(Jar::class).configureEach {

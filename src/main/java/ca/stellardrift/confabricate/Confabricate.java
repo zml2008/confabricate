@@ -32,7 +32,6 @@ import org.apache.logging.log4j.Logger;
 import org.spongepowered.configurate.CommentedConfigurationNode;
 import org.spongepowered.configurate.ConfigurateException;
 import org.spongepowered.configurate.ConfigurationNode;
-import org.spongepowered.configurate.ScopedConfigurationNode;
 import org.spongepowered.configurate.extra.dfu.v4.ConfigurateOps;
 import org.spongepowered.configurate.extra.dfu.v4.DataFixerTransformation;
 import org.spongepowered.configurate.hocon.HoconConfigurationLoader;
@@ -181,7 +180,6 @@ public class Confabricate implements ModInitializer {
             return HoconConfigurationLoader.builder()
                     .path(path)
                     .defaultOptions(o -> o.serializers(MinecraftSerializers.collection()))
-
                     .build();
         }, configurationFile(mod, ownDirectory));
     }
@@ -215,7 +213,6 @@ public class Confabricate implements ModInitializer {
      * is provided by the path {@code versionKey}. The transformation is
      * executed from the provided node.
      *
-     * @param <N> node type
      * @param fixer the fixer containing DFU transformations to apply
      * @param reference the reference to the DFU {@link DSL} type representing
      *                  this node
@@ -224,9 +221,9 @@ public class Confabricate implements ModInitializer {
      *                   the transformer
      * @return a transformation that executes a {@link DataFixer data fixer}.
      */
-    public static <N extends ScopedConfigurationNode<N>> ConfigurationTransformation<N> createTransformation(final DataFixer fixer,
+    public static ConfigurationTransformation createTransformation(final DataFixer fixer,
             final DSL.TypeReference reference, final int targetVersion, final Object... versionKey) {
-        return ConfigurationTransformation.<N>builder()
+        return ConfigurationTransformation.builder()
                 .addAction(NodePath.path(), createTransformAction(fixer, reference, targetVersion, versionKey))
                 .build();
 
@@ -237,7 +234,6 @@ public class Confabricate implements ModInitializer {
      * node. This can be used within {@link ConfigurationTransformation}
      * when some values are controlled by DFUs and some aren't.
      *
-     * @param <N> node type
      * @param fixer the fixer containing DFU transformations to apply
      * @param reference the reference to the DFU {@link DSL} type representing this node
      * @param targetVersion the version to convert to
@@ -245,7 +241,7 @@ public class Confabricate implements ModInitializer {
      *                  this action.
      * @return the created action
      */
-    public static <N extends ScopedConfigurationNode<N>> TransformAction<N> createTransformAction(final DataFixer fixer,
+    public static TransformAction createTransformAction(final DataFixer fixer,
             final DSL.TypeReference reference, final int targetVersion, final Object... versionKey) {
         return (inputPath, valueAtPath) -> {
             final int currentVersion = valueAtPath.node(versionKey).getInt(-1);
@@ -273,11 +269,10 @@ public class Confabricate implements ModInitializer {
      * Return a builder pre-configured to apply Minecraft's DataFixers to the
      * latest game save version.
      *
-     * @param <N> node type
      * @return new builder
      */
-    public static <N extends ScopedConfigurationNode<N>> DataFixerTransformation.Builder<N> minecraftDfuBuilder() {
-        return DataFixerTransformation.<N>dfuBuilder()
+    public static DataFixerTransformation.Builder minecraftDfuBuilder() {
+        return DataFixerTransformation.dfuBuilder()
                 .versionKey("minecraft-data-version")
                 .dataFixer(Schemas.getFixer())
                 // This seems to always be a bit higher than the latest declared schema.
