@@ -63,7 +63,7 @@ dependencies {
         exclude("com.google.guava")
     })
 
-    include("com.typesafe:config:1.4.0")
+    include("com.typesafe:config:1.4.1")
     include(modApi(configurate("gson", versionConfigurate)) { isTransitive = false })
 }
 
