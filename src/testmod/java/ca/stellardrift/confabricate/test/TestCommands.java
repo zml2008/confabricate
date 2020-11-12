@@ -35,6 +35,7 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtHelper;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -92,7 +93,7 @@ final class TestCommands {
 
                     boolean first = true;
                     for (ItemStack stack : itemsToGive) {
-                        target.inventory.offerOrDrop(target.world, stack.copy());
+                        target.getInventory().offerOrDrop(stack.copy());
                         if (!first) {
                             output.append(COMMA);
                         }
@@ -161,7 +162,7 @@ final class TestCommands {
                     try {
                         final ServerPlayerEntity entity = EntityArgumentType.getPlayer(ctx, "ply");
 
-                        final Text roundtripped = dumpToFile(entity::toTag, path("file", ctx)).toText();
+                        final Text roundtripped = toText(dumpToFile(entity::toTag, path("file", ctx)));
                         ctx.getSource().sendFeedback(roundtripped, false);
 
                         ctx.getSource().sendFeedback(new LiteralText("Successfully dumped data from player ")
@@ -174,7 +175,7 @@ final class TestCommands {
                 .then(literal("entity").then(argument("ent", EntityArgumentType.entity()).executes(ctx -> {
                     final Entity entity = EntityArgumentType.getEntity(ctx, "ent");
 
-                    final Text roundtripped = dumpToFile(entity::toTag, path("file", ctx)).toText();
+                    final Text roundtripped = toText(dumpToFile(entity::toTag, path("file", ctx)));
                     ctx.getSource().sendFeedback(roundtripped, false);
 
                     ctx.getSource().sendFeedback(new LiteralText("Successfully dumped data from ")
@@ -189,12 +190,16 @@ final class TestCommands {
                         throw new CommandException(new LiteralText("No block entity found!"));
                     }
 
-                    final Text roundtripped = dumpToFile(entity::toTag, path("file", ctx)).toText();
+                    final Text roundtripped = toText(dumpToFile(entity::toTag, path("file", ctx)));
                     ctx.getSource().sendFeedback(roundtripped, false);
                     ctx.getSource().sendFeedback(new LiteralText("Successfully dumped data from ")
                             .append(new LiteralText(pos.toString()).styled(s -> s.withColor(Formatting.AQUA))), false);
                     return 1;
                 }))));
+    }
+
+    static Text toText(final Tag tag) {
+        return NbtHelper.method_32270(tag);
     }
 
     static Tag dumpToFile(final Consumer<CompoundTag> dumpFunc, final Path file) throws CommandException {

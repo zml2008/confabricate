@@ -32,6 +32,7 @@ import org.apache.logging.log4j.Logger;
 import org.spongepowered.configurate.CommentedConfigurationNode;
 import org.spongepowered.configurate.ConfigurateException;
 import org.spongepowered.configurate.ConfigurationNode;
+import org.spongepowered.configurate.ConfigurationOptions;
 import org.spongepowered.configurate.extra.dfu.v4.ConfigurateOps;
 import org.spongepowered.configurate.extra.dfu.v4.DataFixerTransformation;
 import org.spongepowered.configurate.hocon.HoconConfigurationLoader;
@@ -131,10 +132,36 @@ public class Confabricate implements ModInitializer {
      * @return the newly created configuration loader
      */
     public static ConfigurationLoader<CommentedConfigurationNode> loaderFor(final ModContainer mod, final boolean ownDirectory) {
+        return loaderFor(mod, ownDirectory, ConfigurationOptions.defaults().serializers(MinecraftSerializers.collection()));
+    }
+
+    /**
+     * Get a configuration loader for a mod. The configuration will be in
+     * Hocon format.
+     *
+     * <p>If the configuration is in its own directory, the path will be
+     * <pre>&lt;config root&gt;/&lt;modid&gt;/&lt;modid&gt;.conf</pre>.
+     * Otherwise, the path will be
+     * <pre>&lt;config root&gt;/&lt;modid&gt;.conf</pre>.
+     *
+     * <p>The returned {@link ConfigurationLoader ConfigurationLoaders} will be
+     * pre-configured to use the type serializers from
+     * {@link MinecraftSerializers#collection()}, but will otherwise use
+     * default settings.
+     *
+     * @param mod the mod to get the configuration loader for
+     * @param ownDirectory whether the configuration should be in a directory
+     *                     just for the mod, or a file in the config root
+     * @param options the options to use by default when loading
+     * @return the newly created configuration loader
+     */
+    public static ConfigurationLoader<CommentedConfigurationNode> loaderFor(final ModContainer mod, final boolean ownDirectory,
+            final ConfigurationOptions options) {
         return HoconConfigurationLoader.builder()
                 .path(configurationFile(mod, ownDirectory))
-                .defaultOptions(o -> o.serializers(MinecraftSerializers.collection()))
+                .defaultOptions(options)
                 .build();
+
     }
 
     /**
@@ -148,7 +175,7 @@ public class Confabricate implements ModInitializer {
      * @return a configuration reference for a loaded node in HOCON format
      * @throws ConfigurateException if a listener could not be established or if
      *                      the configuration failed to load.
-     * @see #configurationFor(ModContainer, boolean)
+     * @see #configurationFor(ModContainer, boolean, ConfigurationOptions)
      */
     public static ConfigurationReference<CommentedConfigurationNode> configurationFor(final ModContainer mod) throws ConfigurateException {
         return configurationFor(mod, true);
@@ -174,12 +201,39 @@ public class Confabricate implements ModInitializer {
      * @throws ConfigurateException if a listener could not be established or
      *                              the configuration failed to load.
      */
-    public static ConfigurationReference<CommentedConfigurationNode> configurationFor(final ModContainer mod,
-            final boolean ownDirectory) throws ConfigurateException {
+    public static ConfigurationReference<CommentedConfigurationNode> configurationFor(final ModContainer mod, final boolean ownDirectory)
+            throws ConfigurateException {
+        return configurationFor(mod, ownDirectory, ConfigurationOptions.defaults().serializers(MinecraftSerializers.collection()));
+    }
+
+    /**
+     * Get a configuration reference for a mod. The configuration will be in
+     * Hocon format.
+     *
+     * <p>If the configuration is in its own directory, the path will be
+     * <pre>&lt;config root&gt;/&lt;modid&gt;/&lt;modid&gt;.conf</pre>
+     * Otherwise, the path will be
+     * <pre>&lt;config root&gt;/&lt;modid&gt;.conf</pre>.
+     *
+     * <p>The reference's {@link ConfigurationLoader} will be pre-configured to
+     * use the type serializers from {@link MinecraftSerializers#collection()}
+     * but will otherwise use default settings.
+     *
+     * @param mod the mod to get the configuration loader for
+     * @param ownDirectory whether the configuration should be in a directory
+     *                     just for the mod
+     * @param options the options to use when loading
+     * @return the newly created and loaded configuration reference
+     * @throws ConfigurateException if a listener could not be established or
+     *                              the configuration failed to load.
+     * @since 2.0.0
+     */
+    public static ConfigurationReference<CommentedConfigurationNode> configurationFor(final ModContainer mod, final boolean ownDirectory,
+            final ConfigurationOptions options) throws ConfigurateException {
         return fileWatcher().listenToConfiguration(path -> {
             return HoconConfigurationLoader.builder()
                     .path(path)
-                    .defaultOptions(o -> o.serializers(MinecraftSerializers.collection()))
+                    .defaultOptions(options)
                     .build();
         }, configurationFile(mod, ownDirectory));
     }

@@ -19,6 +19,7 @@ package ca.stellardrift.confabricate.test;
 import static org.spongepowered.configurate.transformation.ConfigurationTransformation.WILDCARD_OBJECT;
 
 import ca.stellardrift.confabricate.Confabricate;
+import ca.stellardrift.confabricate.typeserializers.MinecraftSerializers;
 import com.google.common.collect.ImmutableSet;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v1.CommandRegistrationCallback;
@@ -57,6 +58,7 @@ import org.apache.logging.log4j.Logger;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.spongepowered.configurate.CommentedConfigurationNode;
 import org.spongepowered.configurate.ConfigurateException;
+import org.spongepowered.configurate.ConfigurationOptions;
 import org.spongepowered.configurate.extra.dfu.v4.DataFixerTransformation;
 import org.spongepowered.configurate.objectmapping.ConfigSerializable;
 import org.spongepowered.configurate.objectmapping.meta.Comment;
@@ -105,7 +107,11 @@ public class ConfabricateTester implements ModInitializer {
 
         // Load config
         try {
-            this.configFile = Confabricate.configurationFor(container);
+            this.configFile = Confabricate.configurationFor(container, true, ConfigurationOptions.defaults()
+                    .serializers(MinecraftSerializers.collection())
+                    .shouldCopyDefaults(true)
+                    .implicitInitialization(true));
+
             // Handle updating with game changes
             final CommentedConfigurationNode node = this.configFile.node();
             final DataFixerTransformation xform = Confabricate.minecraftDfuBuilder()
@@ -199,7 +205,7 @@ public class ConfabricateTester implements ModInitializer {
                     if (result == ActionResult.FAIL) { // if we can't place, then let's restore inventory
                         ((ServerPlayerEntity) player).networkHandler.sendPacket(
                                 new ScreenHandlerSlotUpdateS2CPacket(-2,
-                                        player.inventory.selectedSlot, heldItem));
+                                        player.getInventory().selectedSlot, heldItem));
                     }
                     return result;
                 }
