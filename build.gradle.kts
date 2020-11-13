@@ -53,7 +53,7 @@ tasks.withType(Javadoc::class).configureEach {
 dependencies {
     compileOnly("com.google.errorprone:error_prone_annotations:$versionErrorprone")
     errorprone("com.google.errorprone:error_prone_core:$versionErrorprone")
-    compileOnlyApi("org.checkerframework:checker-qual:3.7.0")
+    compileOnlyApi("org.checkerframework:checker-qual:3.7.1")
 
     minecraft("com.mojang:minecraft:$versionMinecraft")
     mappings("net.fabricmc:yarn:$versionMinecraft+build.$versionMappings:v2")
