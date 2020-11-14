@@ -69,6 +69,8 @@ import java.util.function.Supplier;
  * <p>The {@link #collection()} provides an easily accessible collection of
  * built-in type serializers, while other factory methods allow creating custom
  * type serializers that interact with game serialization mechanisms.
+ *
+ * @since 1.2.0
  */
 public final class MinecraftSerializers {
 
@@ -115,12 +117,30 @@ public final class MinecraftSerializers {
         }
     }
 
-    public static <V> TypeSerializer<V> forCodec(final Codec<V> codec) {
+    /**
+     * Create a new serializer wrapping the provided {@link Codec}.
+     *
+     * @param codec codec to use for the serialization operation
+     * @param <V> value type
+     * @return a new serializer
+     * @since 2.0.0
+     */
+    public static <V> TypeSerializer<V> serializer(final Codec<V> codec) {
         return DfuSerializers.serializer(codec);
     }
 
-    public static <V, S extends V> @Nullable Codec<S> forSerializer(final TypeToken<S> type) {
-        return forSerializer(type, collection());
+    /**
+     * Create a new codec that uses the default type serializer collection
+     * to serialize an object of the provided type.
+     *
+     * @param type token representing a value type
+     * @param <S> value type
+     * @return a codec for the type, or null if an appropriate
+     *      {@link TypeSerializer} could not be found.
+     * @since 2.0.0
+     */
+    public static <S> @Nullable Codec<S> codec(final TypeToken<S> type) {
+        return codec(type, collection());
     }
 
     /**
@@ -131,8 +151,10 @@ public final class MinecraftSerializers {
      * @param <V> value type
      * @return a codec, or null if an appropriate {@link TypeSerializer}
      *      could not be found for the TypeToken.
+     * @see DfuSerializers#codec(TypeToken)
+     * @since 1.2.0
      */
-    public static <V> @Nullable Codec<V> forSerializer(final TypeToken<V> type, final TypeSerializerCollection collection) {
+    public static <V> @Nullable Codec<V> codec(final TypeToken<V> type, final TypeSerializerCollection collection) {
         return DfuSerializers.codec(type, collection);
     }
 
@@ -143,6 +165,7 @@ public final class MinecraftSerializers {
      * @param registry the registry
      * @param <T> the type registered by the registry
      * @return a serializer for the registry
+     * @since 1.2.0
      */
     public static <T> TypeSerializer<T> forRegistry(final Registry<T> registry) {
         return new RegistrySerializer<>(registry);
@@ -159,6 +182,7 @@ public final class MinecraftSerializers {
      * @return minecraft serializers
      * @see #populate(TypeSerializerCollection.Builder) for information about
      *      which serializers this collection will include
+     * @since 1.2.0
      */
     public static TypeSerializerCollection collection() {
         TypeSerializerCollection collection = MINECRAFT_COLLECTION;
@@ -176,6 +200,7 @@ public final class MinecraftSerializers {
      *
      * @param collection collection to test
      * @return if tested collection is the confabricate default collection
+     * @since 1.2.0
      */
     public static boolean isCommonCollection(final TypeSerializerCollection collection) {
         return requireNonNull(collection, "collection").equals(MINECRAFT_COLLECTION);
@@ -201,6 +226,7 @@ public final class MinecraftSerializers {
      *
      * @param collection to populate
      * @return provided collection
+     * @since 1.2.0
      */
     public static TypeSerializerCollection.Builder populate(final TypeSerializerCollection.Builder collection) {
         collection.registerExact(Identifier.class, IdentifierSerializer.INSTANCE)
@@ -210,8 +236,8 @@ public final class MinecraftSerializers {
             registerRegistry(collection, registry.getKey(), registry.getValue());
         }
 
-        collection.register(ItemStack.class, forCodec(ItemStack.CODEC));
-        collection.register(CompoundTag.class, forCodec(CompoundTag.CODEC));
+        collection.register(ItemStack.class, serializer(ItemStack.CODEC));
+        collection.register(CompoundTag.class, serializer(CompoundTag.CODEC));
 
         // All registries here should be in SPECIAL_REGISTRIES
         populateTaggedRegistry(collection, TypeToken.get(Fluid.class), Registry.FLUID, FluidTagsAccessor.getRequiredTags()::getGroup);
@@ -223,14 +249,14 @@ public final class MinecraftSerializers {
     }
 
     // Type serializers that use the server resource manager
-    public static TypeSerializerCollection.Builder populateServer(final MinecraftServer server, final TypeSerializerCollection.Builder collection) {
+    private static TypeSerializerCollection.Builder populateServer(final MinecraftServer server, final TypeSerializerCollection.Builder collection) {
         registerRegistry(collection, DimensionType.class, forRegistry(server.getRegistryManager().getDimensionTypes()));
         return collection;
     }
 
     // Type serializers that source registry + tag information from the client
     @Environment(EnvType.CLIENT)
-    public static TypeSerializerCollection.Builder populateClient(final MinecraftClient client, final TypeSerializerCollection.Builder collection) {
+    private static TypeSerializerCollection.Builder populateClient(final MinecraftClient client, final TypeSerializerCollection.Builder collection) {
         return collection;
     }
 
