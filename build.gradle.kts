@@ -1,6 +1,5 @@
 
 import ca.stellardrift.build.common.configurate
-import ca.stellardrift.build.common.sonatypeOss
 
 plugins {
     id("net.ltgt.errorprone") version "1.3.0"
@@ -22,7 +21,7 @@ version = "$versionBase+${versionConfigurate.replace("-SNAPSHOT", "")}"
 description = ext["longDescription"] as String
 
 repositories {
-    sonatypeOss()
+    mavenCentral()
     jcenter()
 }
 
