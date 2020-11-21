@@ -13,10 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package ca.stellardrift.confabricate;
 
-import ca.stellardrift.confabricate.typeserializers.MinecraftSerializers;
 import com.google.common.collect.ImmutableSet;
 import net.minecraft.nbt.ByteArrayTag;
 import net.minecraft.nbt.ByteTag;

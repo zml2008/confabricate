@@ -3,9 +3,8 @@ import ca.stellardrift.build.common.configurate
 
 plugins {
     id("net.ltgt.errorprone") version "1.3.0"
-    id("fabric-loom") version "0.5-SNAPSHOT"
-    id("ca.stellardrift.opinionated.fabric") version "3.1"
-    id("ca.stellardrift.opinionated.publish") version "3.1"
+    id("ca.stellardrift.opinionated.fabric") version "4.0.1"
+    id("net.kyori.indra.publishing.bintray") version "1.1.1"
 }
 
 val versionBase = "2.0-SNAPSHOT"
@@ -34,12 +33,6 @@ tasks.withType(Jar::class).configureEach {
     }
 }
 
-tasks.withType(ProcessResources::class.java).configureEach {
-    filesMatching("fabric.mod.json") {
-        expand("project" to project)
-    }
-}
-
 tasks.withType(Javadoc::class).configureEach {
     val options = this.options
     if (options is StandardJavadocDocletOptions) {
@@ -59,6 +52,7 @@ dependencies {
     modImplementation("net.fabricmc:fabric-loader:$versionLoader")
     modImplementation("net.fabricmc.fabric-api:fabric-api:$versionFabricApi")
 
+    // We add the bom, but because Loom can't handle reading versions from there, we'll have to
     modApi(enforcedPlatform(configurate("bom", versionConfigurate)))
     include(modApi(configurate("core", versionConfigurate))!!)
     include(modApi(configurate("hocon", versionConfigurate))!!)
@@ -70,14 +64,23 @@ dependencies {
     include("io.leangen.geantyref:geantyref:1.3.11")
 
     include(modApi(configurate("gson", versionConfigurate)) { isTransitive = false })
+
+    checkstyle("ca.stellardrift:stylecheck:0.1")
 }
 
-opinionated {
-    github("zml2008", "confabricate")
-    apache2()
-    useJUnit5()
+tasks.javadoc {
+    classpath += sourceSets["accessor"].output
+}
 
-    publication?.apply {
+indra {
+    github("zml2008", "confabricate")
+    apache2License()
+
+    javaVersions {
+        testWith(8, 11, 15)
+    }
+
+    configurePublications {
         pom {
             developers {
                 developer {
@@ -88,5 +91,5 @@ opinionated {
         }
     }
 
-    publishTo("pex", "https://repo.glaremasters.me/repository/permissionsex")
+    publishSnapshotsTo("pex", "https://repo.glaremasters.me/repository/permissionsex")
 }

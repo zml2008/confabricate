@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package ca.stellardrift.confabricate;
 
 import ca.stellardrift.confabricate.typeserializers.MinecraftSerializers;
@@ -90,6 +89,13 @@ public class Confabricate implements ModInitializer {
         }
     }
 
+    /**
+     * Internal API to get a mod {@link Identifier}.
+     *
+     * @param item path value
+     * @return new identifier
+     * @since 2.0.0
+     */
     @RestrictedApi(explanation = "confabricate namespace is not open to others",
             link = "", allowedOnPath = ".*/ca/stellardrift/confabricate/.*")
     public static Identifier id(final String item) {

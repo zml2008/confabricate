@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package ca.stellardrift.confabricate.test;
 
 import static org.spongepowered.configurate.transformation.ConfigurationTransformation.WILDCARD_OBJECT;
@@ -244,7 +243,7 @@ public class ConfabricateTester implements ModInitializer {
     @ConfigSerializable
     static class ProtectionSection {
         @Comment("Log checks performed")
-        private boolean debug = false;
+        private boolean debug;
         @Comment("Check for breaking blocks")
         private List<ProtectionEntry<Block>> blockBreak = new ArrayList<>();
         @Comment("Check for placing blocks")
