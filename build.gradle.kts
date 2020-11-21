@@ -4,7 +4,7 @@ import ca.stellardrift.build.common.configurate
 plugins {
     id("net.ltgt.errorprone") version "1.3.0"
     id("fabric-loom") version "0.5-SNAPSHOT"
-    id("ca.stellardrift.opinionated.fabric") version "3.1"
+    id("ca.stellardrift.opinionated.fabric") version "4.0.1"
     id("ca.stellardrift.opinionated.publish") version "3.1"
 }
 
