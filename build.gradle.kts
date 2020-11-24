@@ -4,7 +4,7 @@ import ca.stellardrift.build.common.configurate
 plugins {
     id("net.ltgt.errorprone") version "1.3.0"
     id("ca.stellardrift.opinionated.fabric") version "4.0.1"
-    id("net.kyori.indra.publishing.bintray") version "1.1.1"
+    id("net.kyori.indra.publishing.bintray") version "1.2.0"
 }
 
 val versionBase = "2.0-SNAPSHOT"
