@@ -161,7 +161,7 @@ final class TestCommands {
                     try {
                         final ServerPlayerEntity entity = EntityArgumentType.getPlayer(ctx, "ply");
 
-                        final Text roundtripped = toText(dumpToFile(entity::toTag, path("file", ctx)));
+                        final Text roundtripped = NbtHelper.toPrettyPrintedText(dumpToFile(entity::toTag, path("file", ctx)));
                         ctx.getSource().sendFeedback(roundtripped, false);
 
                         ctx.getSource().sendFeedback(new LiteralText("Successfully dumped data from player ")
@@ -174,7 +174,7 @@ final class TestCommands {
                 .then(literal("entity").then(argument("ent", EntityArgumentType.entity()).executes(ctx -> {
                     final Entity entity = EntityArgumentType.getEntity(ctx, "ent");
 
-                    final Text roundtripped = toText(dumpToFile(entity::toTag, path("file", ctx)));
+                    final Text roundtripped = NbtHelper.toPrettyPrintedText(dumpToFile(entity::toTag, path("file", ctx)));
                     ctx.getSource().sendFeedback(roundtripped, false);
 
                     ctx.getSource().sendFeedback(new LiteralText("Successfully dumped data from ")
@@ -189,16 +189,12 @@ final class TestCommands {
                         throw new CommandException(new LiteralText("No block entity found!"));
                     }
 
-                    final Text roundtripped = toText(dumpToFile(entity::toTag, path("file", ctx)));
+                    final Text roundtripped = NbtHelper.toPrettyPrintedText(dumpToFile(entity::toTag, path("file", ctx)));
                     ctx.getSource().sendFeedback(roundtripped, false);
                     ctx.getSource().sendFeedback(new LiteralText("Successfully dumped data from ")
                             .append(new LiteralText(pos.toString()).styled(s -> s.withColor(Formatting.AQUA))), false);
                     return 1;
                 }))));
-    }
-
-    static Text toText(final Tag tag) {
-        return NbtHelper.method_32270(tag);
     }
 
     static Tag dumpToFile(final Consumer<CompoundTag> dumpFunc, final Path file) throws CommandException {
