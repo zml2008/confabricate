@@ -13,10 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package ca.stellardrift.confabricate;
 
-import ca.stellardrift.confabricate.typeserializers.MinecraftSerializers;
 import com.google.common.collect.ImmutableSet;
 import net.minecraft.nbt.ByteArrayTag;
 import net.minecraft.nbt.ByteTag;
@@ -44,6 +42,8 @@ import java.util.Map;
 /**
  * A configuration adapter that will convert Minecraft NBT data into a
  * Configurate {@link ConfigurationNode}.
+ *
+ * @since 1.0.0
  */
 public final class NbtNodeAdapter {
 
@@ -59,6 +59,7 @@ public final class NbtNodeAdapter {
      * @param tag the tag to convert
      * @param node the node to populate
      * @throws IOException if invalid tags are provided
+     * @since 1.0.0
      */
     public static void tagToNode(final Tag tag, final ConfigurationNode node) throws IOException {
         if (tag instanceof CompoundTag) {
@@ -127,6 +128,7 @@ public final class NbtNodeAdapter {
      * @param node the configuration node
      * @return the converted tag object
      * @throws IOException if an IO error occurs while converting the tag
+     * @since 1.0.0
      */
     public static Tag nodeToTag(final ConfigurationNode node) throws IOException {
         if (node.isMap()) {
@@ -173,9 +175,10 @@ public final class NbtNodeAdapter {
      * Create an empty node with options appropriate for handling NBT data.
      *
      * @return the new node
+     * @since 1.0.0
      */
     public static ConfigurationNode createEmptyNode() {
-        return createEmptyNode(ConfigurationOptions.defaults().serializers(MinecraftSerializers.collection()));
+        return createEmptyNode(Confabricate.confabricateOptions());
     }
 
     /**
@@ -183,6 +186,7 @@ public final class NbtNodeAdapter {
      *
      * @param options options to work with
      * @return the new node
+     * @since 1.0.0
      */
     public static ConfigurationNode createEmptyNode(final @NonNull ConfigurationOptions options) {
         return BasicConfigurationNode.root(options

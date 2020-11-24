@@ -14,6 +14,8 @@
     To suppress certain violations please review suppression filters.
 
     Authors: Max Vetrenko, Ruslan Diachenko, Roman Ivanov.
+
+    This file modified to incorporate Sponge and Configurate customizations.
  -->
 
 <module name="Checker">
@@ -33,12 +35,11 @@
         <property name="optional" value="true"/>
     </module>
 
-    <!-- Checks for whitespace                               -->
+    <!-- Checks for whitespace                            -->
     <!-- See http://checkstyle.org/config_whitespace.html -->
     <module name="FileTabCharacter">
         <property name="eachLine" value="true"/>
     </module>
-
 
     <!-- Sponge code style extras -->
     <module name="LineLength">
@@ -73,7 +74,22 @@
         <property name="fileExtensions" value="groovy,java"/>
     </module>
 
+    <!-- https://checkstyle.org/config_regexp.html#RegexpSingleline -->
+    <module name="RegexpSingleline">
+        <property name="id" value="NoTrailingWhitespace"/>
+        <property name="format" value="\s+$"/>
+        <property name="message" value="No white space an the end of lines"/>
+    </module>
+
+    <module name="SuppressWarningsFilter"/>
+
     <module name="TreeWalker">
+        <module name="JavadocVariable">
+            <property name="scope" value="public"/>
+        </module>
+        <module name="MissingJavadocType">
+            <property name="scope" value="public"/>
+        </module>
         <module name="RedundantImport"/>
         <module name="RedundantModifier"/>
         <module name="RequireThis">
@@ -82,25 +98,90 @@
         </module>
 
          <!-- Configurate-specific changes -->
-        <module name="FinalClass"/>
-        <module name="HideUtilityClassConstructor"/>
-        <module name="InterfaceIsType"/>
-        <module name="SingleSpaceSeparator">
-            <property name="validateComments" value="true"/>
+
+        <!-- https://checkstyle.org/config_coding.html#AvoidDoubleBraceInitialization -->
+        <module name="AvoidDoubleBraceInitialization"/>
+
+        <!-- https://checkstyle.org/config_coding.html#AvoidNoArgumentSuperConstructorCall -->
+        <module name="AvoidNoArgumentSuperConstructorCall"/>
+
+        <!-- https://checkstyle.org/config_coding.html#ExplicitInitialization -->
+        <module name="ExplicitInitialization"/>
+
+        <!-- https://checkstyle.org/config_javadoc.html#WriteTag -->
+        <!-- https://gitlab.com/stellardrift/stylecheck/-/blob/dev/src/main/java/ca/stellardrift/stylecheck/FilteringWriteTag.java -->
+        <module name="FilteringWriteTag">
+            <property name="id" value="MissingJavadocSince"/>
+            <property name="tag" value="@since"/>
+            <property name="tagFormat" value="\d\.\d+\.\d+"/>
+            <property name="tagSeverity" value="ignore"/>
+            <property name="minimumScope" value="protected"/>
+            <property name="tokens" value="INTERFACE_DEF, CLASS_DEF, ENUM_DEF, ANNOTATION_DEF, RECORD_DEF, METHOD_DEF, CTOR_DEF, ANNOTATION_FIELD_DEF, RECORD_DEF, COMPACT_CTOR_DEF"/>
         </module>
+
+        <module name="FinalClass"/>
         <module name="FinalLocalVariable">
             <property name="tokens" value="PARAMETER_DEF,VARIABLE_DEF"/>
         </module>
+        <module name="HideUtilityClassConstructor"/>
         <module name="IllegalImport">
             <property name="illegalPkgs" value="javax.annotations.*"/>
-            <property name="illegalClasses" value="com.google.common.base.Preconditions.*"/>
-            <property name="illegalClasses" value="com.google.common.base.Preconditions"/>
             <property name="regexp" value="true"/>
         </module>
-
         <module name="IllegalType">
-            <property name="illegalClassNames" value="java.org.spongepowered.configurate.util.Optional"/>
+            <property name="illegalClassNames" value="java.util.Optional"/>
         </module>
+        <module name="InterfaceIsType"/>
+
+        <!-- https://checkstyle.org/config_naming.html#MethodName -->
+        <module name="MethodName">
+            <property name="id" value="NoGetSetPrefix"/>
+            <property name="format" value="^(?:(?:.{1,3})|(?:[gs]et[^A-Z].*)|(?:(?:[^gsA-Z]..|.[^e].|..[^t]).+))$"/>
+        </module>
+
+        <module name="RegexpSinglelineJava">
+            <property name="id" value="JavadocNoCaptializedStarts"/>
+            <property name="format" value="\s+\*\s@((?:(?:param|throws)\s\S+)|return)\s+[A-Z]"/>
+            <property name="message" value="Javadoc at-tag descriptions should not start with a capital letter"/>
+        </module>
+        <module name="RegexpSinglelineJava">
+            <property name="id" value="JavadocNotJustThis"/>
+            <property name="format" value="\s+\*\s@((?:(?:param|throws)\s\S+)|return)\s+this$"/>
+            <property name="message" value="Javadoc at-tag descriptions should not just be 'this'."/>
+        </module>
+
+        <!-- https://checkstyle.org/config_coding.html#SimplifyBooleanExpression -->
+        <module name="SimplifyBooleanExpression"/>
+
+        <!-- https://checkstyle.org/config_coding.html#SimplifyBooleanReturn -->
+        <module name="SimplifyBooleanReturn"/>
+
+        <!-- https://checkstyle.org/config_whitespace.html#SingleSpaceSeparator -->
+        <module name="SingleSpaceSeparator">
+            <property name="validateComments" value="true"/>
+        </module>
+
+        <module name="SuppressWarningsHolder"/>
+
+        <module name="SuppressWithNearbyCommentFilter">
+            <property name="commentFormat" value="@cs-: (\w+) \(.*\)"/>
+            <property name="idFormat" value="$1"/>
+            <property name="influenceFormat" value="1"/>
+        </module>
+
+        <!-- https://checkstyle.org/config_coding.html#UnnecessaryParentheses -->
+        <module name="UnnecessaryParentheses"/>
+
+        <!-- https://checkstyle.org/config_coding.html#UnnecessarySemicolonAfterOuterTypeDeclaration -->
+        <module name="UnnecessarySemicolonAfterOuterTypeDeclaration"/>
+
+        <!-- https://checkstyle.org/config_coding.html#UnnecessarySemicolonAfterTypeMemberDeclaration -->
+        <module name="UnnecessarySemicolonAfterTypeMemberDeclaration"/>
+
+        <!-- https://checkstyle.org/config_coding.html#UnnecessarySemicolonInTryWithResources -->
+        <module name="UnnecessarySemicolonInTryWithResources"/>
+
+        <module name="UnusedImports"/>
 
         <!-- Standard Google style checks -->
 
@@ -137,7 +218,7 @@
                     INTERFACE_DEF, LAMBDA, LITERAL_CASE, LITERAL_CATCH, LITERAL_DEFAULT,
                     LITERAL_DO, LITERAL_ELSE, LITERAL_FINALLY, LITERAL_FOR, LITERAL_IF,
                     LITERAL_SWITCH, LITERAL_SYNCHRONIZED, LITERAL_TRY, LITERAL_WHILE, METHOD_DEF,
-                    OBJBLOCK, STATIC_INIT"/>
+                    OBJBLOCK, STATIC_INIT, RECORD_DEF, COMPACT_CTOR_DEF"/>
         </module>
         <module name="RightCurly">
             <property name="id" value="RightCurlySame"/>
@@ -150,7 +231,8 @@
             <property name="option" value="alone"/>
             <property name="tokens"
              value="CLASS_DEF, METHOD_DEF, CTOR_DEF, LITERAL_FOR, LITERAL_WHILE, STATIC_INIT,
-                    INSTANCE_INIT, ANNOTATION_DEF, ENUM_DEF"/>
+                    INSTANCE_INIT, ANNOTATION_DEF, ENUM_DEF, INTERFACE_DEF, RECORD_DEF,
+                    COMPACT_CTOR_DEF"/>
         </module>
         <module name="SuppressionXpathSingleFilter">
           <!-- suppresion is required till https://github.com/checkstyle/checkstyle/issues/7541 -->
@@ -174,9 +256,9 @@
                     BXOR_ASSIGN, COLON, DIV, DIV_ASSIGN, DO_WHILE, EQUAL, GE, GT, LAMBDA, LAND,
                     LCURLY, LE, LITERAL_CATCH, LITERAL_DO, LITERAL_ELSE, LITERAL_FINALLY,
                     LITERAL_FOR, LITERAL_IF, LITERAL_RETURN, LITERAL_SWITCH, LITERAL_SYNCHRONIZED,
-                     LITERAL_TRY, LITERAL_WHILE, LOR, LT, MINUS, MINUS_ASSIGN, MOD, MOD_ASSIGN,
-                     NOT_EQUAL, PLUS, PLUS_ASSIGN, QUESTION, RCURLY, SL, SLIST, SL_ASSIGN, SR,
-                     SR_ASSIGN, STAR, STAR_ASSIGN, LITERAL_ASSERT, TYPE_EXTENSION_AND"/>
+                    LITERAL_TRY, LITERAL_WHILE, LOR, LT, MINUS, MINUS_ASSIGN, MOD, MOD_ASSIGN,
+                    NOT_EQUAL, PLUS, PLUS_ASSIGN, QUESTION, RCURLY, SL, SLIST, SL_ASSIGN, SR,
+                    SR_ASSIGN, STAR, STAR_ASSIGN, LITERAL_ASSERT, TYPE_EXTENSION_AND"/>
             <message key="ws.notFollowed"
              value="WhitespaceAround: ''{0}'' is not followed by whitespace. Empty blocks may only be represented as '{}' when not part of a multi-block statement (4.1.3)"/>
             <message key="ws.notPreceded"
@@ -190,10 +272,11 @@
         <module name="UpperEll"/>
         <module name="ModifierOrder"/>
         <module name="EmptyLineSeparator">
-            <!-- No new line after the license header -->
+            <!-- Configurate: No new line after the license header -->
             <property name="tokens"
              value="IMPORT, STATIC_IMPORT, CLASS_DEF, INTERFACE_DEF, ENUM_DEF,
-                    STATIC_INIT, INSTANCE_INIT, METHOD_DEF, CTOR_DEF, VARIABLE_DEF"/>
+                    STATIC_INIT, INSTANCE_INIT, METHOD_DEF, CTOR_DEF, VARIABLE_DEF, RECORD_DEF,
+                    COMPACT_CTOR_DEF"/>
             <property name="allowNoEmptyLineBetweenFields" value="true"/>
             <property name="allowMultipleEmptyLines" value="false"/> <!-- Configurate: false -->
         </module>
@@ -230,7 +313,8 @@
              value="Package name ''{0}'' must match pattern ''{1}''."/>
         </module>
         <module name="TypeName">
-            <property name="tokens" value="CLASS_DEF, INTERFACE_DEF, ENUM_DEF, ANNOTATION_DEF"/>
+            <property name="tokens" value="CLASS_DEF, INTERFACE_DEF, ENUM_DEF,
+                    ANNOTATION_DEF, RECORD_DEF"/>
             <message key="name.invalidPattern"
              value="Type name ''{0}'' must match pattern ''{1}''."/>
         </module>
@@ -245,7 +329,7 @@
              value="Parameter name ''{0}'' must match pattern ''{1}''."/>
         </module>
         <module name="LambdaParameterName">
-            <property name="format" value="^\$+|([a-z]([a-z0-9][a-zA-Z0-9]*)?)$"/>
+            <property name="format" value="^\$+|([a-z]([a-z0-9][a-zA-Z0-9]*)?)$"/> <!-- Configurate: allow $ param -->
             <message key="name.invalidPattern"
                      value="Lambda parameter name ''{0}'' must match pattern ''{1}''."/>
         </module>
@@ -257,12 +341,22 @@
         <module name="LocalVariableName">
             <property name="format" value="^[a-z]([a-z0-9][a-zA-Z0-9]*)?$"/>
             <message key="name.invalidPattern"
-             value="Local variable name ''{0}'' must match pattern ''{1}''."/>
+                     value="Local variable name ''{0}'' must match pattern ''{1}''."/>
+        </module>
+        <module name="PatternVariableName">
+            <property name="format" value="^[a-z]([a-z0-9][a-zA-Z0-9]*)?$"/>
+            <message key="name.invalidPattern"
+                     value="Pattern variable name ''{0}'' must match pattern ''{1}''."/>
         </module>
         <module name="ClassTypeParameterName">
             <property name="format" value="(^[A-Z][0-9]?)$|([A-Z][a-zA-Z0-9]*[T]$)"/>
             <message key="name.invalidPattern"
-             value="Class type name ''{0}'' must match pattern ''{1}''."/>
+                     value="Class type name ''{0}'' must match pattern ''{1}''."/>
+        </module>
+        <module name="RecordTypeParameterName">
+            <property name="format" value="(^[A-Z][0-9]?)$|([A-Z][a-zA-Z0-9]*[T]$)"/>
+            <message key="name.invalidPattern"
+                     value="Record type name ''{0}'' must match pattern ''{1}''."/>
         </module>
         <module name="MethodTypeParameterName">
             <property name="format" value="(^[A-Z][0-9]?)$|([A-Z][a-zA-Z0-9]*[T]$)"/>
@@ -299,7 +393,8 @@
             <property name="allowedAbbreviations" value="UTF" />
             <property name="tokens"
              value="CLASS_DEF, INTERFACE_DEF, ENUM_DEF, ANNOTATION_DEF, ANNOTATION_FIELD_DEF,
-                    PARAMETER_DEF, VARIABLE_DEF, METHOD_DEF"/>
+                    PARAMETER_DEF, VARIABLE_DEF, METHOD_DEF, PATTERN_VARIABLE_DEF, RECORD_DEF,
+                    RECORD_COMPONENT_DEF"/>
         </module>
         <module name="OverloadMethodsDeclarationOrder"/>
         <module name="VariableDeclarationUsageDistance"/>
@@ -313,7 +408,7 @@
         <module name="MethodParamPad">
             <property name="tokens"
              value="CTOR_DEF, LITERAL_NEW, METHOD_CALL, METHOD_DEF,
-                    SUPER_CTOR_CALL, ENUM_CONSTANT_DEF"/>
+                    SUPER_CTOR_CALL, ENUM_CONSTANT_DEF, RECORD_DEF"/>
         </module>
         <module name="NoWhitespaceBefore">
             <property name="tokens"
@@ -326,7 +421,8 @@
              value="ANNOTATION, ANNOTATION_FIELD_DEF, CTOR_CALL, CTOR_DEF, DOT, ENUM_CONSTANT_DEF,
                     EXPR, LITERAL_CATCH, LITERAL_DO, LITERAL_FOR, LITERAL_IF, LITERAL_NEW,
                     LITERAL_SWITCH, LITERAL_SYNCHRONIZED, LITERAL_WHILE, METHOD_CALL,
-                    METHOD_DEF, QUESTION, RESOURCE_SPECIFICATION, SUPER_CTOR_CALL, LAMBDA"/>
+                    METHOD_DEF, QUESTION, RESOURCE_SPECIFICATION, SUPER_CTOR_CALL, LAMBDA,
+                    RECORD_DEF"/>
         </module>
         <module name="OperatorWrap">
             <property name="option" value="NL"/>
@@ -337,7 +433,8 @@
         <module name="AnnotationLocation">
             <property name="id" value="AnnotationLocationMostCases"/>
             <property name="tokens"
-             value="CLASS_DEF, INTERFACE_DEF, ENUM_DEF, METHOD_DEF, CTOR_DEF"/>
+               value="CLASS_DEF, INTERFACE_DEF, ENUM_DEF, METHOD_DEF, CTOR_DEF,
+                      RECORD_DEF, COMPACT_CTOR_DEF"/>
         </module>
         <module name="AnnotationLocation">
             <property name="id" value="AnnotationLocationVariables"/>
@@ -352,21 +449,22 @@
              value="^@return the *|^This method returns |^A [{]@code [a-zA-Z0-9]+[}]( is a )"/>
         </module>
         <module name="JavadocParagraph"/>
+        <module name="RequireEmptyLineBeforeBlockTagGroup"/>
         <module name="AtclauseOrder">
-            <property name="tagOrder" value="@param, @return, @throws, @deprecated"/>
+            <property name="tagOrder" value="@param, @return, @throws, @see, @since, @deprecated"/> <!-- Configurate: extra tags -->
             <property name="target"
              value="CLASS_DEF, INTERFACE_DEF, ENUM_DEF, METHOD_DEF, CTOR_DEF, VARIABLE_DEF"/>
         </module>
         <module name="JavadocMethod">
             <property name="scope" value="public"/>
             <property name="allowedAnnotations" value="Override, Test"/>
-            <property name="tokens" value="METHOD_DEF, CTOR_DEF, ANNOTATION_FIELD_DEF"/>
+            <property name="tokens" value="METHOD_DEF, CTOR_DEF, ANNOTATION_FIELD_DEF, COMPACT_CTOR_DEF"/>
         </module>
         <module name="MissingJavadocMethod">
             <property name="scope" value="public"/>
-            <property name="minLineCount" value="2"/>
+            <!-- <property name="minLineCount" value="2"/> Configurate: no minimum lines -->
             <property name="allowedAnnotations" value="Override, Test"/>
-            <property name="tokens" value="METHOD_DEF, CTOR_DEF, ANNOTATION_FIELD_DEF"/>
+            <property name="tokens" value="METHOD_DEF, CTOR_DEF, ANNOTATION_FIELD_DEF, COMPACT_CTOR_DEF"/>
         </module>
         <module name="MethodName">
             <property name="format" value="^[a-z][a-z0-9][a-zA-Z0-9_]*$"/>
@@ -377,7 +475,7 @@
             <property name="ignoreInlineTags" value="false"/>
         </module>
         <module name="EmptyCatchBlock">
-            <property name="exceptionVariableName" value="(expected|ignore)"/>
+            <property name="exceptionVariableName" value="(expected|ignore)"/> <!-- Configurate: allow ignore -->
         </module>
         <module name="CommentsIndentation">
             <property name="tokens" value="SINGLE_LINE_COMMENT, BLOCK_COMMENT_BEGIN"/>

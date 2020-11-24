@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package ca.stellardrift.confabricate;
 
 import ca.stellardrift.confabricate.typeserializers.MinecraftSerializers;
@@ -33,6 +32,7 @@ import org.spongepowered.configurate.CommentedConfigurationNode;
 import org.spongepowered.configurate.ConfigurateException;
 import org.spongepowered.configurate.ConfigurationNode;
 import org.spongepowered.configurate.ConfigurationOptions;
+import org.spongepowered.configurate.NodePath;
 import org.spongepowered.configurate.extra.dfu.v4.ConfigurateOps;
 import org.spongepowered.configurate.extra.dfu.v4.DataFixerTransformation;
 import org.spongepowered.configurate.hocon.HoconConfigurationLoader;
@@ -40,7 +40,6 @@ import org.spongepowered.configurate.loader.ConfigurationLoader;
 import org.spongepowered.configurate.reference.ConfigurationReference;
 import org.spongepowered.configurate.reference.WatchServiceListener;
 import org.spongepowered.configurate.transformation.ConfigurationTransformation;
-import org.spongepowered.configurate.transformation.NodePath;
 import org.spongepowered.configurate.transformation.TransformAction;
 
 import java.io.IOException;
@@ -53,6 +52,8 @@ import java.nio.file.Path;
  *
  * <p>This class has static utility methods for usage by other mods -- it should
  * not be instantiated by anyone but the mod loader.
+ *
+ * @since 1.0.0
  */
 public class Confabricate implements ModInitializer {
 
@@ -65,6 +66,8 @@ public class Confabricate implements ModInitializer {
 
     /**
      * Constructor for loader usage only.
+     *
+     * @since 9.9.9
      */
     public Confabricate() {
         if (instance != null) {
@@ -86,6 +89,13 @@ public class Confabricate implements ModInitializer {
         }
     }
 
+    /**
+     * Internal API to get a mod {@link Identifier}.
+     *
+     * @param item path value
+     * @return new identifier
+     * @since 2.0.0
+     */
     @RestrictedApi(explanation = "confabricate namespace is not open to others",
             link = "", allowedOnPath = ".*/ca/stellardrift/confabricate/.*")
     public static Identifier id(final String item) {
@@ -99,6 +109,17 @@ public class Confabricate implements ModInitializer {
     }
 
     /**
+     * Get configuration options configured to use Confabricate's serializers.
+     *
+     * @return customized options
+     * @since 2.0.0
+     */
+    public static ConfigurationOptions confabricateOptions() {
+        return ConfigurationOptions.defaults()
+                .serializers(MinecraftSerializers.collection());
+    }
+
+    /**
      * Create a configuration loader for the given mod's main
      * configuration file.
      *
@@ -106,7 +127,8 @@ public class Confabricate implements ModInitializer {
      *
      * @param mod the mod wanting to access its config
      * @return a configuration loader in the Hocon format
-     * @see #loaderFor(ModContainer, boolean)
+     * @see #loaderFor(ModContainer, boolean, ConfigurationOptions)
+     * @since 1.0.0
      */
     public static ConfigurationLoader<CommentedConfigurationNode> loaderFor(final ModContainer mod) {
         return loaderFor(mod, true);
@@ -130,9 +152,10 @@ public class Confabricate implements ModInitializer {
      * @param ownDirectory whether the configuration should be in a directory
      *                     just for the mod, or a file in the config root
      * @return the newly created configuration loader
+     * @since 1.0.0
      */
     public static ConfigurationLoader<CommentedConfigurationNode> loaderFor(final ModContainer mod, final boolean ownDirectory) {
-        return loaderFor(mod, ownDirectory, ConfigurationOptions.defaults().serializers(MinecraftSerializers.collection()));
+        return loaderFor(mod, ownDirectory, confabricateOptions());
     }
 
     /**
@@ -154,6 +177,7 @@ public class Confabricate implements ModInitializer {
      *                     just for the mod, or a file in the config root
      * @param options the options to use by default when loading
      * @return the newly created configuration loader
+     * @since 2.0.0
      */
     public static ConfigurationLoader<CommentedConfigurationNode> loaderFor(final ModContainer mod, final boolean ownDirectory,
             final ConfigurationOptions options) {
@@ -176,6 +200,7 @@ public class Confabricate implements ModInitializer {
      * @throws ConfigurateException if a listener could not be established or if
      *                      the configuration failed to load.
      * @see #configurationFor(ModContainer, boolean, ConfigurationOptions)
+     * @since 1.1.0
      */
     public static ConfigurationReference<CommentedConfigurationNode> configurationFor(final ModContainer mod) throws ConfigurateException {
         return configurationFor(mod, true);
@@ -200,10 +225,11 @@ public class Confabricate implements ModInitializer {
      * @return the newly created and loaded configuration reference
      * @throws ConfigurateException if a listener could not be established or
      *                              the configuration failed to load.
+     * @since 1.1.0
      */
-    public static ConfigurationReference<CommentedConfigurationNode> configurationFor(final ModContainer mod, final boolean ownDirectory)
-            throws ConfigurateException {
-        return configurationFor(mod, ownDirectory, ConfigurationOptions.defaults().serializers(MinecraftSerializers.collection()));
+    public static ConfigurationReference<CommentedConfigurationNode> configurationFor(final ModContainer mod,
+            final boolean ownDirectory) throws ConfigurateException {
+        return configurationFor(mod, ownDirectory, confabricateOptions());
     }
 
     /**
@@ -222,14 +248,14 @@ public class Confabricate implements ModInitializer {
      * @param mod the mod to get the configuration loader for
      * @param ownDirectory whether the configuration should be in a directory
      *                     just for the mod
-     * @param options the options to use when loading
+     * @param options the options to use by default when loading
      * @return the newly created and loaded configuration reference
      * @throws ConfigurateException if a listener could not be established or
      *                              the configuration failed to load.
      * @since 2.0.0
      */
-    public static ConfigurationReference<CommentedConfigurationNode> configurationFor(final ModContainer mod, final boolean ownDirectory,
-            final ConfigurationOptions options) throws ConfigurateException {
+    public static ConfigurationReference<CommentedConfigurationNode> configurationFor(final ModContainer mod,
+            final boolean ownDirectory, final ConfigurationOptions options) throws ConfigurateException {
         return fileWatcher().listenToConfiguration(path -> {
             return HoconConfigurationLoader.builder()
                     .path(path)
@@ -247,6 +273,7 @@ public class Confabricate implements ModInitializer {
      * @param ownDirectory whether the configuration should be in its own
      *                  directory, or in the main configuration directory
      * @return path to a configuration file
+     * @since 1.1.0
      */
     public static Path configurationFile(final ModContainer mod, final boolean ownDirectory) {
         Path configRoot = FabricLoader.getInstance().getConfigDir();
@@ -274,6 +301,7 @@ public class Confabricate implements ModInitializer {
      * @param versionKey the location of the data version in nodes provided to
      *                   the transformer
      * @return a transformation that executes a {@link DataFixer data fixer}.
+     * @since 1.1.0
      */
     public static ConfigurationTransformation createTransformation(final DataFixer fixer,
             final DSL.TypeReference reference, final int targetVersion, final Object... versionKey) {
@@ -294,6 +322,7 @@ public class Confabricate implements ModInitializer {
      * @param versionKey the location of the data version in nodes seen by
      *                  this action.
      * @return the created action
+     * @since 1.1.0
      */
     public static TransformAction createTransformAction(final DataFixer fixer,
             final DSL.TypeReference reference, final int targetVersion, final Object... versionKey) {
@@ -310,6 +339,7 @@ public class Confabricate implements ModInitializer {
      * the default filesystem.
      *
      * @return watcher
+     * @since 1.1.0
      */
     public static WatchServiceListener fileWatcher() {
         final WatchServiceListener ret = instance.listener;
@@ -324,6 +354,7 @@ public class Confabricate implements ModInitializer {
      * latest game save version.
      *
      * @return new builder
+     * @since 2.0.0
      */
     public static DataFixerTransformation.Builder minecraftDfuBuilder() {
         return DataFixerTransformation.dfuBuilder()

@@ -1,12 +1,10 @@
 
 import ca.stellardrift.build.common.configurate
-import ca.stellardrift.build.common.sonatypeOss
 
 plugins {
     id("net.ltgt.errorprone") version "1.3.0"
-    id("fabric-loom") version "0.5-SNAPSHOT"
-    id("ca.stellardrift.opinionated.fabric") version "3.1"
-    id("ca.stellardrift.opinionated.publish") version "3.1"
+    id("ca.stellardrift.opinionated.fabric") version "4.1"
+    id("net.kyori.indra.publishing.bintray") version "1.2.1"
 }
 
 val versionBase = "2.1.0-SNAPSHOT"
@@ -22,7 +20,7 @@ version = "$versionBase+${versionConfigurate.replace("-SNAPSHOT", "")}"
 description = ext["longDescription"] as String
 
 repositories {
-    sonatypeOss()
+    mavenCentral()
     jcenter()
 }
 
@@ -32,12 +30,6 @@ tasks.withType(Jar::class).configureEach {
                 "Specification-Version" to versionConfigurate,
                 "Implementation-Title" to project.name,
                 "Implementation-Version" to versionBase)
-    }
-}
-
-tasks.withType(ProcessResources::class.java).configureEach {
-    filesMatching("fabric.mod.json") {
-        expand("project" to project)
     }
 }
 
@@ -53,32 +45,37 @@ tasks.withType(Javadoc::class).configureEach {
 dependencies {
     compileOnly("com.google.errorprone:error_prone_annotations:$versionErrorprone")
     errorprone("com.google.errorprone:error_prone_core:$versionErrorprone")
-    compileOnlyApi("org.checkerframework:checker-qual:3.7.0")
+    compileOnlyApi("org.checkerframework:checker-qual:3.7.1")
 
     minecraft("com.mojang:minecraft:$versionMinecraft")
     mappings("net.fabricmc:yarn:$versionMinecraft+build.$versionMappings:v2")
     modImplementation("net.fabricmc:fabric-loader:$versionLoader")
     modImplementation("net.fabricmc.fabric-api:fabric-api:$versionFabricApi")
 
+    // We add the bom, but because Loom can't handle reading versions from there, we'll have to
     modApi(enforcedPlatform(configurate("bom", versionConfigurate)))
     include(modApi(configurate("core", versionConfigurate))!!)
     include(modApi(configurate("hocon", versionConfigurate))!!)
+    include(modApi(configurate("gson", versionConfigurate)) { isTransitive = false })
     include(modApi(configurate("extra-dfu4", versionConfigurate)) {
         exclude("com.mojang") // Use the game's DFU version
     })
 
-    include("com.typesafe:config:1.4.0")
+    include("com.typesafe:config:1.4.1")
     include("io.leangen.geantyref:geantyref:1.3.11")
 
-    include(modApi(configurate("gson", versionConfigurate)) { isTransitive = false })
+    checkstyle("ca.stellardrift:stylecheck:0.1")
 }
 
-opinionated {
+indra {
     github("zml2008", "confabricate")
-    apache2()
-    useJUnit5()
+    apache2License()
 
-    publication?.apply {
+    javaVersions {
+        testWith(8, 11, 15)
+    }
+
+    configurePublications {
         pom {
             developers {
                 developer {
@@ -89,5 +86,5 @@ opinionated {
         }
     }
 
-    publishTo("pex", "https://repo.glaremasters.me/repository/permissionsex")
+    publishAllTo("pex", "https://repo.glaremasters.me/repository/permissionsex")
 }
