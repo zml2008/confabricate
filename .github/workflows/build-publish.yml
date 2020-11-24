@@ -1,6 +1,6 @@
 # Making changes? https://github.com/nektos/act may help you test locally
 
-name: Build And Test
+name: Build and Publish
 
 on: [push, pull_request]
 
@@ -34,7 +34,7 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: test-results-${{ runner.os }}
-          path: configurate-*/build/test-results/test
+          path: build/test-results/test
       - name: Publish to Maven
         if: ${{ runner.os == 'Linux' && github.event_name == 'push' && (github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/heads/mc/')) }}
         run: ./gradlew publish

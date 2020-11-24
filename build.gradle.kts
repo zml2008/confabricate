@@ -3,8 +3,8 @@ import ca.stellardrift.build.common.configurate
 
 plugins {
     id("net.ltgt.errorprone") version "1.3.0"
-    id("ca.stellardrift.opinionated.fabric") version "4.0.1"
-    id("net.kyori.indra.publishing.bintray") version "1.1.1"
+    id("ca.stellardrift.opinionated.fabric") version "4.1"
+    id("net.kyori.indra.publishing.bintray") version "1.2.1"
 }
 
 val versionBase = "2.0-SNAPSHOT"
@@ -56,20 +56,15 @@ dependencies {
     modApi(enforcedPlatform(configurate("bom", versionConfigurate)))
     include(modApi(configurate("core", versionConfigurate))!!)
     include(modApi(configurate("hocon", versionConfigurate))!!)
+    include(modApi(configurate("gson", versionConfigurate)) { isTransitive = false })
     include(modApi(configurate("extra-dfu4", versionConfigurate)) {
         exclude("com.mojang") // Use the game's DFU version
     })
 
-    include("com.typesafe:config:1.4.0")
+    include("com.typesafe:config:1.4.1")
     include("io.leangen.geantyref:geantyref:1.3.11")
 
-    include(modApi(configurate("gson", versionConfigurate)) { isTransitive = false })
-
     checkstyle("ca.stellardrift:stylecheck:0.1")
-}
-
-tasks.javadoc {
-    classpath += sourceSets["accessor"].output
 }
 
 indra {
@@ -91,5 +86,5 @@ indra {
         }
     }
 
-    publishSnapshotsTo("pex", "https://repo.glaremasters.me/repository/permissionsex")
+    publishAllTo("pex", "https://repo.glaremasters.me/repository/permissionsex")
 }
