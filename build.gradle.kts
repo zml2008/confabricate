@@ -52,8 +52,7 @@ dependencies {
     modImplementation("net.fabricmc:fabric-loader:$versionLoader")
     modImplementation("net.fabricmc.fabric-api:fabric-api:$versionFabricApi")
 
-    // We add the bom, but because Loom can't handle reading versions from there, we'll have to
-    modApi(enforcedPlatform(configurate("bom", versionConfigurate)))
+    // We can't add the bom because loom doesn't put it into our pom correctly
     include(modApi(configurate("core", versionConfigurate))!!)
     include(modApi(configurate("hocon", versionConfigurate))!!)
     include(modApi(configurate("gson", versionConfigurate)) { isTransitive = false })
