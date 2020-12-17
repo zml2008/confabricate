@@ -249,7 +249,7 @@ public final class MinecraftSerializers {
 
     // Type serializers that use the server resource manager
     private static TypeSerializerCollection.Builder populateServer(final MinecraftServer server, final TypeSerializerCollection.Builder collection) {
-        registerRegistry(collection, DimensionType.class, forRegistry(server.getRegistryManager().getDimensionTypes()));
+        registerRegistry(collection, DimensionType.class, forRegistry(server.getRegistryManager().method_33309(Registry.DIMENSION_TYPE_KEY)));
         return collection;
     }
 
