@@ -52,11 +52,12 @@ dependencies {
     modImplementation("net.fabricmc:fabric-loader:$versionLoader")
     modImplementation("net.fabricmc.fabric-api:fabric-api:$versionFabricApi")
 
-    // We add the bom, but because Loom can't handle reading versions from there, we'll have to
-    modApi(enforcedPlatform(configurate("bom", versionConfigurate)))
+    // Don't use the bom because it's broken
     include(modApi(configurate("core", versionConfigurate))!!)
     include(modApi(configurate("hocon", versionConfigurate))!!)
-    include(modApi(configurate("gson", versionConfigurate)) { isTransitive = false })
+    include(modApi(configurate("gson", versionConfigurate)) {
+        exclude("com.google.code.gson") // Use Minecraft's gson
+    })
     include(modApi(configurate("extra-dfu4", versionConfigurate)) {
         exclude("com.mojang") // Use the game's DFU version
     })
