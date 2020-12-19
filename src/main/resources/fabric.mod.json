@@ -25,5 +25,6 @@
     "fabricloader": ">=0.4.0"
   },
   "suggests": {
+    "fabric-tag-extensions-v0": "*"
   }
 }
