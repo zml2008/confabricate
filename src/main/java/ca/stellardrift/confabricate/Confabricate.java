@@ -179,7 +179,9 @@ public class Confabricate implements ModInitializer {
      * @return the newly created configuration loader
      * @since 2.0.0
      */
-    public static ConfigurationLoader<CommentedConfigurationNode> loaderFor(final ModContainer mod, final boolean ownDirectory,
+    public static ConfigurationLoader<CommentedConfigurationNode> loaderFor(
+            final ModContainer mod,
+            final boolean ownDirectory,
             final ConfigurationOptions options) {
         return HoconConfigurationLoader.builder()
                 .path(configurationFile(mod, ownDirectory))
@@ -226,7 +228,8 @@ public class Confabricate implements ModInitializer {
      *                              the configuration failed to load.
      * @since 1.1.0
      */
-    public static ConfigurationReference<CommentedConfigurationNode> configurationFor(final ModContainer mod,
+    public static ConfigurationReference<CommentedConfigurationNode> configurationFor(
+            final ModContainer mod,
             final boolean ownDirectory) throws ConfigurateException {
         return configurationFor(mod, ownDirectory, confabricateOptions());
     }
@@ -253,8 +256,10 @@ public class Confabricate implements ModInitializer {
      *                              the configuration failed to load.
      * @since 2.0.0
      */
-    public static ConfigurationReference<CommentedConfigurationNode> configurationFor(final ModContainer mod,
-            final boolean ownDirectory, final ConfigurationOptions options) throws ConfigurateException {
+    public static ConfigurationReference<CommentedConfigurationNode> configurationFor(
+            final ModContainer mod,
+            final boolean ownDirectory,
+            final ConfigurationOptions options) throws ConfigurateException {
         return fileWatcher().listenToConfiguration(path -> {
             return HoconConfigurationLoader.builder()
                     .path(path)
@@ -302,8 +307,11 @@ public class Confabricate implements ModInitializer {
      * @return a transformation that executes a {@link DataFixer data fixer}.
      * @since 1.1.0
      */
-    public static ConfigurationTransformation createTransformation(final DataFixer fixer,
-            final DSL.TypeReference reference, final int targetVersion, final Object... versionKey) {
+    public static ConfigurationTransformation createTransformation(
+            final DataFixer fixer,
+            final DSL.TypeReference reference,
+            final int targetVersion,
+            final Object... versionKey) {
         return ConfigurationTransformation.builder()
                 .addAction(NodePath.path(), createTransformAction(fixer, reference, targetVersion, versionKey))
                 .build();
@@ -323,8 +331,11 @@ public class Confabricate implements ModInitializer {
      * @return the created action
      * @since 1.1.0
      */
-    public static TransformAction createTransformAction(final DataFixer fixer,
-            final DSL.TypeReference reference, final int targetVersion, final Object... versionKey) {
+    public static TransformAction createTransformAction(
+            final DataFixer fixer,
+            final DSL.TypeReference reference,
+            final int targetVersion,
+            final Object... versionKey) {
         return (inputPath, valueAtPath) -> {
             final int currentVersion = valueAtPath.node(versionKey).getInt(-1);
             final Dynamic<ConfigurationNode> dyn = ConfigurateOps.wrap(valueAtPath);
@@ -352,7 +363,7 @@ public class Confabricate implements ModInitializer {
      * Return a builder pre-configured to apply Minecraft's DataFixers to the
      * latest game save version.
      *
-     * @return new builder
+     * @return new transformation builder
      * @since 2.0.0
      */
     public static DataFixerTransformation.Builder minecraftDfuBuilder() {

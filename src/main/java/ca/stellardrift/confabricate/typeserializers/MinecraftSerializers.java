@@ -122,6 +122,7 @@ public final class MinecraftSerializers {
      * @param codec codec to use for the serialization operation
      * @param <V> value type
      * @return a new serializer
+     * @see DfuSerializers#serializer(Codec) for more information
      * @since 2.0.0
      */
     public static <V> TypeSerializer<V> serializer(final Codec<V> codec) {
@@ -136,6 +137,7 @@ public final class MinecraftSerializers {
      * @param <S> value type
      * @return a codec for the type, or null if an appropriate
      *      {@link TypeSerializer} could not be found.
+     * @see DfuSerializers#codec(TypeToken) for more information
      * @since 2.0.0
      */
     public static <S> @Nullable Codec<S> codec(final TypeToken<S> type) {
@@ -150,8 +152,8 @@ public final class MinecraftSerializers {
      * @param <V> value type
      * @return a codec, or null if an appropriate {@link TypeSerializer}
      *      could not be found for the TypeToken.
-     * @see DfuSerializers#codec(TypeToken)
-     * @since 1.2.0
+     * @see DfuSerializers#codec(TypeToken, TypeSerializerCollection)
+     * @since 2.0.0
      */
     public static <V> @Nullable Codec<V> codec(final TypeToken<V> type, final TypeSerializerCollection collection) {
         return DfuSerializers.codec(type, collection);
