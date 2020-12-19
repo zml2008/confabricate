@@ -37,12 +37,13 @@ Confabricate versions are in the format `<confabricate version>+<configurate ver
 
 **Version compatibility**
 
-Minecraft     | Confabricate
-------------- | ------------
-1.15          | 1.1+3.7
-1.16 + 1.16.1 | 1.2+3.7
-1.16.2        | 1.3+3.7.1
-
+Minecraft      | Confabricate
+-------------- | ------------
+1.15           | 1.1+3.7
+1.16 + 1.16.1  | 1.2+3.7
+1.16.2         | 1.3+3.7.1
+1.16.2-1.16.4  | 2.0.0+4.0.0
+1.17 snapshots | 2.1.0-SNAPSHOT+4.0.0
 
 It is recommended to use this project in jar-in-jar packaging
 
