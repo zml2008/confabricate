@@ -7,7 +7,7 @@ plugins {
     id("net.kyori.indra.publishing.bintray") version "1.2.1"
 }
 
-val versionBase = "2.0-SNAPSHOT"
+val versionBase = "2.0.0"
 val versionMinecraft: String by project
 val versionMappings: String by project
 val versionLoader: String by project
