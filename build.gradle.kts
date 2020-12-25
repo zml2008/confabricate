@@ -15,7 +15,7 @@ val versionConfigurate: String by project
 val versionErrorprone: String by project
 
 group = "ca.stellardrift"
-version = "2.0.1-SNAPSHOT"
+version = "2.0.1"
 description = ext["longDescription"] as String
 
 repositories {
@@ -99,6 +99,6 @@ indra {
     }
 
     publishAllTo("pex", "https://repo.glaremasters.me/repository/permissionsex")
-    publishReleasesTo("stellardrift", "https://repo.stellardrift.ca/repositories/releases/")
-    publishSnapshotsTo("stellardrift", "https://repo.stellardrift.ca/repositories/snapshots/")
+    publishReleasesTo("stellardrift", "https://repo.stellardrift.ca/repository/releases/")
+    publishSnapshotsTo("stellardrift", "https://repo.stellardrift.ca/repository/snapshots/")
 }
