@@ -20,8 +20,15 @@ version = "$versionBase+${versionConfigurate.replace("-SNAPSHOT", "")}"
 description = ext["longDescription"] as String
 
 repositories {
-    mavenCentral()
-    jcenter()
+    maven("https://repo.stellardrift.ca/repository/stable/") {
+        name = "stellardriftReleases"
+        mavenContent { releasesOnly() }
+    }
+
+    maven("https://repo.stellardrift.ca/repository/snapshots/") {
+        name = "stellardriftSnapshots"
+        mavenContent { snapshotsOnly() }
+    }
 }
 
 tasks.withType(Jar::class).configureEach {
@@ -40,6 +47,10 @@ tasks.withType(Javadoc::class).configureEach {
                 "https://configurate.aoeu.xyz/$versionConfigurate/apidocs/"
         )
     }
+}
+
+tasks.processResources {
+    inputs.property("version", project.version)
 }
 
 dependencies {
@@ -88,4 +99,6 @@ indra {
     }
 
     publishAllTo("pex", "https://repo.glaremasters.me/repository/permissionsex")
+    publishReleasesTo("stellardrift", "https://repo.stellardrift.ca/repositories/releases/")
+    publishSnapshotsTo("stellardrift", "https://repo.stellardrift.ca/repositories/snapshots/")
 }
