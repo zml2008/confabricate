@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "id": "${project.rootProject.name.toLowerCase()}",
-  "version": "${project.version}",
+  "version": "${project.version}+${project.versionConfigurate}",
 
   "name": "${project.rootProject.name}",
   "description": "${project.ext.longDescription}",

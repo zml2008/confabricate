@@ -7,7 +7,6 @@ plugins {
     id("net.kyori.indra.publishing.bintray") version "1.2.1"
 }
 
-val versionBase = "2.0.1-SNAPSHOT"
 val versionMinecraft: String by project
 val versionMappings: String by project
 val versionLoader: String by project
@@ -16,7 +15,7 @@ val versionConfigurate: String by project
 val versionErrorprone: String by project
 
 group = "ca.stellardrift"
-version = "$versionBase+${versionConfigurate.replace("-SNAPSHOT", "")}"
+version = "2.0.1-SNAPSHOT"
 description = ext["longDescription"] as String
 
 repositories {
@@ -36,7 +35,7 @@ tasks.withType(Jar::class).configureEach {
         attributes("Specification-Title" to "Configurate",
                 "Specification-Version" to versionConfigurate,
                 "Implementation-Title" to project.name,
-                "Implementation-Version" to versionBase)
+                "Implementation-Version" to project.version)
     }
 }
 
@@ -51,6 +50,7 @@ tasks.withType(Javadoc::class).configureEach {
 
 tasks.processResources {
     inputs.property("version", project.version)
+    inputs.property("versionConfigurate", versionConfigurate)
 }
 
 dependencies {
