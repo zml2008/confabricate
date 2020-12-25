@@ -37,16 +37,18 @@ Confabricate versions are in the format `<confabricate version>+<configurate ver
 
 **Version compatibility**
 
-Minecraft     | Confabricate
-------------- | ------------
-1.15          | 1.1+3.7
-1.16 + 1.16.1 | 1.2+3.7
-1.16.2        | 1.3+3.7.1
-
+Minecraft      | Confabricate | Configurate
+-------------- | ------------ | ------------
+1.15           | 1.1+3.7      | 3.7
+1.16 + 1.16.1  | 1.2+3.7      | 3.7
+1.16.2         | 1.3+3.7.1    | 3.7.1
+1.16.2-1.16.4  | 2.0.1        | 4.0.0
+1.17 snapshots | 2.1.0-SNAPSHOT | 4.0.0
 
 It is recommended to use this project in jar-in-jar packaging
 
-Releases of Confabricate are on jCenter, as are releases of Configurate. Snapshots of Confabricate and Configurate are published on the PermissionsEx repository and Sonatype OSS respectively.
+Releases of Confabricate are on jCenter, as are releases of Configurate. Snapshots of Confabricate and Configurate are published on the Stellardrift 
+repository and Sonatype OSS respectively.
 
 ```kotlin
 
@@ -55,14 +57,16 @@ repositories {
     // Snapshots only
     maven(url = "https://oss.sonatype.org/content/repositories/snapshots/") {
         name = "sonatype"
+        mavenContent { snapshotsOnly() }
     }
-    maven(url = "https://repo.glaremasters.me/repository/permissionsex") {
-        name = "pex"
+    maven(url = "https://repo.stellardrift.ca/repository/snapshots/") {
+        name = "stellardriftSnapshots"
+        mavenContent { snapshotsOnly() }
     }
 }
 
 dependencies {
-    modImplementation(include("ca.stellardrift:confabricate:1.3+3.7.1")!!)
+    modImplementation(include("ca.stellardrift:confabricate:2.0.1")!!)
 }
 ```
 

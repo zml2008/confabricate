@@ -7,7 +7,6 @@ plugins {
     id("net.kyori.indra.publishing.bintray") version "1.2.1"
 }
 
-val versionBase = "2.1.0-SNAPSHOT"
 val versionMinecraft: String by project
 val versionMappings: String by project
 val versionLoader: String by project
@@ -16,12 +15,19 @@ val versionConfigurate: String by project
 val versionErrorprone: String by project
 
 group = "ca.stellardrift"
-version = "$versionBase+${versionConfigurate.replace("-SNAPSHOT", "")}"
+version = "2.1.0-SNAPSHOT"
 description = ext["longDescription"] as String
 
 repositories {
-    mavenCentral()
-    jcenter()
+    maven("https://repo.stellardrift.ca/repository/stable/") {
+        name = "stellardriftReleases"
+        mavenContent { releasesOnly() }
+    }
+
+    maven("https://repo.stellardrift.ca/repository/snapshots/") {
+        name = "stellardriftSnapshots"
+        mavenContent { snapshotsOnly() }
+    }
 }
 
 tasks.withType(Jar::class).configureEach {
@@ -29,7 +35,7 @@ tasks.withType(Jar::class).configureEach {
         attributes("Specification-Title" to "Configurate",
                 "Specification-Version" to versionConfigurate,
                 "Implementation-Title" to project.name,
-                "Implementation-Version" to versionBase)
+                "Implementation-Version" to project.version)
     }
 }
 
@@ -42,10 +48,15 @@ tasks.withType(Javadoc::class).configureEach {
     }
 }
 
+tasks.processResources {
+    inputs.property("version", project.version)
+    inputs.property("versionConfigurate", versionConfigurate)
+}
+
 dependencies {
     compileOnly("com.google.errorprone:error_prone_annotations:$versionErrorprone")
     errorprone("com.google.errorprone:error_prone_core:$versionErrorprone")
-    compileOnlyApi("org.checkerframework:checker-qual:3.7.1")
+    compileOnlyApi("org.checkerframework:checker-qual:3.8.0")
 
     minecraft("com.mojang:minecraft:$versionMinecraft")
     mappings("net.fabricmc:yarn:$versionMinecraft+build.$versionMappings:v2")
@@ -55,7 +66,9 @@ dependencies {
     // We can't add the bom because loom doesn't put it into our pom correctly
     include(modApi(configurate("core", versionConfigurate))!!)
     include(modApi(configurate("hocon", versionConfigurate))!!)
-    include(modApi(configurate("gson", versionConfigurate)) { isTransitive = false })
+    include(modApi(configurate("gson", versionConfigurate)) {
+        exclude("com.google.code.gson") // Use Minecraft's gson
+    })
     include(modApi(configurate("extra-dfu4", versionConfigurate)) {
         exclude("com.mojang") // Use the game's DFU version
     })
@@ -86,4 +99,6 @@ indra {
     }
 
     publishAllTo("pex", "https://repo.glaremasters.me/repository/permissionsex")
+    publishReleasesTo("stellardrift", "https://repo.stellardrift.ca/repository/releases/")
+    publishSnapshotsTo("stellardrift", "https://repo.stellardrift.ca/repository/snapshots/")
 }
