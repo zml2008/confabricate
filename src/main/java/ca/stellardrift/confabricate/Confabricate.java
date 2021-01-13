@@ -59,27 +59,16 @@ public class Confabricate implements ModInitializer {
 
     static final String MOD_ID = "confabricate";
 
-    private static Confabricate instance;
     static final Logger LOGGER = LogManager.getLogger();
 
-    private WatchServiceListener listener;
+    private static WatchServiceListener listener;
 
-    /**
-     * Constructor for loader usage only.
-     *
-     * @since 9.9.9
-     */
-    public Confabricate() {
-        if (instance != null) {
-            throw new ExceptionInInitializerError("Confabricate can only be initialized by the Fabric mod loader");
-        }
-        instance = this;
-
+    static {
         try {
-            this.listener = WatchServiceListener.create();
+            Confabricate.listener = WatchServiceListener.create();
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
                 try {
-                    this.listener.close();
+                    Confabricate.listener.close();
                 } catch (final IOException e) {
                     LOGGER.catching(e);
                 }
@@ -352,7 +341,7 @@ public class Confabricate implements ModInitializer {
      * @since 1.1.0
      */
     public static WatchServiceListener fileWatcher() {
-        final WatchServiceListener ret = instance.listener;
+        final WatchServiceListener ret = Confabricate.listener;
         if (ret == null) {
             throw new IllegalStateException("Configurate file watcher failed to initialize, check log for earlier errors");
         }
