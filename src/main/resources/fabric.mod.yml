@@ -1,0 +1,20 @@
+schemaVersion: 1
+id: "${project.rootProject.name.toLowerCase()}"
+version: "${project.version}+${project.versionConfigurate}"
+
+name: "${project.rootProject.name}"
+description: "${project.ext.longDescription}"
+authors: [zml]
+license: Apache v2.0
+
+entrypoints:
+  main:
+  - ca.stellardrift.confabricate.Confabricate
+
+mixins:
+- confabricate.accessor.mixins.json
+
+depends:
+  fabricloader: ">=0.4.0"
+suggests:
+  fabric-tag-extensions-v0: "*"

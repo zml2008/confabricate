@@ -42,7 +42,7 @@ Minecraft      | Confabricate | Configurate
 1.15           | 1.1+3.7      | 3.7
 1.16 + 1.16.1  | 1.2+3.7      | 3.7
 1.16.2         | 1.3+3.7.1    | 3.7.1
-1.16.2-1.16.4  | 2.0.1        | 4.0.0
+1.16.2-1.16.4  | 2.0.2        | 4.0.0
 1.17 snapshots | 2.1.0-SNAPSHOT | 4.0.0
 
 It is recommended to use this project in jar-in-jar packaging
@@ -55,10 +55,6 @@ repository and Sonatype OSS respectively.
 repositories {
     jcenter()
     // Snapshots only
-    maven(url = "https://oss.sonatype.org/content/repositories/snapshots/") {
-        name = "sonatype"
-        mavenContent { snapshotsOnly() }
-    }
     maven(url = "https://repo.stellardrift.ca/repository/snapshots/") {
         name = "stellardriftSnapshots"
         mavenContent { snapshotsOnly() }
@@ -66,7 +62,7 @@ repositories {
 }
 
 dependencies {
-    modImplementation(include("ca.stellardrift:confabricate:2.0.1")!!)
+    modImplementation(include("ca.stellardrift:confabricate:2.0.2")!!)
 }
 ```
 
