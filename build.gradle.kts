@@ -71,7 +71,7 @@ tasks.processResources {
 dependencies {
     compileOnly("com.google.errorprone:error_prone_annotations:$versionErrorprone")
     errorprone("com.google.errorprone:error_prone_core:$versionErrorprone")
-    compileOnlyApi("org.checkerframework:checker-qual:3.9.1")
+    compileOnlyApi("org.checkerframework:checker-qual:3.10.0")
 
     minecraft("com.mojang:minecraft:$versionMinecraft")
     mappings("net.fabricmc:yarn:$versionMinecraft+build.$versionMappings:v2")
