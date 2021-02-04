@@ -2,12 +2,13 @@
 import ca.stellardrift.build.common.configurate
 import ca.stellardrift.build.configurate.ConfigFormats
 import ca.stellardrift.build.configurate.transformations.convertFormat
+import java.time.Duration
 
 plugins {
     id("net.ltgt.errorprone") version "1.3.0"
     id("ca.stellardrift.opinionated.fabric") version "4.1"
     id("ca.stellardrift.configurate-transformations") version "4.1"
-    id("net.kyori.indra.publishing.bintray") version "1.2.1"
+    id("net.kyori.indra.publishing.sonatype") version "1.2.1"
 }
 
 val versionMinecraft: String by project
@@ -18,7 +19,7 @@ val versionConfigurate: String by project
 val versionErrorprone: String by project
 
 group = "ca.stellardrift"
-version = "2.0.3-SNAPSHOT"
+version = "2.0.3"
 description = ext["longDescription"] as String
 
 repositories {
@@ -40,6 +41,11 @@ tasks.withType(Jar::class).configureEach {
                 "Implementation-Title" to project.name,
                 "Implementation-Version" to project.version)
     }
+}
+
+nexusPublishing {
+    this.connectTimeout.set(Duration.ofMinutes(5))
+    this.clientTimeout.set(Duration.ofMinutes(5))
 }
 
 tasks.withType(Javadoc::class).configureEach {
@@ -89,7 +95,9 @@ dependencies {
 }
 
 indra {
-    github("zml2008", "confabricate")
+    github("zml2008", "confabricate") {
+        ci = true
+    }
     apache2License()
 
     javaVersions {
