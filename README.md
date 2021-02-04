@@ -33,8 +33,6 @@ Thanks to @i509VCB for providing an initial implementation of DynamicOps
 
 ## How to use
 
-Confabricate versions are in the format `<confabricate version>+<configurate version>` for easy identification
-
 **Version compatibility**
 
 Minecraft      | Confabricate | Configurate
@@ -42,18 +40,20 @@ Minecraft      | Confabricate | Configurate
 1.15           | 1.1+3.7      | 3.7
 1.16 + 1.16.1  | 1.2+3.7      | 3.7
 1.16.2         | 1.3+3.7.1    | 3.7.1
-1.16.2-1.16.4  | 2.0.2        | 4.0.0
+1.16.2-1.16.4  | 2.0.3        | 4.0.0
 1.17 snapshots | 2.1.0-SNAPSHOT | 4.0.0
 
-It is recommended to use this project in jar-in-jar packaging
+It is recommended to use this project in jar-in-jar packaging.
 
-Releases of Confabricate are on jCenter, as are releases of Configurate. Snapshots of Confabricate and Configurate are published on the Stellardrift 
-repository and Sonatype OSS respectively.
+Releases of Confabricate are on Maven Central, as are releases of Configurate. Snapshots of Confabricate and Configurate are published on Sonatype 
+OSS.
+
+Additionally, both releases and snapshots of Confabricate are published on the `stellardrift` repository.
 
 ```kotlin
 
 repositories {
-    jcenter()
+    mavenCentral()
     // Snapshots only
     maven(url = "https://repo.stellardrift.ca/repository/snapshots/") {
         name = "stellardriftSnapshots"
@@ -62,7 +62,7 @@ repositories {
 }
 
 dependencies {
-    modImplementation(include("ca.stellardrift:confabricate:2.0.2")!!)
+    modImplementation(include("ca.stellardrift:confabricate:2.0.3")!!)
 }
 ```
 
