@@ -19,7 +19,7 @@ val versionConfigurate: String by project
 val versionErrorprone: String by project
 
 group = "ca.stellardrift"
-version = "2.0.3"
+version = "2.0.4-SNAPSHOT"
 description = ext["longDescription"] as String
 
 repositories {
