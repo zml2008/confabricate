@@ -43,4 +43,6 @@ jobs:
           ORG_GRADLE_PROJECT_pexPassword: ${{ secrets.REPO_PASSWORD }}
           ORG_GRADLE_PROJECT_stellardriftUsername: ${{  secrets.STELLARDRIFT_REPO_USER }}
           ORG_GRADLE_PROJECT_stellardriftPassword: ${{ secrets.STELLARDRIFT_REPO_PASSWORD }}
+          ORG_GRADLE_PROJECT_sonatypeUsername: ${{  secrets.SONATYPE_USERNAME }}
+          ORG_GRADLE_PROJECT_sonatypePassword: ${{ secrets.SONATYPE_PASSWORD }}
 
