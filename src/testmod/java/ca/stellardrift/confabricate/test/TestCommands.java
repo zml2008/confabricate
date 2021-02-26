@@ -161,7 +161,7 @@ final class TestCommands {
                     try {
                         final ServerPlayerEntity entity = EntityArgumentType.getPlayer(ctx, "ply");
 
-                        final Text roundtripped = NbtHelper.toPrettyPrintedText(dumpToFile(entity::toTag, path("file", ctx)));
+                        final Text roundtripped = NbtHelper.toPrettyPrintedText(dumpToFile(entity::writeNbt, path("file", ctx)));
                         ctx.getSource().sendFeedback(roundtripped, false);
 
                         ctx.getSource().sendFeedback(new LiteralText("Successfully dumped data from player ")
@@ -174,7 +174,7 @@ final class TestCommands {
                 .then(literal("entity").then(argument("ent", EntityArgumentType.entity()).executes(ctx -> {
                     final Entity entity = EntityArgumentType.getEntity(ctx, "ent");
 
-                    final Text roundtripped = NbtHelper.toPrettyPrintedText(dumpToFile(entity::toTag, path("file", ctx)));
+                    final Text roundtripped = NbtHelper.toPrettyPrintedText(dumpToFile(entity::writeNbt, path("file", ctx)));
                     ctx.getSource().sendFeedback(roundtripped, false);
 
                     ctx.getSource().sendFeedback(new LiteralText("Successfully dumped data from ")
@@ -189,7 +189,7 @@ final class TestCommands {
                         throw new CommandException(new LiteralText("No block entity found!"));
                     }
 
-                    final Text roundtripped = NbtHelper.toPrettyPrintedText(dumpToFile(entity::toTag, path("file", ctx)));
+                    final Text roundtripped = NbtHelper.toPrettyPrintedText(dumpToFile(entity::writeNbt, path("file", ctx)));
                     ctx.getSource().sendFeedback(roundtripped, false);
                     ctx.getSource().sendFeedback(new LiteralText("Successfully dumped data from ")
                             .append(new LiteralText(pos.toString()).styled(s -> s.withColor(Formatting.AQUA))), false);
