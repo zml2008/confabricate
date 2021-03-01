@@ -1,14 +1,13 @@
 
 import ca.stellardrift.build.common.configurate
-import ca.stellardrift.build.configurate.ConfigFormats
-import ca.stellardrift.build.configurate.transformations.convertFormat
+import ca.stellardrift.build.common.stellardriftReleases
+import ca.stellardrift.build.common.stellardriftSnapshots
 import java.time.Duration
 
 plugins {
     id("net.ltgt.errorprone") version "1.3.0"
-    id("ca.stellardrift.opinionated.fabric") version "4.1"
-    id("ca.stellardrift.configurate-transformations") version "4.1"
-    id("net.kyori.indra.publishing.sonatype") version "1.2.1"
+    id("ca.stellardrift.opinionated.fabric") version "4.2"
+    id("net.kyori.indra.publishing.sonatype") version "1.3.1"
 }
 
 val versionMinecraft: String by project
@@ -23,15 +22,8 @@ version = "2.0.4-SNAPSHOT"
 description = ext["longDescription"] as String
 
 repositories {
-    maven("https://repo.stellardrift.ca/repository/stable/") {
-        name = "stellardriftReleases"
-        mavenContent { releasesOnly() }
-    }
-
-    maven("https://repo.stellardrift.ca/repository/snapshots/") {
-        name = "stellardriftSnapshots"
-        mavenContent { snapshotsOnly() }
-    }
+    stellardriftReleases()
+    stellardriftSnapshots()
 }
 
 tasks.withType(Jar::class).configureEach {
@@ -58,14 +50,7 @@ tasks.withType(Javadoc::class).configureEach {
 }
 
 tasks.processResources {
-    inputs.property("version", project.version)
     inputs.property("versionConfigurate", versionConfigurate)
-
-    filesMatching("*.yml") {
-        expand("project" to project)
-        convertFormat(ConfigFormats.YAML, ConfigFormats.JSON)
-        name = "${name.removeSuffix(".yml")}.json"
-    }
 }
 
 dependencies {
