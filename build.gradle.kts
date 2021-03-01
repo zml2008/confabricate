@@ -7,7 +7,7 @@ import java.time.Duration
 plugins {
     id("net.ltgt.errorprone") version "1.3.0"
     id("ca.stellardrift.opinionated.fabric") version "4.1"
-    id("ca.stellardrift.configurate-transformations") version "4.1"
+    id("ca.stellardrift.configurate-transformations") version "4.2"
     id("net.kyori.indra.publishing.sonatype") version "1.2.1"
 }
 
