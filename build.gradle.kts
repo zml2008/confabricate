@@ -5,7 +5,7 @@ import ca.stellardrift.build.common.stellardriftSnapshots
 import java.time.Duration
 
 plugins {
-    id("net.ltgt.errorprone") version "1.3.0"
+    id("net.ltgt.errorprone") version "2.0.1"
     id("ca.stellardrift.opinionated.fabric") version "4.2"
     id("net.kyori.indra.publishing.sonatype") version "1.3.1"
 }
