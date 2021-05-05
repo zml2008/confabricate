@@ -4,14 +4,9 @@ import ca.stellardrift.build.common.stellardriftReleases
 import ca.stellardrift.build.common.stellardriftSnapshots
 
 plugins {
-    id("org.jlleitschuh.gradle.ktlint") version "10.0.0"
     id("net.ltgt.errorprone") version "2.0.1"
     id("ca.stellardrift.opinionated.fabric") version "5.0.0-SNAPSHOT"
     id("net.kyori.indra.publishing.sonatype") version "2.0.2"
-}
-
-ktlint {
-    version.set("0.41.0")
 }
 
 val versionMinecraft: String by project
@@ -48,8 +43,9 @@ tasks.withType(Javadoc::class).configureEach {
     }
 }
 
-tasks.processResources {
+tasks.withType(ProcessResources::class) {
     inputs.property("versionConfigurate", versionConfigurate)
+    expand("project" to project, "versionConfigurate" to versionConfigurate)
 }
 
 dependencies {
