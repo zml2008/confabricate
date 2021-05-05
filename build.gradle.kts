@@ -1,14 +1,12 @@
 
 import ca.stellardrift.build.common.configurate
-import ca.stellardrift.build.configurate.ConfigFormats
-import ca.stellardrift.build.configurate.transformations.convertFormat
-import java.time.Duration
+import ca.stellardrift.build.common.stellardriftReleases
+import ca.stellardrift.build.common.stellardriftSnapshots
 
 plugins {
-    id("net.ltgt.errorprone") version "1.3.0"
-    id("ca.stellardrift.opinionated.fabric") version "4.1"
-    id("ca.stellardrift.configurate-transformations") version "4.1"
-    id("net.kyori.indra.publishing.sonatype") version "1.2.1"
+    id("net.ltgt.errorprone") version "2.0.1"
+    id("ca.stellardrift.opinionated.fabric") version "5.0.0-SNAPSHOT"
+    id("net.kyori.indra.publishing.sonatype") version "2.0.2"
 }
 
 val versionMinecraft: String by project
@@ -23,15 +21,8 @@ version = "2.1.0-SNAPSHOT"
 description = ext["longDescription"] as String
 
 repositories {
-    maven("https://repo.stellardrift.ca/repository/stable/") {
-        name = "stellardriftReleases"
-        mavenContent { releasesOnly() }
-    }
-
-    maven("https://repo.stellardrift.ca/repository/snapshots/") {
-        name = "stellardriftSnapshots"
-        mavenContent { snapshotsOnly() }
-    }
+    stellardriftReleases()
+    stellardriftSnapshots()
 }
 
 tasks.withType(Jar::class).configureEach {
@@ -43,11 +34,6 @@ tasks.withType(Jar::class).configureEach {
     }
 }
 
-nexusPublishing {
-    this.connectTimeout.set(Duration.ofMinutes(5))
-    this.clientTimeout.set(Duration.ofMinutes(5))
-}
-
 tasks.withType(Javadoc::class).configureEach {
     val options = this.options
     if (options is StandardJavadocDocletOptions) {
@@ -57,21 +43,15 @@ tasks.withType(Javadoc::class).configureEach {
     }
 }
 
-tasks.processResources {
-    inputs.property("version", project.version)
+tasks.withType(ProcessResources::class) {
     inputs.property("versionConfigurate", versionConfigurate)
-
-    filesMatching("*.yml") {
-        expand("project" to project)
-        convertFormat(ConfigFormats.YAML, ConfigFormats.JSON)
-        name = "${name.removeSuffix(".yml")}.json"
-    }
+    expand("project" to project, "versionConfigurate" to versionConfigurate)
 }
 
 dependencies {
     compileOnly("com.google.errorprone:error_prone_annotations:$versionErrorprone")
     errorprone("com.google.errorprone:error_prone_core:$versionErrorprone")
-    compileOnlyApi("org.checkerframework:checker-qual:3.9.1")
+    compileOnlyApi("org.checkerframework:checker-qual:3.13.0")
 
     minecraft("com.mojang:minecraft:$versionMinecraft")
     mappings("net.fabricmc:yarn:$versionMinecraft+build.$versionMappings:v2")
@@ -96,12 +76,12 @@ dependencies {
 
 indra {
     github("zml2008", "confabricate") {
-        ci = true
+        ci(true)
     }
     apache2License()
 
     javaVersions {
-        testWith(8, 11, 15)
+        testWith(8, 11, 16)
     }
 
     configurePublications {
