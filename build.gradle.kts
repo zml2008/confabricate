@@ -2,12 +2,16 @@
 import ca.stellardrift.build.common.configurate
 import ca.stellardrift.build.common.stellardriftReleases
 import ca.stellardrift.build.common.stellardriftSnapshots
-import java.time.Duration
 
 plugins {
-    id("net.ltgt.errorprone") version "1.3.0"
-    id("ca.stellardrift.opinionated.fabric") version "4.2"
-    id("net.kyori.indra.publishing.sonatype") version "1.3.1"
+    id("org.jlleitschuh.gradle.ktlint") version "10.0.0"
+    id("net.ltgt.errorprone") version "2.0.1"
+    id("ca.stellardrift.opinionated.fabric") version "5.0.0-SNAPSHOT"
+    id("net.kyori.indra.publishing.sonatype") version "2.0.2"
+}
+
+ktlint {
+    version.set("0.41.0")
 }
 
 val versionMinecraft: String by project
@@ -35,11 +39,6 @@ tasks.withType(Jar::class).configureEach {
     }
 }
 
-nexusPublishing {
-    this.connectTimeout.set(Duration.ofMinutes(5))
-    this.clientTimeout.set(Duration.ofMinutes(5))
-}
-
 tasks.withType(Javadoc::class).configureEach {
     val options = this.options
     if (options is StandardJavadocDocletOptions) {
@@ -56,7 +55,7 @@ tasks.processResources {
 dependencies {
     compileOnly("com.google.errorprone:error_prone_annotations:$versionErrorprone")
     errorprone("com.google.errorprone:error_prone_core:$versionErrorprone")
-    compileOnlyApi("org.checkerframework:checker-qual:3.10.0")
+    compileOnlyApi("org.checkerframework:checker-qual:3.13.0")
 
     minecraft("com.mojang:minecraft:$versionMinecraft")
     mappings("net.fabricmc:yarn:$versionMinecraft+build.$versionMappings:v2")
@@ -81,12 +80,12 @@ dependencies {
 
 indra {
     github("zml2008", "confabricate") {
-        ci = true
+        ci(true)
     }
     apache2License()
 
     javaVersions {
-        testWith(8, 11, 15)
+        testWith(8, 11, 16)
     }
 
     configurePublications {
