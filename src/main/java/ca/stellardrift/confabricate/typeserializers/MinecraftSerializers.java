@@ -33,7 +33,7 @@ import net.minecraft.entity.EntityType;
 import net.minecraft.fluid.Fluid;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.tag.BlockTags;
 import net.minecraft.tag.EntityTypeTags;
@@ -223,7 +223,7 @@ public final class MinecraftSerializers {
      *     <li>{@link Tag} of a combination of identifiers and
      *          tags for blocks, items, fluids, and entity types</li>
      *     <li>{@link ItemStack}</li>
-     *     <li>{@link CompoundTag} instances</li>
+     *     <li>{@link NbtCompound} instances</li>
      * </ul>
      *
      * @param collection to populate
@@ -239,7 +239,7 @@ public final class MinecraftSerializers {
         }
 
         collection.register(ItemStack.class, serializer(ItemStack.CODEC));
-        collection.register(CompoundTag.class, serializer(CompoundTag.CODEC));
+        collection.register(NbtCompound.class, serializer(NbtCompound.CODEC));
 
         // All registries here should be in SPECIAL_REGISTRIES
         populateTaggedRegistry(collection, TypeToken.get(Fluid.class), Registry.FLUID, FluidTagsAccessor.getRequiredTags()::getGroup);

@@ -33,9 +33,9 @@ import net.minecraft.command.argument.EntityArgumentType;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtHelper;
-import net.minecraft.nbt.Tag;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.LiteralText;
@@ -197,9 +197,9 @@ final class TestCommands {
                 }))));
     }
 
-    static Tag dumpToFile(final Consumer<CompoundTag> dumpFunc, final Path file) throws CommandException {
+    static NbtElement dumpToFile(final Consumer<NbtCompound> dumpFunc, final Path file) throws CommandException {
         try {
-            final CompoundTag out = new CompoundTag();
+            final NbtCompound out = new NbtCompound();
             dumpFunc.accept(out);
 
             final ConfigurationNode node = BasicConfigurationNode.root();

@@ -16,20 +16,20 @@
 package ca.stellardrift.confabricate;
 
 import com.google.common.collect.ImmutableSet;
-import net.minecraft.nbt.ByteArrayTag;
-import net.minecraft.nbt.ByteTag;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.DoubleTag;
-import net.minecraft.nbt.EndTag;
-import net.minecraft.nbt.FloatTag;
-import net.minecraft.nbt.IntArrayTag;
-import net.minecraft.nbt.IntTag;
-import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.LongArrayTag;
-import net.minecraft.nbt.LongTag;
-import net.minecraft.nbt.ShortTag;
-import net.minecraft.nbt.StringTag;
-import net.minecraft.nbt.Tag;
+import net.minecraft.nbt.NbtByte;
+import net.minecraft.nbt.NbtByteArray;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtDouble;
+import net.minecraft.nbt.NbtElement;
+import net.minecraft.nbt.NbtFloat;
+import net.minecraft.nbt.NbtInt;
+import net.minecraft.nbt.NbtIntArray;
+import net.minecraft.nbt.NbtList;
+import net.minecraft.nbt.NbtLong;
+import net.minecraft.nbt.NbtLongArray;
+import net.minecraft.nbt.NbtNull;
+import net.minecraft.nbt.NbtShort;
+import net.minecraft.nbt.NbtString;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.spongepowered.configurate.BasicConfigurationNode;
 import org.spongepowered.configurate.ConfigurationNode;
@@ -61,59 +61,59 @@ public final class NbtNodeAdapter {
      * @throws IOException if invalid tags are provided
      * @since 1.0.0
      */
-    public static void tagToNode(final Tag tag, final ConfigurationNode node) throws IOException {
-        if (tag instanceof CompoundTag) {
-            final CompoundTag compoundTag = (CompoundTag) tag;
+    public static void tagToNode(final NbtElement tag, final ConfigurationNode node) throws IOException {
+        if (tag instanceof NbtCompound) {
+            final NbtCompound compoundTag = (NbtCompound) tag;
             for (String key : compoundTag.getKeys()) {
                 tagToNode(compoundTag.get(key), node.node(key));
             }
-        } else if (tag instanceof ListTag) {
-            for (Tag value : (ListTag) tag) {
+        } else if (tag instanceof NbtList) {
+            for (NbtElement value : (NbtList) tag) {
                 tagToNode(value, node.appendListNode());
             }
-        } else if (tag instanceof StringTag) {
+        } else if (tag instanceof NbtString) {
             node.raw(tag.asString());
-        } else if (tag instanceof ByteTag) {
-            node.raw(((ByteTag) tag).getByte());
-        } else if (tag instanceof ShortTag) {
-            node.raw(((ShortTag) tag).getShort());
-        } else if (tag instanceof IntTag) {
-            node.raw(((IntTag) tag).getInt());
-        } else if (tag instanceof LongTag) {
-            node.raw(((LongTag) tag).getLong());
-        } else if (tag instanceof FloatTag) {
-            node.raw(((FloatTag) tag).getFloat());
-        } else if (tag instanceof DoubleTag) {
-            node.raw(((DoubleTag) tag).getDouble());
-        } else if (tag instanceof ByteArrayTag) {
+        } else if (tag instanceof NbtByte) {
+            node.raw(((NbtByte) tag).byteValue());
+        } else if (tag instanceof NbtShort) {
+            node.raw(((NbtShort) tag).shortValue());
+        } else if (tag instanceof NbtInt) {
+            node.raw(((NbtInt) tag).intValue());
+        } else if (tag instanceof NbtLong) {
+            node.raw(((NbtLong) tag).longValue());
+        } else if (tag instanceof NbtFloat) {
+            node.raw(((NbtFloat) tag).floatValue());
+        } else if (tag instanceof NbtDouble) {
+            node.raw(((NbtDouble) tag).doubleValue());
+        } else if (tag instanceof NbtByteArray) {
             if (node.options().acceptsType(byte[].class)) {
-                node.raw(((ByteArrayTag) tag).getByteArray());
+                node.raw(((NbtByteArray) tag).getByteArray());
             } else {
                 node.raw(null);
-                for (byte b : ((ByteArrayTag) tag).getByteArray()) {
+                for (byte b : ((NbtByteArray) tag).getByteArray()) {
                     node.appendListNode().raw(b);
                 }
             }
-        } else if (tag instanceof IntArrayTag) {
+        } else if (tag instanceof NbtIntArray) {
             if (node.options().acceptsType(int[].class)) {
-                node.raw(((IntArrayTag) tag).getIntArray());
+                node.raw(((NbtIntArray) tag).getIntArray());
             } else {
                 node.raw(null);
-                for (int i : ((IntArrayTag) tag).getIntArray()) {
+                for (int i : ((NbtIntArray) tag).getIntArray()) {
                     node.appendListNode().raw(i);
                 }
             }
 
-        } else if (tag instanceof LongArrayTag) {
+        } else if (tag instanceof NbtLongArray) {
             if (node.options().acceptsType(long[].class)) {
-                node.raw(((LongArrayTag) tag).getLongArray());
+                node.raw(((NbtLongArray) tag).getLongArray());
             } else {
                 node.raw(null);
-                for (long l : ((LongArrayTag) tag).getLongArray()) {
+                for (long l : ((NbtLongArray) tag).getLongArray()) {
                     node.appendListNode().raw(l);
                 }
             }
-        } else if (tag instanceof EndTag) {
+        } else if (tag instanceof NbtNull) {
             // no-op
         } else {
             throw new IOException("Unknown tag type: " + tag.getClass());
@@ -130,15 +130,15 @@ public final class NbtNodeAdapter {
      * @throws IOException if an IO error occurs while converting the tag
      * @since 1.0.0
      */
-    public static Tag nodeToTag(final ConfigurationNode node) throws IOException {
+    public static NbtElement nodeToTag(final ConfigurationNode node) throws IOException {
         if (node.isMap()) {
-            final CompoundTag tag = new CompoundTag();
+            final NbtCompound tag = new NbtCompound();
             for (Map.Entry<Object, ? extends ConfigurationNode> ent : node.childrenMap().entrySet()) {
                 tag.put(ent.getKey().toString(), nodeToTag(ent.getValue()));
             }
             return tag;
         } else if (node.isList()) {
-            final ListTag list = new ListTag();
+            final NbtList list = new NbtList();
             for (ConfigurationNode child : node.childrenList()) {
                 list.add(nodeToTag(child));
             }
@@ -146,25 +146,25 @@ public final class NbtNodeAdapter {
         } else {
             final Object obj = node.raw();
             if (obj instanceof byte[]) {
-                return new ByteArrayTag((byte[]) obj);
+                return new NbtByteArray((byte[]) obj);
             } else if (obj instanceof int[]) {
-                return new IntArrayTag((int[]) obj);
+                return new NbtIntArray((int[]) obj);
             } else if (obj instanceof long[]) {
-                return new LongArrayTag((long[]) obj);
+                return new NbtLongArray((long[]) obj);
             } else if (obj instanceof Byte) {
-                return ByteTag.of((Byte) obj);
+                return NbtByte.of((Byte) obj);
             } else if (obj instanceof Short) {
-                return ShortTag.of((Short) obj);
+                return NbtShort.of((Short) obj);
             } else if (obj instanceof Integer) {
-                return IntTag.of((Integer) obj);
+                return NbtInt.of((Integer) obj);
             } else if (obj instanceof Long) {
-                return LongTag.of((Long) obj);
+                return NbtLong.of((Long) obj);
             } else if (obj instanceof Float) {
-                return FloatTag.of((Float) obj);
+                return NbtFloat.of((Float) obj);
             } else if (obj instanceof Double) {
-                return DoubleTag.of((Double) obj);
+                return NbtDouble.of((Double) obj);
             } else if (obj instanceof String) {
-                return StringTag.of((String) obj);
+                return NbtString.of((String) obj);
             } else {
                 throw new IOException("Unsupported object type " + (obj == null ? null : obj.getClass()));
             }

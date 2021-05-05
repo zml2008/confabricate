@@ -22,7 +22,7 @@
  * and {@link com.mojang.serialization.Codec Codecs}.
  *
  * <p>To be able to handle a mixed collection of registry elements and {@link net.minecraft.tag.Tag tags},
- * Confabricate can create anonymous {@link net.minecraft.nbt.Tag Tags}
+ * Confabricate can create anonymous {@link net.minecraft.tag.Tag Tags}
  * which can be used in object-mapped classes to preserve information on how
  * elements were described in the configuration file.
  */
