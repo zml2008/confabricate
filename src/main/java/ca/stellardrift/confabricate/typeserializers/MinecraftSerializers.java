@@ -50,6 +50,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.spongepowered.configurate.ConfigurationNode;
 import org.spongepowered.configurate.extra.dfu.v4.ConfigurateOps;
 import org.spongepowered.configurate.extra.dfu.v4.DfuSerializers;
+import org.spongepowered.configurate.gson.GsonConfigurationLoader;
 import org.spongepowered.configurate.serialize.TypeSerializer;
 import org.spongepowered.configurate.serialize.TypeSerializerCollection;
 
@@ -245,6 +246,8 @@ public final class MinecraftSerializers {
         populateTaggedRegistry(collection, TypeToken.get(Block.class), Registry.BLOCK, BlockTags::getTagGroup);
         populateTaggedRegistry(collection, new TypeToken<EntityType<?>>() {}, Registry.ENTITY_TYPE, EntityTypeTags::getTagGroup);
         populateTaggedRegistry(collection, TypeToken.get(Item.class), Registry.ITEM, ItemTags::getTagGroup);
+
+        collection.registerAll(GsonConfigurationLoader.gsonSerializers());
 
         return collection;
     }
