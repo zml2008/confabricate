@@ -6,7 +6,7 @@ import ca.stellardrift.build.common.stellardriftSnapshots
 plugins {
     id("net.ltgt.errorprone") version "2.0.1"
     id("ca.stellardrift.opinionated.fabric") version "5.0.0-SNAPSHOT"
-    id("net.kyori.indra.publishing.sonatype") version "2.0.2"
+    id("net.kyori.indra.publishing.sonatype") version "2.0.3"
 }
 
 val versionMinecraft: String by project
@@ -17,7 +17,7 @@ val versionConfigurate: String by project
 val versionErrorprone: String by project
 
 group = "ca.stellardrift"
-version = "2.0.4-SNAPSHOT"
+version = "2.1.0-SNAPSHOT"
 description = ext["longDescription"] as String
 
 repositories {
