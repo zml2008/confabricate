@@ -35,13 +35,13 @@ Thanks to @i509VCB for providing an initial implementation of DynamicOps
 
 **Version compatibility**
 
-Minecraft      | Confabricate | Configurate
--------------- | ------------ | ------------
-1.15           | 1.1+3.7      | 3.7
-1.16 + 1.16.1  | 1.2+3.7      | 3.7
-1.16.2         | 1.3+3.7.1    | 3.7.1
-1.16.2-1.16.4  | 2.0.3        | 4.0.0
-1.17 snapshots | 2.1.0-SNAPSHOT | 4.0.0
+Minecraft      | Confabricate   | Configurate
+-------------- | -------------- | ------------
+1.15           | 1.1+3.7        | 3.7
+1.16 + 1.16.1  | 1.2+3.7        | 3.7
+1.16.2         | 1.3+3.7.1      | 3.7.1
+1.16.2-1.16.5  | 2.1.0          | 4.1.1
+1.17           | 2.2.0-SNAPSHOT | 4.1.1
 
 It is recommended to use this project in jar-in-jar packaging.
 
@@ -62,7 +62,7 @@ repositories {
 }
 
 dependencies {
-    modImplementation(include("ca.stellardrift:confabricate:2.0.3")!!)
+    modImplementation(include("ca.stellardrift:confabricate:2.1.0")!!)
 }
 ```
 
