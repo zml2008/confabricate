@@ -4,7 +4,7 @@ import ca.stellardrift.build.common.stellardriftReleases
 import ca.stellardrift.build.common.stellardriftSnapshots
 
 plugins {
-    id("net.ltgt.errorprone") version "2.0.1"
+    id("net.ltgt.errorprone") version "2.0.2"
     id("ca.stellardrift.opinionated.fabric") version "5.0.0"
     id("net.kyori.indra.publishing.sonatype") version "2.0.5"
 }
