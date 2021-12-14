@@ -69,7 +69,7 @@ dependencies {
     })
 
     include("com.typesafe:config:1.4.1")
-    include("io.leangen.geantyref:geantyref:1.3.11")
+    include("io.leangen.geantyref:geantyref:1.3.13")
 
     checkstyle("ca.stellardrift:stylecheck:0.1")
 }
