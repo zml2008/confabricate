@@ -131,7 +131,7 @@ dependencies {
         exclude group: "com.mojang" // Use the game's DFU version
     })
 
-    include "com.typesafe:config:1.4.1"
+    include "com.typesafe:config:1.4.2"
     include api("io.leangen.geantyref:geantyref:1.3.13")
 
     checkstyle "ca.stellardrift:stylecheck:0.1"
