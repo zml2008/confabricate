@@ -17,7 +17,6 @@ package ca.stellardrift.confabricate.typeserializers;
 
 import static java.util.Objects.requireNonNull;
 
-import ca.stellardrift.confabricate.mixin.FluidTagsAccessor;
 import com.google.common.collect.ImmutableSet;
 import com.google.errorprone.annotations.concurrent.LazyInit;
 import com.mojang.serialization.Codec;
@@ -27,22 +26,15 @@ import io.leangen.geantyref.TypeFactory;
 import io.leangen.geantyref.TypeToken;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.block.Block;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.entity.EntityType;
-import net.minecraft.fluid.Fluid;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.tag.BlockTags;
-import net.minecraft.tag.EntityTypeTags;
-import net.minecraft.tag.ItemTags;
 import net.minecraft.tag.Tag;
-import net.minecraft.tag.TagGroup;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.registry.Registry;
+import net.minecraft.util.registry.RegistryEntryList;
 import net.minecraft.world.dimension.DimensionType;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -61,7 +53,6 @@ import java.lang.reflect.Type;
 import java.util.AbstractMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Supplier;
 
 /**
  * Access serializers for Minecraft types.
@@ -81,13 +72,7 @@ public final class MinecraftSerializers {
     /**
      * Registries that should not be added to a serializer collection.
      */
-    private static final ImmutableSet<Registry<?>> SPECIAL_REGISTRIES =
-            ImmutableSet.of(Registry.CUSTOM_STAT, // Type of identifier
-                    Registry.FLUID,
-                    Registry.BLOCK,
-                    Registry.ITEM,
-                    Registry.ENTITY_TYPE
-            );
+    private static final Set<Registry<?>> SPECIAL_REGISTRIES = Set.of(Registry.CUSTOM_STAT); // Type of identifier
 
     private static @LazyInit Set<Map.Entry<Type, TypeSerializer<?>>> KNOWN_REGISTRIES;
 
@@ -234,7 +219,7 @@ public final class MinecraftSerializers {
         collection.registerExact(Identifier.class, IdentifierSerializer.INSTANCE)
                 .register(Text.class, TextSerializer.INSTANCE);
 
-        for (Map.Entry<Type, TypeSerializer<?>> registry : knownRegistries()) {
+        for (final Map.Entry<Type, TypeSerializer<?>> registry : knownRegistries()) {
             registerRegistry(collection, registry.getKey(), registry.getValue());
         }
 
@@ -242,10 +227,6 @@ public final class MinecraftSerializers {
         collection.register(NbtCompound.class, serializer(NbtCompound.CODEC));
 
         // All registries here should be in SPECIAL_REGISTRIES
-        populateTaggedRegistry(collection, TypeToken.get(Fluid.class), Registry.FLUID, FluidTagsAccessor.getRequiredTags()::getGroup);
-        populateTaggedRegistry(collection, TypeToken.get(Block.class), Registry.BLOCK, BlockTags::getTagGroup);
-        populateTaggedRegistry(collection, new TypeToken<EntityType<?>>() {}, Registry.ENTITY_TYPE, EntityTypeTags::getTagGroup);
-        populateTaggedRegistry(collection, TypeToken.get(Item.class), Registry.ITEM, ItemTags::getTagGroup);
 
         collection.registerAll(GsonConfigurationLoader.gsonSerializers());
 
@@ -254,7 +235,7 @@ public final class MinecraftSerializers {
 
     // Type serializers that use the server resource manager
     private static TypeSerializerCollection.Builder populateServer(final MinecraftServer server, final TypeSerializerCollection.Builder collection) {
-        registerRegistry(collection, DimensionType.class, forRegistry(server.getRegistryManager().getMutable(Registry.DIMENSION_TYPE_KEY)));
+        registerRegistry(collection, DimensionType.class, forRegistry(server.getRegistryManager().get(Registry.DIMENSION_TYPE_KEY)));
         return collection;
     }
 
@@ -277,7 +258,7 @@ public final class MinecraftSerializers {
         Set<Map.Entry<Type, TypeSerializer<?>>> registries = KNOWN_REGISTRIES;
         if (registries == null) {
             final ImmutableSet.Builder<Map.Entry<Type, TypeSerializer<?>>> accumulator = ImmutableSet.builder();
-            for (Field registryField : Registry.class.getFields()) {
+            for (final Field registryField : Registry.class.getFields()) {
                 // only look at public static fields (excludes the ROOT registry)
                 if ((registryField.getModifiers() & (Modifier.STATIC | Modifier.PUBLIC)) != (Modifier.STATIC | Modifier.PUBLIC)) {
                     continue;
@@ -316,17 +297,15 @@ public final class MinecraftSerializers {
      * @param collection the collection to serialize
      * @param token generic element type of the registry
      * @param registry registry containing values
-     * @param tagRegistry tag container for values in the registry
      * @param <T> element type
      */
     @SuppressWarnings("unchecked")
     private static <T> void populateTaggedRegistry(final TypeSerializerCollection.Builder collection, final TypeToken<T> token,
-            final Registry<T> registry,
-            final Supplier<TagGroup<T>> tagRegistry) {
-        final Type tagType = TypeFactory.parameterizedClass(Tag.class, token.getType());
+            final Registry<T> registry) {
+        final Type tagType = TypeFactory.parameterizedClass(RegistryEntryList.class, token.getType());
 
-        collection.registerExact((TypeToken<Tag<T>>) TypeToken.get(tagType), new TagSerializer<>(registry, tagRegistry));
-        collection.registerExact(token, new RegistrySerializer<>(registry));
+        // collection.registerExact((TypeToken<RegistryEntryList<T>>) TypeToken.get(tagType), new TagSerializer<>(registry, tagRegistry));
+        // collection.registerExact(token, new RegistrySerializer<>(registry));
     }
 
 }

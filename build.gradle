@@ -6,14 +6,19 @@ import ca.stellardrift.build.configurate.transformations.ConfigurateTransformati
 plugins {
     id 'net.ltgt.errorprone' version '2.0.2'
     id 'fabric-loom' version '0.11.+'
-    id 'ca.stellardrift.opinionated' version "5.0.1"
-    id 'ca.stellardrift.configurate-transformations' version "5.0.1"
-    id 'net.kyori.indra.publishing.sonatype' version "2.1.1"
+    id 'io.github.juuxel.loom-quiltflower' version '1.6.0'
+    id 'ca.stellardrift.opinionated' version '5.0.1'
+    id 'ca.stellardrift.configurate-transformations' version '5.0.1'
+    id 'net.kyori.indra.publishing.sonatype' version '2.1.1'
 }
 
 group = "ca.stellardrift"
-version = "2.2.0-SNAPSHOT"
+version = "3.0.0-SNAPSHOT"
 description = "$longDescription"
+indra.javaVersions {
+    target(17)
+}
+
 
 repositories {
     stellardriftReleases()
@@ -46,28 +51,28 @@ sourceSets {
       "src/mixin/resources/"
     )
   }
-  register("testmod") {
+  /*register("testmod") {
     compileClasspath += main.compileClasspath
     runtimeClasspath += main.runtimeClasspath
     java.srcDirs("src/testmodMixin/java")
     resources.srcDirs("src/testmodMixin/resources")
-  }
+  }*/
 }
 
 dependencies {
-   testmodImplementation sourceSets.main.output
+   // testmodImplementation sourceSets.main.output
 }
 
 loom {
   runs {
-    register("testmodClient") {
+    /*register("testmodClient") {
       source("testmod")
       client()
     }
     register("testmodServer") {
       source("testmod")
       server()
-    }
+    }*/
   }
 }
 
@@ -98,6 +103,14 @@ tasks.withType(ProcessResources).configureEach {
     filesMatching("pack.mcmeta") { convertFormat(ConfigFormats.YAML, ConfigFormats.JSON) }
 }
 
+quiltflower {
+  fromDependency("org.quiltmc:quiltflower:$versionQuiltflower")
+  preferences {
+    win = 0
+  }
+  addToRuntimeClasspath = true
+}
+
 dependencies {
     compileOnly "com.google.errorprone:error_prone_annotations:$versionErrorprone"
     errorprone "com.google.errorprone:error_prone_core:$versionErrorprone"
@@ -119,7 +132,7 @@ dependencies {
     })
 
     include "com.typesafe:config:1.4.1"
-    include "io.leangen.geantyref:geantyref:1.3.11"
+    include api("io.leangen.geantyref:geantyref:1.3.13")
 
     checkstyle "ca.stellardrift:stylecheck:0.1"
 }
@@ -129,10 +142,6 @@ indra {
         ci(true)
     }
     apache2License()
-
-    javaVersions {
-        target(16)
-    }
 
     configurePublications {
         pom {

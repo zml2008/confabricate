@@ -21,13 +21,13 @@ import net.minecraft.nbt.NbtByteArray;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtDouble;
 import net.minecraft.nbt.NbtElement;
+import net.minecraft.nbt.NbtEnd;
 import net.minecraft.nbt.NbtFloat;
 import net.minecraft.nbt.NbtInt;
 import net.minecraft.nbt.NbtIntArray;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.nbt.NbtLong;
 import net.minecraft.nbt.NbtLongArray;
-import net.minecraft.nbt.NbtNull;
 import net.minecraft.nbt.NbtShort;
 import net.minecraft.nbt.NbtString;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -64,11 +64,11 @@ public final class NbtNodeAdapter {
     public static void tagToNode(final NbtElement tag, final ConfigurationNode node) throws IOException {
         if (tag instanceof NbtCompound) {
             final NbtCompound compoundTag = (NbtCompound) tag;
-            for (String key : compoundTag.getKeys()) {
+            for (final String key : compoundTag.getKeys()) {
                 tagToNode(compoundTag.get(key), node.node(key));
             }
         } else if (tag instanceof NbtList) {
-            for (NbtElement value : (NbtList) tag) {
+            for (final NbtElement value : (NbtList) tag) {
                 tagToNode(value, node.appendListNode());
             }
         } else if (tag instanceof NbtString) {
@@ -90,7 +90,7 @@ public final class NbtNodeAdapter {
                 node.raw(((NbtByteArray) tag).getByteArray());
             } else {
                 node.raw(null);
-                for (byte b : ((NbtByteArray) tag).getByteArray()) {
+                for (final byte b : ((NbtByteArray) tag).getByteArray()) {
                     node.appendListNode().raw(b);
                 }
             }
@@ -99,7 +99,7 @@ public final class NbtNodeAdapter {
                 node.raw(((NbtIntArray) tag).getIntArray());
             } else {
                 node.raw(null);
-                for (int i : ((NbtIntArray) tag).getIntArray()) {
+                for (final int i : ((NbtIntArray) tag).getIntArray()) {
                     node.appendListNode().raw(i);
                 }
             }
@@ -109,11 +109,11 @@ public final class NbtNodeAdapter {
                 node.raw(((NbtLongArray) tag).getLongArray());
             } else {
                 node.raw(null);
-                for (long l : ((NbtLongArray) tag).getLongArray()) {
+                for (final long l : ((NbtLongArray) tag).getLongArray()) {
                     node.appendListNode().raw(l);
                 }
             }
-        } else if (tag instanceof NbtNull) {
+        } else if (tag instanceof NbtEnd) {
             // no-op
         } else {
             throw new IOException("Unknown tag type: " + tag.getClass());
@@ -133,13 +133,13 @@ public final class NbtNodeAdapter {
     public static NbtElement nodeToTag(final ConfigurationNode node) throws IOException {
         if (node.isMap()) {
             final NbtCompound tag = new NbtCompound();
-            for (Map.Entry<Object, ? extends ConfigurationNode> ent : node.childrenMap().entrySet()) {
+            for (final Map.Entry<Object, ? extends ConfigurationNode> ent : node.childrenMap().entrySet()) {
                 tag.put(ent.getKey().toString(), nodeToTag(ent.getValue()));
             }
             return tag;
         } else if (node.isList()) {
             final NbtList list = new NbtList();
-            for (ConfigurationNode child : node.childrenList()) {
+            for (final ConfigurationNode child : node.childrenList()) {
                 list.add(nodeToTag(child));
             }
             return list;

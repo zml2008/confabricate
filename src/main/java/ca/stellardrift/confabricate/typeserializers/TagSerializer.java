@@ -15,12 +15,7 @@
  */
 package ca.stellardrift.confabricate.typeserializers;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import net.fabricmc.fabric.api.tag.TagRegistry;
 import net.minecraft.tag.Tag;
-import net.minecraft.tag.TagGroup;
-import net.minecraft.util.Identifier;
 import net.minecraft.util.registry.Registry;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -30,16 +25,13 @@ import org.spongepowered.configurate.serialize.SerializationException;
 import org.spongepowered.configurate.serialize.TypeSerializer;
 
 import java.lang.reflect.Type;
-import java.util.function.Supplier;
 
 final class TagSerializer<V> implements TypeSerializer<Tag<V>> {
 
     private final Registry<V> registry;
-    private final Supplier<TagGroup<V>> tags;
 
-    TagSerializer(final Registry<V> registry, final Supplier<TagGroup<V>> tags) {
+    TagSerializer(final Registry<V> registry) {
         this.registry = registry;
-        this.tags = tags;
     }
 
     private static final String TAG_PREFIX = "#";
@@ -48,16 +40,17 @@ final class TagSerializer<V> implements TypeSerializer<Tag<V>> {
     private static final String REQUIRED = "required";
 
     @Override
-    public Tag<V> deserialize(@NonNull final Type type, @NonNull final ConfigurationNode value) throws SerializationException {
-        if (value.isList()) { // anonymous tag
+    public Tag<V> deserialize(final @NonNull Type type, final @NonNull ConfigurationNode value) throws SerializationException {
+        return Tag.empty();
+        /*if (value.isList()) { // anonymous tag
             final ImmutableList.Builder<Tag.Entry> entries = ImmutableList.builder();
             for (final ConfigurationNode child : value.childrenList()) {
-                entries.add(entryFromNode(child));
+                entries.add(this.entryFromNode(child));
             }
             return new ConfabricateTag<>(entries.build(), () -> this.registry, this.tags);
         } else if (!value.isMap()) { // definitely a reference
             final String id = value.getString();
-            return TagRegistry.create(IdentifierSerializer.createIdentifier(id), this.tags);
+            return this.registry.getEntryList(TagKey.of(this.registry.getKey(), IdentifierSerializer.createIdentifier(id)));
         } else {
             final String id = value.node(ID).getString();
             final boolean required = value.node(REQUIRED).getBoolean();
@@ -65,12 +58,12 @@ final class TagSerializer<V> implements TypeSerializer<Tag<V>> {
                 throw new SerializationException("An ID is required");
             } else {
                 if (required && id.startsWith(TAG_PREFIX)) {
-                    return TagRegistry.create(IdentifierSerializer.createIdentifier(id.substring(1)), this.tags);
+                    return this.registry.getEntryList(TagKey.of(this.registry.getKey(), IdentifierSerializer.createIdentifier(id.substring(1))));
                 } else {
-                    return new ConfabricateTag<>(ImmutableList.of(entryFromNode(value)), () -> this.registry, this.tags);
+                    return new ConfabricateTag<>(ImmutableList.of(this.entryFromNode(value)), () -> this.registry, this.tags);
                 }
             }
-        }
+        }*/
     }
 
     @Override
@@ -81,7 +74,7 @@ final class TagSerializer<V> implements TypeSerializer<Tag<V>> {
             return;
         }
 
-        if (obj instanceof Tag.Identified<?>) { // named tag
+        /*if (obj instanceof Tag.Identified<?>) { // named tag
             value.set(TAG_PREFIX + ((Tag.Identified<V>) obj).getId().toString());
         } else if (obj instanceof ConfabricateTag<?>) {
             final ConfabricateTag<V> tag = (ConfabricateTag<V>) obj;
@@ -89,7 +82,7 @@ final class TagSerializer<V> implements TypeSerializer<Tag<V>> {
                 for (int i = 0; i < tag.serializedForm().size(); ++i) {
                     final ConfigurationNode child = value.node(i);
                     try {
-                        entryToNode(tag.serializedForm().get(i), child);
+                        this.entryToNode(tag.serializedForm().get(i), child);
                     } catch (final SerializationException ex) {
                         ex.initPath(child::path);
                         throw ex;
@@ -97,16 +90,16 @@ final class TagSerializer<V> implements TypeSerializer<Tag<V>> {
                 }
             } else {
                 value.raw(null);
-                for (Tag.Entry entry : tag.serializedForm()) {
-                    entryToNode(entry, value.appendListNode());
+                for (final Tag.Entry entry : tag.serializedForm()) {
+                    this.entryToNode(entry, value.appendListNode());
                 }
             }
         } else {
             value.raw(null);
-            for (V element : obj.values()) {
+            for (final V element : obj.values()) {
                 IdentifierSerializer.toNode(this.registry.getId(element), value.appendListNode());
             }
-        }
+        }*/
     }
 
     private Tag.Entry entryFromNode(final ConfigurationNode value) throws SerializationException {
@@ -124,16 +117,19 @@ final class TagSerializer<V> implements TypeSerializer<Tag<V>> {
             throw new SerializationException("a tag id field is required to deserialize");
         }
 
-        if (id.startsWith(TAG_PREFIX)) {
+        return null;
+        /*if (id.startsWith(TAG_PREFIX)) {
             final Identifier ident = new Identifier(id.substring(1));
-            return required ? new Tag.TagEntry(ident) : new Tag.OptionalTagEntry(ident);
+            // return required ? new Tag.TagEntry(ident) : new Tag.OptionalTagEntry(ident);
         } else {
             final Identifier ident = new Identifier(id);
-            return required ? new Tag.ObjectEntry(ident) : new Tag.OptionalObjectEntry(ident);
-        }
+            // return required ? new Tag.ObjectEntry(ident) : new Tag.OptionalObjectEntry(ident);
+        }*/
     }
 
-    private void entryToNode(final Tag.Entry entry, final ConfigurationNode target) throws SerializationException {
+    /*private void entryToNode(final Tag.Entry entry,
+     * final ConfigurationNode target)
+     * throws SerializationException {
         // TODO: Properly propagate exceptions
         if (entry instanceof Tag.ObjectEntry) {
             entry.resolve(id -> null, id -> {
@@ -159,11 +155,11 @@ final class TagSerializer<V> implements TypeSerializer<Tag<V>> {
             }, id -> null, val -> {});
         }
         throw new SerializationException("Unknown tag entry type " + entry);
-    }
+    }*/
 
     @Override
     public Tag<V> emptyValue(final Type specificType, final ConfigurationOptions options) {
-        return Tag.of(ImmutableSet.of());
+        return Tag.empty();
     }
 
 }

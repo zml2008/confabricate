@@ -362,7 +362,7 @@ public class Confabricate implements ModInitializer {
                 .dataFixer(Schemas.getFixer())
                 // This seems to always be a bit higher than the latest declared schema.
                 // Don't know why, but the rest of the game uses this version.
-                .targetVersion(SharedConstants.getGameVersion().getWorldVersion());
+                .targetVersion(SharedConstants.getGameVersion().getSaveVersion().getId());
     }
 
 }

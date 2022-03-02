@@ -17,9 +17,13 @@ package ca.stellardrift.confabricate.typeserializers;
 
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.concurrent.LazyInit;
+import com.mojang.datafixers.util.Either;
 import net.minecraft.tag.Tag;
-import net.minecraft.tag.TagGroup;
+import net.minecraft.tag.TagKey;
 import net.minecraft.util.registry.Registry;
+import net.minecraft.util.registry.RegistryEntry;
+import net.minecraft.util.registry.RegistryEntryList;
+import net.minecraft.util.registry.RegistryKey;
 
 import java.util.List;
 import java.util.function.Supplier;
@@ -29,12 +33,11 @@ import java.util.function.Supplier;
  *
  * @param <V> element type
  */
-final class ConfabricateTag<V> implements Tag<V> {
+final class ConfabricateTag<V> extends RegistryEntryList.ListBacked<V> {
 
     private final List<Tag.Entry> serializedForm;
     private final Supplier<Registry<V>> elementResolver;
-    private final Supplier<TagGroup<V>> tagResolver;
-    @LazyInit private volatile List<V> values;
+    @LazyInit private volatile List<RegistryEntry<V>> values;
 
     /**
      * Create a new lazily initialized tag.
@@ -43,42 +46,66 @@ final class ConfabricateTag<V> implements Tag<V> {
      * @param elementResolver element-based resolver
      * @param tagResolver tag-based resolver
      */
-    ConfabricateTag(final List<Entry> serializedForm, final Supplier<Registry<V>> elementResolver, final Supplier<TagGroup<V>> tagResolver) {
+    ConfabricateTag(final List<Tag.Entry> serializedForm, final Supplier<Registry<V>> elementResolver, final Supplier<Tag<V>> tagResolver) {
         this.serializedForm = ImmutableList.copyOf(serializedForm);
         this.elementResolver = elementResolver;
-        this.tagResolver = tagResolver;
-    }
-
-    @Override
-    public boolean contains(final V entry) {
-        return values().contains(entry);
     }
 
     public List<Tag.Entry> serializedForm() {
         return this.serializedForm;
     }
 
-    private List<V> resolve() {
-        final ImmutableList.Builder<V> builder = ImmutableList.builder();
+    private List<RegistryEntry<V>> resolve() {
+        final ImmutableList.Builder<RegistryEntry<V>> builder = ImmutableList.builder();
 
-        for (Tag.Entry entry : this.serializedForm) {
+        /*for (final Tag.Entry entry : this.serializedForm) {
             if (!entry.resolve(tag -> this.tagResolver.get().getTag(tag),
                 obj -> this.elementResolver.get().get(obj),
                 builder::add)) {
                 throw new IllegalArgumentException("Unknown tag entry " + entry);
             }
-        }
+        }*/
 
         return builder.build();
     }
 
     @Override
-    public List<V> values() {
-        List<V> values = this.values;
+    public List<RegistryEntry<V>> getEntries() {
+        List<RegistryEntry<V>> values = this.values;
         if (values == null) {
-            this.values = values = resolve();
+            this.values = values = this.resolve();
         }
         return values;
+    }
+
+    @Override
+    public Either<TagKey<V>, List<RegistryEntry<V>>> getStorage() {
+        return Either.right(this.getEntries());
+    }
+
+    @Override
+    public boolean contains(final RegistryEntry<V> entry) {
+        return false; // TODO
+    }
+
+    sealed interface TagEntry<V> {
+        RegistryEntryList<V> resolve(Registry<V> registry);
+
+        record Single<V>(RegistryKey<V> item) implements TagEntry<V> {
+
+            @Override
+            public RegistryEntryList<V> resolve(final Registry<V> registry) {
+                return RegistryEntryList.of(registry.getOrCreateEntry(this.item));
+            }
+        }
+
+        record Tag<V>(TagKey<V> tagKey) implements TagEntry<V> {
+            @Override
+            public RegistryEntryList<V> resolve(final Registry<V> registry) {
+                return registry.getOrCreateEntryList(this.tagKey);
+            }
+        }
+
     }
 
 }
