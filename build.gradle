@@ -1,0 +1,159 @@
+
+import ca.stellardrift.build.common.MinecraftDependenciesKt
+import ca.stellardrift.build.configurate.ConfigFormats
+import ca.stellardrift.build.configurate.transformations.ConfigurateTransformations
+
+plugins {
+    id 'net.ltgt.errorprone' version '2.0.2'
+    id 'fabric-loom' version '0.11.+'
+    id 'ca.stellardrift.opinionated' version "5.0.1"
+    id 'ca.stellardrift.configurate-transformations' version "5.0.1"
+    id 'net.kyori.indra.publishing.sonatype' version "2.1.1"
+}
+
+group = "ca.stellardrift"
+version = "2.2.0-SNAPSHOT"
+description = "$longDescription"
+
+repositories {
+    stellardriftReleases()
+    stellardriftSnapshots()
+}
+
+tasks.withType(Jar).configureEach {
+    manifest {
+        attributes  "Specification-Title": "Configurate",
+            "Specification-Version": versionConfigurate,
+            "Implementation-Title": project.name,
+            "Implementation-Version": project.version
+    }
+}
+
+tasks.withType(Javadoc).configureEach {
+    options.links(
+        "https://configurate.aoeu.xyz/$versionConfigurate/apidocs/"
+    )
+}
+
+sourceSets {
+  main {
+    java.srcDirs(
+      "src/accessor/java",
+      "src/mixin/java"
+    )
+    resources.srcDirs(
+      "src/accessor/resources/",
+      "src/mixin/resources/"
+    )
+  }
+  register("testmod") {
+    compileClasspath += main.compileClasspath
+    runtimeClasspath += main.runtimeClasspath
+    java.srcDirs("src/testmodMixin/java")
+    resources.srcDirs("src/testmodMixin/resources")
+  }
+}
+
+dependencies {
+   testmodImplementation sourceSets.main.output
+}
+
+loom {
+  runs {
+    register("testmodClient") {
+      source("testmod")
+      client()
+    }
+    register("testmodServer") {
+      source("testmod")
+      server()
+    }
+  }
+}
+
+tasks.withType(net.fabricmc.loom.task.RunGameTask) {
+  javaLauncher.set(javaToolchains.launcherFor { languageVersion.set(indra.javaVersions().target().map { v -> JavaLanguageVersion.of(v) })})
+}
+
+// Convert yaml files to josn
+tasks.withType(ProcessResources).configureEach {
+    inputs.property("versionConfigurate", versionConfigurate)
+
+    // Convert data files yaml -> json
+    filesMatching(
+        [
+            "fabric.mod",
+            "data/**/*",
+            "assets/**/*"
+        ].collect { base -> ["${base}.yml".toString(), "${base}.yaml".toString()] }
+        .flatten()
+    ) {
+        ConfigurateTransformations.convertFormat(it, ConfigFormats.YAML, ConfigFormats.JSON)
+        if (name.startsWith("fabric.mod")) {
+            expand project: project, versionConfigurate: versionConfigurate
+        }
+        name = name.substring(0, name.lastIndexOf('.')) + ".json"
+    }
+    // Convert pack meta, without changing extension
+    filesMatching("pack.mcmeta") { convertFormat(ConfigFormats.YAML, ConfigFormats.JSON) }
+}
+
+dependencies {
+    compileOnly "com.google.errorprone:error_prone_annotations:$versionErrorprone"
+    errorprone "com.google.errorprone:error_prone_core:$versionErrorprone"
+    compileOnlyApi "org.checkerframework:checker-qual:3.13.0"
+
+    minecraft "com.mojang:minecraft:$versionMinecraft"
+    mappings "net.fabricmc:yarn:$versionMinecraft+build.$versionMappings:v2"
+    modImplementation "net.fabricmc:fabric-loader:$versionLoader"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:$versionFabricApi"
+
+    // We can't add the bom because loom doesn't put it into our pom correctly
+    include modApi("org.spongepowered:configurate-core:$versionConfigurate")
+    include modApi("org.spongepowered:configurate-hocon:$versionConfigurate")
+    include(modApi("org.spongepowered:configurate-gson:$versionConfigurate") {
+        exclude group: "com.google.code.gson" // Use Minecraft's gson
+    })
+    include(modApi("org.spongepowered:configurate-extra-dfu4:$versionConfigurate") {
+        exclude group: "com.mojang" // Use the game's DFU version
+    })
+
+    include "com.typesafe:config:1.4.1"
+    include "io.leangen.geantyref:geantyref:1.3.11"
+
+    checkstyle "ca.stellardrift:stylecheck:0.1"
+}
+
+indra {
+    github("zml2008", "confabricate") {
+        ci(true)
+    }
+    apache2License()
+
+    javaVersions {
+        target(16)
+    }
+
+    configurePublications {
+        pom {
+            developers {
+                developer {
+                    name = "zml"
+                    email = "zml at stellardrift dot ca"
+                }
+            }
+        }
+    }
+
+    publishAllTo("pex", "https://repo.glaremasters.me/repository/permissionsex")
+    publishReleasesTo("stellardrift", "https://repo.stellardrift.ca/repository/releases/")
+    publishSnapshotsTo("stellardrift", "https://repo.stellardrift.ca/repository/snapshots/")
+}
+
+// Workaround for both loom and indra doing publication logic in an afterEvaluate :(
+indra.includeJavaSoftwareComponentInPublications(false)
+publishing {
+  publications.maven {
+    from components.java
+  }
+}
