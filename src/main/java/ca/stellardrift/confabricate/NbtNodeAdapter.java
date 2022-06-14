@@ -15,7 +15,6 @@
  */
 package ca.stellardrift.confabricate;
 
-import com.google.common.collect.ImmutableSet;
 import net.minecraft.nbt.ByteArrayTag;
 import net.minecraft.nbt.ByteTag;
 import net.minecraft.nbt.CompoundTag;
@@ -33,11 +32,13 @@ import net.minecraft.nbt.Tag;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.spongepowered.configurate.BasicConfigurationNode;
 import org.spongepowered.configurate.ConfigurationNode;
+import org.spongepowered.configurate.ConfigurationNodeFactory;
 import org.spongepowered.configurate.ConfigurationOptions;
 
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * A configuration adapter that will convert Minecraft NBT data into a
@@ -46,6 +47,18 @@ import java.util.Map;
  * @since 1.0.0
  */
 public final class NbtNodeAdapter {
+
+    private static final ConfigurationNodeFactory<BasicConfigurationNode> FACTORY = new ConfigurationNodeFactory<>() {
+
+        @Override
+        public BasicConfigurationNode createNode(final ConfigurationOptions options) {
+            return BasicConfigurationNode.root(options
+                    .nativeTypes(Set.of(Map.class, List.class, Byte.class,
+                            Short.class, Integer.class, Long.class, Float.class, Double.class,
+                            long[].class, byte[].class, int[].class, String.class)));
+        }
+
+    };
 
     private NbtNodeAdapter() {}
 
@@ -177,7 +190,7 @@ public final class NbtNodeAdapter {
      * @since 1.0.0
      */
     public static ConfigurationNode createEmptyNode() {
-        return createEmptyNode(Confabricate.confabricateOptions());
+        return FACTORY.createNode(Confabricate.confabricateOptions());
     }
 
     /**
@@ -188,10 +201,17 @@ public final class NbtNodeAdapter {
      * @since 1.0.0
      */
     public static ConfigurationNode createEmptyNode(final @NonNull ConfigurationOptions options) {
-        return BasicConfigurationNode.root(options
-                .nativeTypes(ImmutableSet.of(Map.class, List.class, Byte.class,
-                        Short.class, Integer.class, Long.class, Float.class, Double.class,
-                        long[].class, byte[].class, int[].class, String.class)));
+        return FACTORY.createNode(options);
+    }
+
+    /**
+     * Get a factory for nodes prepared to handle NBT data.
+     *
+     * @return the factory
+     * @since 3.0.0
+     */
+    public static ConfigurationNodeFactory<BasicConfigurationNode> nodeFactory() {
+        return FACTORY;
     }
 
 }

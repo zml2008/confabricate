@@ -16,21 +16,20 @@
 package ca.stellardrift.confabricate.typeserializers;
 
 import net.minecraft.core.Registry;
+import net.minecraft.core.RegistryAccess;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.spongepowered.configurate.ConfigurationNode;
 import org.spongepowered.configurate.serialize.SerializationException;
-import org.spongepowered.configurate.serialize.TypeSerializer;
 
 import java.lang.reflect.Type;
 
-final class RegistrySerializer<T> implements TypeSerializer<T> {
+final class RegistrySerializer<T> extends RegistryBasedSerializer<T, T> {
 
-    private final Registry<T> registry;
-
-    RegistrySerializer(final Registry<T> registry) {
-        this.registry = registry;
+    RegistrySerializer(final RegistryAccess access, final ResourceKey<? extends Registry<T>> registry) {
+        super(access, registry);
     }
 
     @Override
@@ -40,7 +39,7 @@ final class RegistrySerializer<T> implements TypeSerializer<T> {
             return null;
         }
 
-        return this.registry.get(loc);
+        return this.registry().get(loc);
     }
 
     @Override
@@ -50,7 +49,7 @@ final class RegistrySerializer<T> implements TypeSerializer<T> {
             value.raw(null);
         }
 
-        final ResourceLocation loc = this.registry.getKey(obj);
+        final ResourceLocation loc = this.registry().getKey(obj);
         if (loc == null) {
             throw new SerializationException("Unknown registry element " + obj);
         }

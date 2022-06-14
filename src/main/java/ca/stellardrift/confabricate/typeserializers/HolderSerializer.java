@@ -15,46 +15,54 @@
  */
 package ca.stellardrift.confabricate.typeserializers;
 
+import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
+import net.minecraft.core.RegistryAccess;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.spongepowered.configurate.ConfigurationNode;
 import org.spongepowered.configurate.serialize.SerializationException;
-import org.spongepowered.configurate.serialize.TypeSerializer;
 
 import java.lang.reflect.Type;
 
-final class RegistryEntrySerializer<T> implements TypeSerializer<T> {
+final class HolderSerializer<T> extends RegistryBasedSerializer<T, Holder<T>> {
 
-    private final Registry<T> registry;
-
-    RegistryEntrySerializer(final Registry<T> registry) {
-        this.registry = registry;
+    HolderSerializer(final RegistryAccess access, final ResourceKey<? extends Registry<T>> registry) {
+        super(access, registry);
     }
 
     @Override
-    public @Nullable T deserialize(final @NonNull Type type, final @NonNull ConfigurationNode value) throws SerializationException {
+    public @Nullable Holder<T> deserialize(final @NonNull Type type, final @NonNull ConfigurationNode value) throws SerializationException {
         final ResourceLocation loc = ResourceLocationSerializer.fromNode(value);
         if (loc == null) {
             return null;
         }
 
-        return this.registry.get(loc);
+        return this.registry()
+            .getOrCreateHolder(ResourceKey.create(this.registry, loc));
     }
 
     @Override
-    public void serialize(final @NonNull Type type, final @Nullable T obj,
+    public void serialize(final @NonNull Type type, final @Nullable Holder<T> obj,
             final @NonNull ConfigurationNode value) throws SerializationException {
         if (obj == null) {
             value.raw(null);
         }
 
-        final ResourceLocation loc = this.registry.getKey(obj);
-        if (loc == null) {
-            throw new SerializationException("Unknown registry element " + obj);
+        final ResourceKey<T> loc = obj.unwrapKey()
+            .orElseThrow(() -> new SerializationException(value, type, "Unknown registry element " + obj));
+
+        if (!loc.registry().equals(this.registry.location())) {
+            throw new SerializationException(
+                value,
+                type,
+                "Registry of provided Holder (" + loc.registry()
+                    + ") is not the registry associated with the type to be serialized (" + this.registry.location() + ")"
+            );
         }
-        ResourceLocationSerializer.toNode(loc, value);
+        ResourceLocationSerializer.toNode(loc.location(), value);
     }
 
 }

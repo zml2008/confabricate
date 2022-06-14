@@ -19,25 +19,23 @@ import static java.util.Objects.requireNonNull;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.errorprone.annotations.concurrent.LazyInit;
-import com.mojang.authlib.minecraft.client.MinecraftClient;
+import com.mojang.logging.LogUtils;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.DynamicOps;
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.geantyref.TypeFactory;
 import io.leangen.geantyref.TypeToken;
-import net.fabricmc.api.EnvType;
-import net.fabricmc.api.Environment;
+import net.minecraft.core.Holder;
 import net.minecraft.core.HolderSet;
 import net.minecraft.core.Registry;
+import net.minecraft.core.RegistryAccess;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.dimension.DimensionType;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.slf4j.Logger;
 import org.spongepowered.configurate.ConfigurationNode;
 import org.spongepowered.configurate.extra.dfu.v4.ConfigurateOps;
 import org.spongepowered.configurate.extra.dfu.v4.DfuSerializers;
@@ -49,9 +47,10 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
-import java.util.AbstractMap;
+import java.lang.reflect.WildcardType;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
 
 /**
  * Access serializers for Minecraft types.
@@ -64,6 +63,8 @@ import java.util.Set;
  */
 public final class MinecraftSerializers {
 
+    private static final Logger LOGGER = LogUtils.getLogger();
+
     // impl note: initialization order is critical here to ensure we can test
     // most parts of Confabricate without having to fully initialize Minecraft
     // and use any of our Mixins
@@ -71,13 +72,11 @@ public final class MinecraftSerializers {
     /**
      * Registries that should not be added to a serializer collection.
      */
-    private static final Set<Registry<?>> SPECIAL_REGISTRIES = Set.of(Registry.CUSTOM_STAT); // Type of identifier
+    private static final Set<ResourceKey<? extends Registry<?>>> SPECIAL_REGISTRIES = Set.of(Registry.CUSTOM_STAT_REGISTRY); // Type of RL
+    private static final TypeToken<ResourceKey<? extends Registry<?>>> TYPE_RESOURCE_KEY_GENERIC
+        = new TypeToken<ResourceKey<? extends Registry<?>>>() {};
 
-    private static @LazyInit Set<Map.Entry<Type, TypeSerializer<?>>> KNOWN_REGISTRIES;
-
-    private static final TypeToken<Registry<?>> TYPE_REGISTRY_GENERIC = new TypeToken<Registry<?>>() {};
-    private static final Logger LOGGER = LogManager.getLogger();
-
+    private static @LazyInit Set<Map.Entry<Type, ResourceKey<? extends Registry<?>>>> KNOWN_REGISTRIES;
     private static @LazyInit TypeSerializerCollection MINECRAFT_COLLECTION;
     private static @LazyInit ConfigurateOps DEFAULT_OPS;
 
@@ -145,16 +144,38 @@ public final class MinecraftSerializers {
     }
 
     /**
-     * Create a {@link TypeSerializer} than can interpret values in the
-     * provided registry.
+     * Populate a type serializer collection with all applicable serializers
+     * for values in a registry.
      *
-     * @param registry the registry
+     * <p>This includes a serializer for the literal values, a serializer
+     * for {@link Holder Holders} of values, and a serializer for
+     * {@link HolderSet HolderSets} (tags) of values.</p>
+     *
+     * @param builder the builder to populate
+     * @param entryType the type contained in the registry
+     * @param access registry access to read the registry contents from
+     * @param registry the registry to query
      * @param <T> the type registered by the registry
-     * @return a serializer for the registry
-     * @since 1.2.0
+     * @since 3.0.0
      */
-    public static <T> TypeSerializer<T> forRegistry(final Registry<T> registry) {
-        return new RegistrySerializer<>(registry);
+    @SuppressWarnings("unchecked")
+    public static <T> void populateRegistry(
+        final TypeSerializerCollection.Builder builder,
+        final TypeToken<T> entryType,
+        final RegistryAccess access,
+        final ResourceKey<? extends Registry<T>> registry
+    ) {
+        // serializer
+        // holder serializer
+        builder.registerExact(entryType, new RegistrySerializer<>(access, registry));
+        builder.registerExact(
+            (TypeToken<Holder<T>>) TypeToken.get(TypeFactory.parameterizedClass(Holder.class, entryType.getType())),
+            new HolderSerializer<>(access, registry)
+        );
+        builder.registerExact(
+            (TypeToken<HolderSet<T>>) TypeToken.get(TypeFactory.parameterizedClass(HolderSet.class, entryType.getType())),
+            new HolderSetSerializer<>(access, registry)
+        );
     }
 
     /**
@@ -192,7 +213,7 @@ public final class MinecraftSerializers {
         return requireNonNull(collection, "collection").equals(MINECRAFT_COLLECTION);
     }
 
-    private static boolean shouldRegister(final Registry<?> registry) {
+    private static boolean shouldRegister(final ResourceKey<? extends Registry<?>> registry) {
         // Don't register root registry -- its key can't be looked up :(
         return !SPECIAL_REGISTRIES.contains(registry);
     }
@@ -203,7 +224,8 @@ public final class MinecraftSerializers {
      * <p>This will add serializers for: <ul>
      *     <li>{@link ResourceLocation resource locations}</li>
      *     <li>{@link net.minecraft.network.chat.Component} (as a string)</li>
-     *     <li>Any elements in vanilla {@link Registry registries}</li>
+     *     <li>Any individual elements in vanilla {@link Registry registries},
+     *         as raw values or {@link Holder}</li>
      *     <li>{@link HolderSet} of a combination of identifiers and
      *          tags for any taggable registry</li>
      *     <li>{@link ItemStack}</li>
@@ -218,8 +240,13 @@ public final class MinecraftSerializers {
         collection.registerExact(ResourceLocation.class, ResourceLocationSerializer.INSTANCE)
                 .register(Component.class, ComponentSerializer.INSTANCE);
 
-        for (final Map.Entry<Type, TypeSerializer<?>> registry : knownRegistries()) {
-            registerRegistry(collection, registry.getKey(), registry.getValue());
+        for (final Map.Entry<Type, ResourceKey<? extends Registry<?>>> registry : knownRegistries()) {
+            registerRegistry(
+                collection,
+                registry.getKey(),
+                RegistryAccess.BUILTIN,
+                registry.getValue()
+            );
         }
 
         collection.register(ItemStack.class, serializer(ItemStack.CODEC));
@@ -232,18 +259,6 @@ public final class MinecraftSerializers {
         return collection;
     }
 
-    // Type serializers that use the server resource manager
-    private static TypeSerializerCollection.Builder populateServer(final MinecraftServer server, final TypeSerializerCollection.Builder collection) {
-        registerRegistry(collection, DimensionType.class, forRegistry(server.registryAccess().registryOrThrow(Registry.DIMENSION_TYPE_REGISTRY)));
-        return collection;
-    }
-
-    // Type serializers that source registry + tag information from the client
-    @Environment(EnvType.CLIENT)
-    private static TypeSerializerCollection.Builder populateClient(final MinecraftClient client, final TypeSerializerCollection.Builder collection) {
-        return collection;
-    }
-
     /**
      * Lazily initialize our set of vanilla registries.
      *
@@ -253,10 +268,11 @@ public final class MinecraftSerializers {
      *
      * @return collection of built-in registries
      */
-    private static Set<Map.Entry<Type, TypeSerializer<?>>> knownRegistries() {
-        Set<Map.Entry<Type, TypeSerializer<?>>> registries = KNOWN_REGISTRIES;
+    @SuppressWarnings("unchecked")
+    private static Set<Map.Entry<Type, ResourceKey<? extends Registry<?>>>> knownRegistries() {
+        Set<Map.Entry<Type, ResourceKey<? extends Registry<?>>>> registries = KNOWN_REGISTRIES;
         if (registries == null) {
-            final ImmutableSet.Builder<Map.Entry<Type, TypeSerializer<?>>> accumulator = ImmutableSet.builder();
+            final ImmutableSet.Builder<Map.Entry<Type, ResourceKey<? extends Registry<?>>>> accumulator = ImmutableSet.builder();
             for (final Field registryField : Registry.class.getFields()) {
                 // only look at public static fields (excludes the ROOT registry)
                 if ((registryField.getModifiers() & (Modifier.STATIC | Modifier.PUBLIC)) != (Modifier.STATIC | Modifier.PUBLIC)) {
@@ -264,19 +280,30 @@ public final class MinecraftSerializers {
                 }
 
                 final Type fieldType = registryField.getGenericType();
-                if (!GenericTypeReflector.isSuperType(TYPE_REGISTRY_GENERIC.getType(), fieldType)) { // if not a registry (keys)
+                if (!GenericTypeReflector.isSuperType(TYPE_RESOURCE_KEY_GENERIC.getType(), fieldType)) { // if not a registry
                     continue;
                 }
 
-                final Type elementType = ((ParameterizedType) fieldType).getActualTypeArguments()[0];
+                final ResourceKey<? extends Registry<?>> registry;
                 try {
-                    final Registry<?> registry = (Registry<?>) registryField.get(null);
+                    registry = (ResourceKey<? extends Registry<?>>) registryField.get(null);
+                } catch (final IllegalAccessException e) {
+                    LOGGER.error("Unable to create serializer for registry of type {} due to access error", fieldType, e);
+                    continue;
+                }
+
+                try {
                     if (shouldRegister(registry)) {
-                        accumulator.add(new AbstractMap.SimpleImmutableEntry<>(elementType, forRegistry(registry)));
+                        final Type registryKeyType = ((ParameterizedType) fieldType).getActualTypeArguments()[0];
+                        final Type registryType =
+                            registryKeyType instanceof WildcardType ? ((WildcardType) registryKeyType).getUpperBounds()[0]
+                            : registryKeyType;
+                        final Type elementType = ((ParameterizedType) registryType).getActualTypeArguments()[0];
+                        accumulator.add(Map.entry(elementType, registry));
                         LOGGER.debug("Created serializer for Minecraft registry {} with element type {}", registry, elementType);
                     }
-                } catch (final IllegalAccessException e) {
-                    LOGGER.error("Unable to create serializer for registry of type {} due to access error", elementType, e);
+                } catch (final Exception ex) {
+                    LOGGER.error("Error attempting to discover registry entry type for {} from field type {}", registry, fieldType, ex);
                 }
             }
             registries = KNOWN_REGISTRIES = accumulator.build();
@@ -286,25 +313,18 @@ public final class MinecraftSerializers {
 
     // Limit scope of warning suppression for reflective registry initialization
     @SuppressWarnings({"unchecked", "rawtypes"})
-    private static void registerRegistry(final TypeSerializerCollection.Builder collection, final Type type, final TypeSerializer<?> registry) {
-        collection.registerExact(TypeToken.get(type), (TypeSerializer) registry);
-    }
-
-    /**
-     * Add a serializer for the registry and its {@link HolderSet}.
-     *
-     * @param collection the collection to serialize
-     * @param token generic element type of the registry
-     * @param registry registry containing values
-     * @param <T> element type
-     */
-    @SuppressWarnings("unchecked")
-    private static <T> void populateTaggedRegistry(final TypeSerializerCollection.Builder collection, final TypeToken<T> token,
-            final Registry<T> registry) {
-        final Type tagType = TypeFactory.parameterizedClass(HolderSet.class, token.getType());
-
-        // collection.registerExact((TypeToken<RegistryEntryList<T>>) TypeToken.get(tagType), new TagSerializer<>(registry, tagRegistry));
-        // collection.registerExact(token, new RegistrySerializer<>(registry));
+    private static void registerRegistry(
+        final TypeSerializerCollection.Builder collection,
+        final Type type,
+        final Supplier<? extends RegistryAccess> access,
+        final ResourceKey<? extends Registry<?>> registry
+    ) {
+        populateRegistry(
+            collection,
+            TypeToken.get(type),
+            access.get(), // todo: make things lazy?
+            (ResourceKey) registry
+        );
     }
 
 }
