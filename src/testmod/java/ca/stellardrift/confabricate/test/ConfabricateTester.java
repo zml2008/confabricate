@@ -19,7 +19,6 @@ import static org.spongepowered.configurate.transformation.ConfigurationTransfor
 
 import ca.stellardrift.confabricate.Confabricate;
 import ca.stellardrift.confabricate.typeserializers.MinecraftSerializers;
-import com.google.common.collect.ImmutableSet;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v1.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.player.AttackBlockCallback;
@@ -31,27 +30,28 @@ import net.fabricmc.fabric.api.resource.ResourceReloadListenerKeys;
 import net.fabricmc.fabric.api.resource.SimpleResourceReloadListener;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.ModContainer;
-import net.minecraft.block.Block;
-import net.minecraft.datafixer.TypeReferences;
-import net.minecraft.enchantment.Enchantments;
-import net.minecraft.item.BlockItem;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.network.packet.s2c.play.ScreenHandlerSlotUpdateS2CPacket;
-import net.minecraft.resource.ResourceManager;
-import net.minecraft.resource.ResourceType;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.tag.Tag;
-import net.minecraft.text.LiteralText;
-import net.minecraft.text.Text;
-import net.minecraft.text.TextColor;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.Hand;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.TypedActionResult;
-import net.minecraft.util.Util;
-import net.minecraft.util.profiler.Profiler;
+import net.minecraft.Util;
+import net.minecraft.core.Holder;
+import net.minecraft.core.HolderSet;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.TextColor;
+import net.minecraft.network.chat.TextComponent;
+import net.minecraft.network.protocol.game.ClientboundContainerSetSlotPacket;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.packs.PackType;
+import net.minecraft.server.packs.resources.ResourceManager;
+import net.minecraft.util.datafix.fixes.References;
+import net.minecraft.util.profiling.ProfilerFiller;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.item.enchantment.Enchantments;
+import net.minecraft.world.level.block.Block;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
@@ -114,7 +114,7 @@ public class ConfabricateTester implements ModInitializer {
             // Handle updating with game changes
             final CommentedConfigurationNode node = this.configFile.node();
             final DataFixerTransformation xform = Confabricate.minecraftDfuBuilder()
-                    .addType(TypeReferences.ITEM_STACK, "items", WILDCARD_OBJECT) // every child of "items" should be upgraded as an ItemStack
+                    .addType(References.ITEM_STACK, "items", WILDCARD_OBJECT) // every child of "items" should be upgraded as an ItemStack
                     .build();
 
             final boolean wasEmpty = node.empty();
@@ -126,14 +126,14 @@ public class ConfabricateTester implements ModInitializer {
             }
 
             this.config = this.configFile.referenceTo(TestmodConfig.class);
-            ResourceManagerHelper.get(ResourceType.SERVER_DATA).registerReloadListener(new SimpleResourceReloadListener<Void>() {
+            ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(new SimpleResourceReloadListener<Void>() {
                 @Override
-                public Identifier getFabricId() {
-                    return new Identifier("confabricate-testmod", "config");
+                public ResourceLocation getFabricId() {
+                    return new ResourceLocation("confabricate-testmod", "config");
                 }
 
                 @Override
-                public CompletableFuture<Void> load(final ResourceManager manager, final Profiler profiler, final Executor executor) {
+                public CompletableFuture<Void> load(final ResourceManager manager, final ProfilerFiller profiler, final Executor executor) {
                     final CompletableFuture<Void> ret = new CompletableFuture<>();
                     executor.execute(() -> {
                         try {
@@ -147,13 +147,17 @@ public class ConfabricateTester implements ModInitializer {
                 }
 
                 @Override
-                public CompletableFuture<Void> apply(final Void data, final ResourceManager manager, final Profiler profiler,
-                        final Executor executor) {
+                public CompletableFuture<Void> apply(
+                    final Void data,
+                    final ResourceManager manager,
+                    final ProfilerFiller profiler,
+                    final Executor executor
+                ) {
                     return CompletableFuture.completedFuture(data);
                 }
 
                 @Override
-                public Collection<Identifier> getFabricDependencies() {
+                public Collection<ResourceLocation> getFabricDependencies() {
                     return Collections.singletonList(ResourceReloadListenerKeys.TAGS);
                 }
             });
@@ -169,47 +173,52 @@ public class ConfabricateTester implements ModInitializer {
 
         // Register protection events
         AttackBlockCallback.EVENT.register((player, world, hand, blockPos, direction) -> {
-            if (!world.isClient && player instanceof ServerPlayerEntity && hand == Hand.MAIN_HAND) {
-                final ActionResult testAttack = this.configuration().protection().testAttackWith((ServerPlayerEntity) player,
-                                                                                                 player.getMainHandStack());
+            if (!world.isClientSide && player instanceof ServerPlayer && hand == InteractionHand.MAIN_HAND) {
+                final InteractionResult testAttack = this.configuration().protection().testAttackWith((ServerPlayer) player,
+                                                                                                 player.getMainHandItem());
 
-                if (testAttack != ActionResult.PASS) {
+                if (testAttack != InteractionResult.PASS) {
                     return testAttack;
                 }
 
-                return this.configuration().protection().testBreak((ServerPlayerEntity) player,
+                return this.configuration().protection().testBreak((ServerPlayer) player,
                                                                    world.getBlockState(blockPos).getBlock());
             }
-            return ActionResult.PASS;
+            return InteractionResult.PASS;
         });
         AttackEntityCallback.EVENT.register((player, world, hand, entity, result) -> {
-            if (!world.isClient && player instanceof ServerPlayerEntity && hand == Hand.MAIN_HAND) {
-                return this.configuration().protection().testAttackWith((ServerPlayerEntity) player, player.getMainHandStack());
+            if (!world.isClientSide && player instanceof ServerPlayer && hand == InteractionHand.MAIN_HAND) {
+                return this.configuration().protection().testAttackWith((ServerPlayer) player, player.getMainHandItem());
             }
-            return ActionResult.PASS;
+            return InteractionResult.PASS;
         });
         UseItemCallback.EVENT.register((player, world, hand) -> {
-            if (!world.isClient && player instanceof ServerPlayerEntity && hand == Hand.MAIN_HAND) {
-                return new TypedActionResult<>(this.configuration().protection().testUseItem((ServerPlayerEntity) player,
-                                                                                             player.getMainHandStack()), player.getMainHandStack());
+            if (!world.isClientSide && player instanceof ServerPlayer && hand == InteractionHand.MAIN_HAND) {
+                return new InteractionResultHolder<>(this.configuration().protection().testUseItem((ServerPlayer) player,
+                                                                                             player.getMainHandItem()), player.getMainHandItem());
             }
-            return TypedActionResult.pass(player.getStackInHand(hand));
+            return InteractionResultHolder.pass(player.getItemInHand(hand));
         });
         UseBlockCallback.EVENT.register((player, world, hand, hitResult) -> {
-            if (!world.isClient && player instanceof ServerPlayerEntity && hand == Hand.MAIN_HAND) {
-                final ItemStack heldItem = player.getMainHandStack();
+            if (!world.isClientSide && player instanceof ServerPlayer && hand == InteractionHand.MAIN_HAND) {
+                final ItemStack heldItem = player.getMainHandItem();
                 if (heldItem.getItem() instanceof BlockItem) {
-                    final ActionResult result = this.configuration().protection().testPlace((ServerPlayerEntity) player,
+                    final InteractionResult result = this.configuration().protection().testPlace((ServerPlayer) player,
                                                                                             ((BlockItem) heldItem.getItem()).getBlock());
-                    if (result == ActionResult.FAIL) { // if we can't place, then let's restore inventory
-                        ((ServerPlayerEntity) player).networkHandler.sendPacket(
-                                new ScreenHandlerSlotUpdateS2CPacket(-2,
-                                        player.getInventory().selectedSlot, heldItem));
+                    if (result == InteractionResult.FAIL) { // if we can't place, then let's restore inventory
+                        ((ServerPlayer) player).connection.send(
+                            new ClientboundContainerSetSlotPacket(
+                                -2,
+                                player.containerMenu.getStateId(),
+                                player.getInventory().selected,
+                                heldItem
+                            )
+                        );
                     }
                     return result;
                 }
             }
-            return ActionResult.PASS;
+            return InteractionResult.PASS;
         });
 
     }
@@ -220,7 +229,7 @@ public class ConfabricateTester implements ModInitializer {
 
     @ConfigSerializable
     public static class TestmodConfig {
-        private Text message = new LiteralText("Welcome to the server!");
+        private Component message = new TextComponent("Welcome to the server!");
         private List<ItemStack> items = new ArrayList<>();
         @Comment("Protection configuration. Entries for each type will be "
                 + "processed in order, and will be denied based on the first matching.")
@@ -228,11 +237,11 @@ public class ConfabricateTester implements ModInitializer {
 
         {
             final ItemStack stack = new ItemStack(Items.STONE_SWORD, 3);
-            stack.addEnchantment(Enchantments.SHARPNESS, 3);
+            stack.enchant(Enchantments.SHARPNESS, 3);
             this.items.add(stack);
         }
 
-        public Text message() {
+        public Component message() {
             return this.message;
         }
 
@@ -263,38 +272,58 @@ public class ConfabricateTester implements ModInitializer {
             this.blockBreak.add(new ProtectionEntry<>());
         }
 
-        public ActionResult testPlace(final ServerPlayerEntity actor, final Block targetBlock) {
-            return test(this.blockPlace, "place block", actor, targetBlock);
+        public InteractionResult testPlace(final ServerPlayer actor, final Block targetBlock) {
+            return this.test(
+                this.blockPlace,
+                "place block",
+                actor,
+                targetBlock.builtInRegistryHolder()
+            );
         }
 
-        public ActionResult testBreak(final ServerPlayerEntity actor, final Block targetBlock) {
-            return test(this.blockBreak, "break block", actor, targetBlock);
+        public InteractionResult testBreak(final ServerPlayer actor, final Block targetBlock) {
+            return this.test(
+                this.blockBreak,
+                "break block",
+                actor,
+                targetBlock.builtInRegistryHolder()
+            );
         }
 
-        public ActionResult testUseItem(final ServerPlayerEntity actor, final ItemStack usedItem) {
-            return test(this.useItem, "use item", actor, usedItem.getItem());
+        public InteractionResult testUseItem(final ServerPlayer actor, final ItemStack usedItem) {
+            return this.test(
+                this.useItem,
+                "use item",
+                actor,
+                usedItem.getItem().builtInRegistryHolder()
+            );
         }
 
-        public ActionResult testAttackWith(final ServerPlayerEntity actor, final ItemStack usedItem) {
-            return test(this.attackWithItem, "attack with item", actor, usedItem.getItem());
+        public InteractionResult testAttackWith(final ServerPlayer actor, final ItemStack usedItem) {
+            return this.test(
+                this.attackWithItem,
+                "attack with item",
+                actor,
+                usedItem.getItem().builtInRegistryHolder()
+            );
         }
 
-        private <V> ActionResult test(final List<ProtectionEntry<V>> entries, final String description, final ServerPlayerEntity actor,
-                final V target) {
-            ActionResult result = ActionResult.PASS;
+        private <V> InteractionResult test(final List<ProtectionEntry<V>> entries, final String description, final ServerPlayer actor,
+                final Holder<V> target) {
+            InteractionResult result = InteractionResult.PASS;
             for (final ProtectionEntry<V> entry : entries) {
                 result = entry.test(actor, target);
-                if (result == ActionResult.FAIL) {
+                if (result == InteractionResult.FAIL) {
                     if (entry.denyMessage != null) {
-                        actor.sendSystemMessage(entry.denyMessage, Util.NIL_UUID);
+                        actor.sendMessage(entry.denyMessage, Util.NIL_UUID);
                     }
                     break;
-                } else if (result != ActionResult.PASS) {
+                } else if (result != InteractionResult.PASS) {
                     break;
                 }
             }
             if (this.debug) {
-                LOGGER.info("Checked {} on player {} using {}: {}", description, actor.getEntityName(), target, result);
+                LOGGER.info("Checked {} on player {} using {}: {}", description, actor.getScoreboardName(), target, result);
             }
             return result;
         }
@@ -305,20 +334,20 @@ public class ConfabricateTester implements ModInitializer {
         @Comment("Operator level to exempt users from this protection")
         private int exemptLevel = 2;
         @Comment("Message to send when a user is forbidden from this action")
-        private Text denyMessage = new LiteralText("You cannot do that!").styled(s -> s.withColor(TextColor.fromRgb(0xFF0000)));
+        private Component denyMessage = new TextComponent("You cannot do that!").withStyle(s -> s.withColor(TextColor.fromRgb(0xFF0000)));
         @Comment("Types to catch in this entry")
-        private Tag<V> types = Tag.of(ImmutableSet.of());
+        private HolderSet<V> types = HolderSet.direct(List.of());
 
-        public ActionResult test(final ServerPlayerEntity player, final V value) {
-            if (player.hasPermissionLevel(this.exemptLevel)) { // we are exempt
-                return ActionResult.PASS;
+        public InteractionResult test(final ServerPlayer player, final Holder<V> value) {
+            if (this.exemptLevel != -1 && player.hasPermissions(this.exemptLevel)) { // we are exempt
+                return InteractionResult.PASS;
             }
 
             if (this.types == null || !this.types.contains(value)) { // not an applicable item
-                return ActionResult.PASS;
+                return InteractionResult.PASS;
             }
 
-            return ActionResult.FAIL; // block
+            return InteractionResult.FAIL; // block
         }
     }
 

@@ -41,28 +41,28 @@ tasks.withType(Javadoc).configureEach {
 }
 
 sourceSets {
-  /*register("testmod") {
+  register("testmod") {
     compileClasspath += main.compileClasspath
     runtimeClasspath += main.runtimeClasspath
     java.srcDirs("src/testmodMixin/java")
     resources.srcDirs("src/testmodMixin/resources")
-  }*/
+  }
 }
 
 dependencies {
-   // testmodImplementation sourceSets.main.output
+   testmodImplementation sourceSets.main.output
 }
 
 loom {
   runs {
-    /*register("testmodClient") {
+    register("testmodClient") {
       source("testmod")
       client()
     }
     register("testmodServer") {
       source("testmod")
       server()
-    }*/
+    }
   }
 }
 

@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
-  "id": "${project.rootProject.name.toLowerCase()}-testmod",
-  "version": "${project.version}",
+  "id": "confabricate-testmod",
+  "version": "1",
 
-  "name": "${project.rootProject.name} Testing Mod",
-  "description": "Test mod for ${project.ext.longDescription}",
+  "name": "confabricate Testing Mod",
+  "description": "Test mod for confabricate",
   "authors": [
     "zml"
   ],
@@ -22,7 +22,7 @@
         "confabricate-testmod.mixins.json"
     ],
   "depends": {
-    "fabricloader": ">=0.4.0",
+    "fabricloader": ">=0.14.0",
     "confabricate": "*"
   },
   "suggests": {

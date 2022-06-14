@@ -1,9 +1,9 @@
 {
     "required": true,
     "package": "ca.stellardrift.confabricate.test.mixin",
-    "compatibilityLevel": "JAVA_8",
+    "compatibilityLevel": "JAVA_16",
     "mixins": [
-        "MixinPlayerManager"
+        "PlayerListMixin"
     ],
     "injectors": {
         "defaultRequire": 1

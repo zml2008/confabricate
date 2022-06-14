@@ -15,8 +15,8 @@
  */
 package ca.stellardrift.confabricate.test;
 
-import static net.minecraft.server.command.CommandManager.argument;
-import static net.minecraft.server.command.CommandManager.literal;
+import static net.minecraft.commands.Commands.argument;
+import static net.minecraft.commands.Commands.literal;
 
 import ca.stellardrift.confabricate.NbtNodeAdapter;
 import ca.stellardrift.confabricate.typeserializers.MinecraftSerializers;
@@ -25,26 +25,26 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.builder.RequiredArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
-import net.minecraft.block.Block;
-import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.command.CommandException;
-import net.minecraft.command.argument.BlockPosArgumentType;
-import net.minecraft.command.argument.EntityArgumentType;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityType;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtElement;
-import net.minecraft.nbt.NbtHelper;
-import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.LiteralText;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Text;
-import net.minecraft.text.TextColor;
-import net.minecraft.util.Formatting;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.ChatFormatting;
+import net.minecraft.commands.CommandRuntimeException;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.arguments.EntityArgument;
+import net.minecraft.commands.arguments.coordinates.BlockPosArgument;
+import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtUtils;
+import net.minecraft.nbt.Tag;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.chat.TextColor;
+import net.minecraft.network.chat.TextComponent;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import org.spongepowered.configurate.BasicConfigurationNode;
 import org.spongepowered.configurate.ConfigurateException;
 import org.spongepowered.configurate.ConfigurationNode;
@@ -60,6 +60,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 final class TestCommands {
@@ -67,45 +68,45 @@ final class TestCommands {
     private TestCommands() {}
 
     private static final Path currentDir = FileSystems.getDefault().getPath(".");
-    private static final LiteralText COMMA = new LiteralText(", ");
+    private static final Component COMMA = new TextComponent(", ");
     private static final TextColor MESSAGE_COLOR = TextColor.fromRgb(0x2268ab);
 
-    public static void register(final ConfabricateTester mod, final CommandDispatcher<ServerCommandSource> src) {
+    public static void register(final ConfabricateTester mod, final CommandDispatcher<CommandSourceStack> src) {
         src.register(literal("confabricate")
-                .requires(scs -> scs.hasPermissionLevel(4))
+                .requires(scs -> scs.hasPermission(4))
                 .then(dumpCommand())
                 .then(parseObjectCommand()));
         //src.register(literal("confab").redirect(root));
 
         src.register(literal("test-kit")
-                .requires(scs -> scs.hasPermissionLevel(2))
+                .requires(scs -> scs.hasPermission(2))
                 .executes(ctx -> {
                     final List<ItemStack> itemsToGive = mod.configuration().items();
                     if (itemsToGive == null || itemsToGive.isEmpty()) {
-                        ctx.getSource().sendError(new LiteralText("No items are defined in the kit!"));
+                        ctx.getSource().sendFailure(new TextComponent("No items are defined in the kit!"));
                         return 0;
                     }
 
-                    final ServerPlayerEntity target = ctx.getSource().getPlayer();
-                    final MutableText output = new LiteralText("You have been given: ");
-                    output.styled(style -> style.withColor(MESSAGE_COLOR));
+                    final ServerPlayer target = ctx.getSource().getPlayerOrException();
+                    final MutableComponent output = new TextComponent("You have been given: ");
+                    output.withStyle(style -> style.withColor(MESSAGE_COLOR));
 
                     boolean first = true;
-                    for (ItemStack stack : itemsToGive) {
-                        target.getInventory().offerOrDrop(stack.copy());
+                    for (final ItemStack stack : itemsToGive) {
+                        target.getInventory().placeItemBackInInventory(stack.copy());
                         if (!first) {
                             output.append(COMMA);
                         }
-                        output.append(stack.toHoverableText());
+                        output.append(stack.getDisplayName());
                         first = false;
                     }
 
-                    ctx.getSource().sendFeedback(output, false);
+                    ctx.getSource().sendSuccess(output, false);
                     return 1;
                 }));
     }
 
-    private static RequiredArgumentBuilder<ServerCommandSource, String> path(final String argumentName) {
+    private static RequiredArgumentBuilder<CommandSourceStack, String> path(final String argumentName) {
         return argument(argumentName, StringArgumentType.string()).suggests((src, builder) -> {
             return CompletableFuture.supplyAsync(() -> {
                 try (Stream<Path> files = Files.list(currentDir)) {
@@ -127,7 +128,7 @@ final class TestCommands {
     static class DataTest {
         public Block material;
         public EntityType<?> entity;
-        public Identifier ident = new Identifier("test", "demo");
+        public ResourceLocation ident = new ResourceLocation("test", "demo");
 
         @Override
         public String toString() {
@@ -139,7 +140,7 @@ final class TestCommands {
         }
     }
 
-    static LiteralArgumentBuilder<ServerCommandSource> parseObjectCommand() {
+    static LiteralArgumentBuilder<CommandSourceStack> parseObjectCommand() {
         return literal("parse").then(argument("json", StringArgumentType.greedyString()).executes(ctx -> {
             final String jsonText = StringArgumentType.getString(ctx, "json");
             final GsonConfigurationLoader loader = GsonConfigurationLoader.builder()
@@ -147,7 +148,7 @@ final class TestCommands {
                     .source(() -> new BufferedReader(new StringReader(jsonText))).build();
 
             try {
-                ctx.getSource().sendFeedback(new LiteralText("Parsed as: " + loader.load().get(DataTest.class)), false);
+                ctx.getSource().sendSuccess(new TextComponent("Parsed as: " + loader.load().get(DataTest.class)), false);
             } catch (final ConfigurateException ex) {
                 throw new RuntimeException(ex);
             }
@@ -155,52 +156,59 @@ final class TestCommands {
         }));
     }
 
-    static LiteralArgumentBuilder<ServerCommandSource> dumpCommand() {
+    static LiteralArgumentBuilder<CommandSourceStack> dumpCommand() {
         return literal("dump").then(path("file")
-                .then(literal("player").then(argument("ply", EntityArgumentType.player()).executes(ctx -> {
+                .then(literal("player").then(argument("ply", EntityArgument.player()).executes(ctx -> {
                     try {
-                        final ServerPlayerEntity entity = EntityArgumentType.getPlayer(ctx, "ply");
+                        final ServerPlayer entity = EntityArgument.getPlayer(ctx, "ply");
 
-                        final Text roundtripped = NbtHelper.toPrettyPrintedText(dumpToFile(entity::writeNbt, path("file", ctx)));
-                        ctx.getSource().sendFeedback(roundtripped, false);
+                        final Component roundtripped = NbtUtils.toPrettyComponent(dumpToFile(withNew(entity::save), path("file", ctx)));
+                        ctx.getSource().sendSuccess(roundtripped, false);
 
-                        ctx.getSource().sendFeedback(new LiteralText("Successfully dumped data from player ")
-                                .append(entity.getDisplayName().copy().styled(s -> s.withColor(Formatting.AQUA))), false);
+                        ctx.getSource().sendSuccess(new TextComponent("Successfully dumped data from player ")
+                                .append(entity.getDisplayName().copy().withStyle(s -> s.withColor(ChatFormatting.AQUA))), false);
                     } catch (final Throwable t) {
                         ConfabricateTester.LOGGER.error("Unable to write", t);
                     }
                     return 1;
                 })))
-                .then(literal("entity").then(argument("ent", EntityArgumentType.entity()).executes(ctx -> {
-                    final Entity entity = EntityArgumentType.getEntity(ctx, "ent");
+                .then(literal("entity").then(argument("ent", EntityArgument.entity()).executes(ctx -> {
+                    final Entity entity = EntityArgument.getEntity(ctx, "ent");
 
-                    final Text roundtripped = NbtHelper.toPrettyPrintedText(dumpToFile(entity::writeNbt, path("file", ctx)));
-                    ctx.getSource().sendFeedback(roundtripped, false);
+                    final Component roundtripped = NbtUtils.toPrettyComponent(dumpToFile(withNew(entity::save), path("file", ctx)));
+                    ctx.getSource().sendSuccess(roundtripped, false);
 
-                    ctx.getSource().sendFeedback(new LiteralText("Successfully dumped data from ")
-                            .append(entity.getDisplayName().copy().styled(s -> s.withColor(Formatting.AQUA))), false);
+                    ctx.getSource().sendSuccess(new TextComponent("Successfully dumped data from ")
+                            .append(entity.getDisplayName().copy().withStyle(s -> s.withColor(ChatFormatting.AQUA))), false);
                     return 1;
                 })))
-                .then(literal("block").then(argument("pos", BlockPosArgumentType.blockPos()).executes(ctx -> {
-                    final BlockPos pos = BlockPosArgumentType.getBlockPos(ctx, "pos");
-                    final BlockEntity entity = ctx.getSource().getWorld().getBlockEntity(pos);
+                .then(literal("block").then(argument("pos", BlockPosArgument.blockPos()).executes(ctx -> {
+                    final BlockPos pos = BlockPosArgument.getLoadedBlockPos(ctx, "pos");
+                    final BlockEntity entity = ctx.getSource().getLevel().getBlockEntity(pos);
 
                     if (entity == null) {
-                        throw new CommandException(new LiteralText("No block entity found!"));
+                        throw new CommandRuntimeException(new TextComponent("No block entity found!"));
                     }
 
-                    final Text roundtripped = NbtHelper.toPrettyPrintedText(dumpToFile(entity::writeNbt, path("file", ctx)));
-                    ctx.getSource().sendFeedback(roundtripped, false);
-                    ctx.getSource().sendFeedback(new LiteralText("Successfully dumped data from ")
-                            .append(new LiteralText(pos.toString()).styled(s -> s.withColor(Formatting.AQUA))), false);
+                    final Component roundtripped = NbtUtils.toPrettyComponent(dumpToFile(entity::saveWithFullMetadata, path("file", ctx)));
+                    ctx.getSource().sendSuccess(roundtripped, false);
+                    ctx.getSource().sendSuccess(new TextComponent("Successfully dumped data from ")
+                            .append(new TextComponent(pos.toString()).withStyle(s -> s.withColor(ChatFormatting.AQUA))), false);
                     return 1;
                 }))));
     }
 
-    static NbtElement dumpToFile(final Consumer<NbtCompound> dumpFunc, final Path file) throws CommandException {
+    static Supplier<CompoundTag> withNew(final Consumer<CompoundTag> consumer) {
+        return () -> {
+            final var tag = new CompoundTag();
+            consumer.accept(tag);
+            return tag;
+        };
+    }
+
+    static Tag dumpToFile(final Supplier<CompoundTag> dumpFunc, final Path file) throws CommandRuntimeException {
         try {
-            final NbtCompound out = new NbtCompound();
-            dumpFunc.accept(out);
+            final CompoundTag out = dumpFunc.get();
 
             final ConfigurationNode node = BasicConfigurationNode.root();
             NbtNodeAdapter.tagToNode(out, node);
@@ -212,7 +220,7 @@ final class TestCommands {
             return NbtNodeAdapter.nodeToTag(output.load());
         } catch (final IOException e) {
             e.printStackTrace();
-            throw new CommandException(new LiteralText(e.getMessage()));
+            throw new CommandRuntimeException(new TextComponent(e.getMessage()));
         }
     }
 
