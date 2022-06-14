@@ -19,6 +19,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.errorprone.annotations.concurrent.LazyInit;
+import com.mojang.authlib.minecraft.client.MinecraftClient;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.DynamicOps;
 import io.leangen.geantyref.GenericTypeReflector;
@@ -26,16 +27,14 @@ import io.leangen.geantyref.TypeFactory;
 import io.leangen.geantyref.TypeToken;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NbtCompound;
+import net.minecraft.core.HolderSet;
+import net.minecraft.core.Registry;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.tag.Tag;
-import net.minecraft.text.Text;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.registry.Registry;
-import net.minecraft.util.registry.RegistryEntryList;
-import net.minecraft.world.dimension.DimensionType;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.dimension.DimensionType;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -202,13 +201,13 @@ public final class MinecraftSerializers {
      * Register Minecraft {@link TypeSerializer}s with the provided collection.
      *
      * <p>This will add serializers for: <ul>
-     *     <li>{@link net.minecraft.util.Identifier Identifiers}</li>
-     *     <li>{@link net.minecraft.text.Text} (as a string)</li>
+     *     <li>{@link ResourceLocation resource locations}</li>
+     *     <li>{@link net.minecraft.network.chat.Component} (as a string)</li>
      *     <li>Any elements in vanilla {@link Registry registries}</li>
-     *     <li>{@link Tag} of a combination of identifiers and
-     *          tags for blocks, items, fluids, and entity types</li>
+     *     <li>{@link HolderSet} of a combination of identifiers and
+     *          tags for any taggable registry</li>
      *     <li>{@link ItemStack}</li>
-     *     <li>{@link NbtCompound} instances</li>
+     *     <li>{@link CompoundTag} instances</li>
      * </ul>
      *
      * @param collection to populate
@@ -216,15 +215,15 @@ public final class MinecraftSerializers {
      * @since 1.2.0
      */
     public static TypeSerializerCollection.Builder populate(final TypeSerializerCollection.Builder collection) {
-        collection.registerExact(Identifier.class, IdentifierSerializer.INSTANCE)
-                .register(Text.class, TextSerializer.INSTANCE);
+        collection.registerExact(ResourceLocation.class, ResourceLocationSerializer.INSTANCE)
+                .register(Component.class, ComponentSerializer.INSTANCE);
 
         for (final Map.Entry<Type, TypeSerializer<?>> registry : knownRegistries()) {
             registerRegistry(collection, registry.getKey(), registry.getValue());
         }
 
         collection.register(ItemStack.class, serializer(ItemStack.CODEC));
-        collection.register(NbtCompound.class, serializer(NbtCompound.CODEC));
+        collection.register(CompoundTag.class, serializer(CompoundTag.CODEC));
 
         // All registries here should be in SPECIAL_REGISTRIES
 
@@ -235,7 +234,7 @@ public final class MinecraftSerializers {
 
     // Type serializers that use the server resource manager
     private static TypeSerializerCollection.Builder populateServer(final MinecraftServer server, final TypeSerializerCollection.Builder collection) {
-        registerRegistry(collection, DimensionType.class, forRegistry(server.getRegistryManager().get(Registry.DIMENSION_TYPE_KEY)));
+        registerRegistry(collection, DimensionType.class, forRegistry(server.registryAccess().registryOrThrow(Registry.DIMENSION_TYPE_REGISTRY)));
         return collection;
     }
 
@@ -292,7 +291,7 @@ public final class MinecraftSerializers {
     }
 
     /**
-     * Add a serializer for the registry and its {@link Tag}.
+     * Add a serializer for the registry and its {@link HolderSet}.
      *
      * @param collection the collection to serialize
      * @param token generic element type of the registry
@@ -302,7 +301,7 @@ public final class MinecraftSerializers {
     @SuppressWarnings("unchecked")
     private static <T> void populateTaggedRegistry(final TypeSerializerCollection.Builder collection, final TypeToken<T> token,
             final Registry<T> registry) {
-        final Type tagType = TypeFactory.parameterizedClass(RegistryEntryList.class, token.getType());
+        final Type tagType = TypeFactory.parameterizedClass(HolderSet.class, token.getType());
 
         // collection.registerExact((TypeToken<RegistryEntryList<T>>) TypeToken.get(tagType), new TagSerializer<>(registry, tagRegistry));
         // collection.registerExact(token, new RegistrySerializer<>(registry));

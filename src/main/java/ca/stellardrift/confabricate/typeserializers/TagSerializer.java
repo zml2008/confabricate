@@ -15,8 +15,8 @@
  */
 package ca.stellardrift.confabricate.typeserializers;
 
-import net.minecraft.tag.Tag;
-import net.minecraft.util.registry.Registry;
+import net.minecraft.core.Registry;
+import net.minecraft.tags.Tag;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.spongepowered.configurate.ConfigurationNode;

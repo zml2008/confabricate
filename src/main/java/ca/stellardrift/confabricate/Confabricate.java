@@ -24,8 +24,8 @@ import net.fabricmc.api.ModInitializer;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.ModContainer;
 import net.minecraft.SharedConstants;
-import net.minecraft.datafixer.Schemas;
-import net.minecraft.util.Identifier;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.datafix.DataFixers;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.spongepowered.configurate.CommentedConfigurationNode;
@@ -79,7 +79,7 @@ public class Confabricate implements ModInitializer {
     }
 
     /**
-     * Internal API to get a mod {@link Identifier}.
+     * Internal API to get a mod {@link ResourceLocation}.
      *
      * @param item path value
      * @return new identifier
@@ -87,8 +87,8 @@ public class Confabricate implements ModInitializer {
      */
     @RestrictedApi(explanation = "confabricate namespace is not open to others",
             link = "", allowedOnPath = ".*/ca/stellardrift/confabricate/.*")
-    public static Identifier id(final String item) {
-        return new Identifier(MOD_ID, item);
+    public static ResourceLocation id(final String item) {
+        return new ResourceLocation(MOD_ID, item);
     }
 
     @Override
@@ -359,10 +359,10 @@ public class Confabricate implements ModInitializer {
     public static DataFixerTransformation.Builder minecraftDfuBuilder() {
         return DataFixerTransformation.dfuBuilder()
                 .versionKey("minecraft-data-version")
-                .dataFixer(Schemas.getFixer())
+                .dataFixer(DataFixers.getDataFixer())
                 // This seems to always be a bit higher than the latest declared schema.
                 // Don't know why, but the rest of the game uses this version.
-                .targetVersion(SharedConstants.getGameVersion().getSaveVersion().getId());
+                .targetVersion(SharedConstants.getCurrentVersion().getDataVersion().getVersion());
     }
 
 }

@@ -15,8 +15,8 @@
  */
 package ca.stellardrift.confabricate.typeserializers;
 
-import net.minecraft.util.Identifier;
-import net.minecraft.util.InvalidIdentifierException;
+import net.minecraft.ResourceLocationException;
+import net.minecraft.resources.ResourceLocation;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.spongepowered.configurate.ConfigurationNode;
@@ -27,12 +27,12 @@ import java.lang.reflect.Type;
 import java.util.List;
 
 /**
- * Serializes an {@link Identifier} to a configuration object.
+ * Serializes an {@link ResourceLocation} to a configuration object.
  *
- * <p>When identifiers are output, they are given in the canonical
+ * <p>When locations are output, they are given in the canonical
  * string format.
  *
- * <p>When identifiers are read, they are accepted in the formats of:
+ * <p>When locations are read, they are accepted in the formats of:
  * <ul>
  *     <li>
  *         A list of either one or two elements. If the list is two elements,
@@ -43,22 +43,22 @@ import java.util.List;
  *     format, where the default namespace is <pre>minecraft</pre></li>
  * </ul>
  */
-final class IdentifierSerializer implements TypeSerializer<Identifier> {
+final class ResourceLocationSerializer implements TypeSerializer<ResourceLocation> {
 
     //private static final String NAMESPACE_MINECRAFT = "minecraft";
-    public static final IdentifierSerializer INSTANCE = new IdentifierSerializer();
+    public static final ResourceLocationSerializer INSTANCE = new ResourceLocationSerializer();
 
     @Override
-    public Identifier deserialize(final @NonNull Type type, final @NonNull ConfigurationNode value) throws SerializationException {
+    public ResourceLocation deserialize(final @NonNull Type type, final @NonNull ConfigurationNode value) throws SerializationException {
         return fromNode(value);
     }
 
     @Override
-    public void serialize(final @NonNull Type type, final @Nullable Identifier obj, final @NonNull ConfigurationNode value) {
+    public void serialize(final @NonNull Type type, final @Nullable ResourceLocation obj, final @NonNull ConfigurationNode value) {
         toNode(obj, value);
     }
 
-    static Identifier fromNode(final ConfigurationNode node) throws SerializationException {
+    static ResourceLocation fromNode(final ConfigurationNode node) throws SerializationException {
         if (node.virtual()) {
             return null;
         }
@@ -87,22 +87,22 @@ final class IdentifierSerializer implements TypeSerializer<Identifier> {
             if (val == null) {
                 throw listAcceptedFormats();
             }
-            return new Identifier(val);
+            return new ResourceLocation(val);
         }
     }
 
-    static Identifier createIdentifier(final String key, final String value) throws SerializationException {
+    static ResourceLocation createIdentifier(final String key, final String value) throws SerializationException {
         try {
-            return new Identifier(key, value);
-        } catch (final InvalidIdentifierException ex) {
+            return new ResourceLocation(key, value);
+        } catch (final ResourceLocationException ex) {
             throw new SerializationException(ex);
         }
     }
 
-    static Identifier createIdentifier(final String data) throws SerializationException {
+    static ResourceLocation createIdentifier(final String data) throws SerializationException {
         try {
-            return new Identifier(data);
-        } catch (final InvalidIdentifierException ex) {
+            return new ResourceLocation(data);
+        } catch (final ResourceLocationException ex) {
             throw new SerializationException(ex.getMessage());
         }
     }
@@ -111,7 +111,7 @@ final class IdentifierSerializer implements TypeSerializer<Identifier> {
         return new SerializationException("The provided item must be in [<namespace>:]<path> format");
     }
 
-    static void toNode(final Identifier ident, final ConfigurationNode node) {
+    static void toNode(final ResourceLocation ident, final ConfigurationNode node) {
         if (ident == null) {
             node.raw(null);
         } else {

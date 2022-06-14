@@ -5,7 +5,7 @@ import ca.stellardrift.build.configurate.transformations.ConfigurateTransformati
 
 plugins {
     id 'net.ltgt.errorprone' version '2.0.2'
-    id 'fabric-loom' version '0.11.+'
+    id 'fabric-loom' version '0.12.+'
     id 'io.github.juuxel.loom-quiltflower' version '1.7.2'
     id 'ca.stellardrift.opinionated' version '5.0.1'
     id 'ca.stellardrift.configurate-transformations' version '5.0.1'
@@ -117,7 +117,10 @@ dependencies {
     compileOnlyApi "org.checkerframework:checker-qual:3.22.1"
 
     minecraft "com.mojang:minecraft:$versionMinecraft"
-    mappings "net.fabricmc:yarn:$versionMinecraft+build.$versionMappings:v2"
+    mappings loom.layered {
+        officialMojangMappings()
+        parchment "org.parchmentmc.data:parchment-$versionParchment@zip"
+    }
     modImplementation "net.fabricmc:fabric-loader:$versionLoader"
     modImplementation "net.fabricmc.fabric-api:fabric-api:$versionFabricApi"
 

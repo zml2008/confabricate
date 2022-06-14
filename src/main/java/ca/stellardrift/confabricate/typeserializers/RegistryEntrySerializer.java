@@ -15,8 +15,8 @@
  */
 package ca.stellardrift.confabricate.typeserializers;
 
-import net.minecraft.util.Identifier;
-import net.minecraft.util.registry.Registry;
+import net.minecraft.core.Registry;
+import net.minecraft.resources.ResourceLocation;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.spongepowered.configurate.ConfigurationNode;
@@ -35,12 +35,12 @@ final class RegistryEntrySerializer<T> implements TypeSerializer<T> {
 
     @Override
     public @Nullable T deserialize(final @NonNull Type type, final @NonNull ConfigurationNode value) throws SerializationException {
-        final Identifier ident = IdentifierSerializer.fromNode(value);
-        if (ident == null) {
+        final ResourceLocation loc = ResourceLocationSerializer.fromNode(value);
+        if (loc == null) {
             return null;
         }
 
-        return this.registry.get(ident);
+        return this.registry.get(loc);
     }
 
     @Override
@@ -50,11 +50,11 @@ final class RegistryEntrySerializer<T> implements TypeSerializer<T> {
             value.raw(null);
         }
 
-        final Identifier ident = this.registry.getId(obj);
-        if (ident == null) {
+        final ResourceLocation loc = this.registry.getKey(obj);
+        if (loc == null) {
             throw new SerializationException("Unknown registry element " + obj);
         }
-        IdentifierSerializer.toNode(ident, value);
+        ResourceLocationSerializer.toNode(loc, value);
     }
 
 }

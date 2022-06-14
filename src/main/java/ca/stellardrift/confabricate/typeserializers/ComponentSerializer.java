@@ -19,9 +19,9 @@ import static ca.stellardrift.confabricate.typeserializers.MinecraftSerializers.
 
 import com.google.gson.JsonElement;
 import com.mojang.serialization.JsonOps;
-import net.minecraft.text.LiteralText;
-import net.minecraft.text.Style;
-import net.minecraft.text.Text;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.Style;
+import net.minecraft.network.chat.TextComponent;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.spongepowered.configurate.ConfigurationNode;
@@ -31,51 +31,54 @@ import org.spongepowered.configurate.serialize.TypeSerializer;
 
 import java.lang.reflect.Type;
 
-final class TextSerializer implements TypeSerializer<Text> {
+final class ComponentSerializer implements TypeSerializer<Component> {
 
-    static final TypeSerializer<Text> INSTANCE = new TextSerializer();
+    static final TypeSerializer<Component> INSTANCE = new ComponentSerializer();
 
-    private TextSerializer() {}
+    private ComponentSerializer() {}
 
     @Override
-    public Text deserialize(final @NonNull Type type, final @NonNull ConfigurationNode value) throws SerializationException {
+    public Component deserialize(final @NonNull Type type, final @NonNull ConfigurationNode value) throws SerializationException {
         if (value.isMap() || value.isList()) {
             final JsonElement element = opsFor(value).convertTo(JsonOps.INSTANCE, value);
-            return Text.Serializer.fromJson(element);
+            return Component.Serializer.fromJson(element);
         } else {
             final String text = value.getString();
             if (text == null) {
                 return null;
             }
             if (text.startsWith("{")) { // Legacy format as JSON
-                return Text.Serializer.fromLenientJson(text);
+                return Component.Serializer.fromJson(text);
             } else {
-                return new LiteralText(text);
+                return new TextComponent(text);
             }
         }
     }
 
     @Override
-    public void serialize(final @NonNull Type type, final @Nullable Text obj, final @NonNull ConfigurationNode value) throws SerializationException {
+    public void serialize(
+        final @NonNull Type type,
+        final @Nullable Component obj,
+        final @NonNull ConfigurationNode value
+    ) throws SerializationException {
         if (obj == null) {
             value.raw(null);
             return;
         }
 
-        if (obj instanceof LiteralText) {
-            final LiteralText literal = (LiteralText) obj;
-            if (literal.getSiblings().isEmpty() && literal.getStyle().equals(Style.EMPTY)) {
-                value.raw(literal.getRawString());
+        if (obj instanceof final TextComponent text) {
+            if (text.getSiblings().isEmpty() && text.getStyle().equals(Style.EMPTY)) {
+                value.raw(text.getContents());
                 return;
             }
         }
 
-        value.from(JsonOps.INSTANCE.convertTo(opsFor(value), Text.Serializer.toJsonTree(obj)));
+        value.from(JsonOps.INSTANCE.convertTo(opsFor(value), Component.Serializer.toJsonTree(obj)));
     }
 
     @Override
-    public Text emptyValue(final Type specificType, final ConfigurationOptions options) {
-        return new LiteralText("");
+    public Component emptyValue(final Type specificType, final ConfigurationOptions options) {
+        return new TextComponent("");
     }
 
 }
