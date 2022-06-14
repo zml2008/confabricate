@@ -11,9 +11,6 @@ entrypoints:
   main:
   - ca.stellardrift.confabricate.Confabricate
 
-mixins:
-- confabricate.accessor.mixins.json
-
 depends:
   fabricloader: ">=0.4.0"
 suggests:

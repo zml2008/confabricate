@@ -41,16 +41,6 @@ tasks.withType(Javadoc).configureEach {
 }
 
 sourceSets {
-  main {
-    java.srcDirs(
-      "src/accessor/java",
-      "src/mixin/java"
-    )
-    resources.srcDirs(
-      "src/accessor/resources/",
-      "src/mixin/resources/"
-    )
-  }
   /*register("testmod") {
     compileClasspath += main.compileClasspath
     runtimeClasspath += main.runtimeClasspath
