@@ -8,11 +8,11 @@ A mod that provides Configurate's core, gson and hocon serializers, and useful u
 
 ### TypeSerializers for:
 
-- `Identifier`s
+- `ResourceLocation`s
 - Any item stored in a `Registry`
-- `Text` (as json)
+- `Component` (as json)
 - `ItemStack`s
-- `Tags`, both datapack-defined and defined in the config, currently for blocks, items, entity types, and fluids
+- tags (as `HolderSet`), both datapack-defined and defined in the config, currently for blocks, items, entity types, and fluids
 
 ### NBTNodeAdapter
 
@@ -42,6 +42,7 @@ Minecraft      | Confabricate   | Configurate
 1.16.2         | 1.3+3.7.1      | 3.7.1
 1.16.2-1.16.5  | 2.1.0          | 4.1.1
 1.17           | 2.2.0-SNAPSHOT | 4.1.1
+1.18.2         | 3.0.0-SNAPSHOT | 4.1.2
 
 It is recommended to use this project in jar-in-jar packaging.
 
@@ -62,7 +63,7 @@ repositories {
 }
 
 dependencies {
-    modImplementation(include("ca.stellardrift:confabricate:2.1.0")!!)
+    modImplementation(include("ca.stellardrift:confabricate:3.0.0-SNAPSHOT")!!)
 }
 ```
 
