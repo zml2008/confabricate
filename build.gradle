@@ -6,7 +6,7 @@ import ca.stellardrift.build.configurate.transformations.ConfigurateTransformati
 plugins {
     id 'net.ltgt.errorprone' version '2.0.2'
     id 'fabric-loom' version '0.12.+'
-    id 'io.github.juuxel.loom-quiltflower' version '1.7.2'
+    id 'io.github.juuxel.loom-quiltflower' version '1.7.3'
     id 'ca.stellardrift.opinionated' version '5.0.1'
     id 'ca.stellardrift.configurate-transformations' version '5.0.1'
     id 'net.kyori.indra.publishing.sonatype' version '2.1.1'
