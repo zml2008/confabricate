@@ -15,6 +15,10 @@
  */
 package ca.stellardrift.confabricate;
 
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import net.minecraft.nbt.ByteArrayTag;
 import net.minecraft.nbt.ByteTag;
 import net.minecraft.nbt.CompoundTag;
@@ -34,11 +38,6 @@ import org.spongepowered.configurate.BasicConfigurationNode;
 import org.spongepowered.configurate.ConfigurationNode;
 import org.spongepowered.configurate.ConfigurationNodeFactory;
 import org.spongepowered.configurate.ConfigurationOptions;
-
-import java.io.IOException;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 /**
  * A configuration adapter that will convert Minecraft NBT data into a

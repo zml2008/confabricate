@@ -18,6 +18,9 @@ package ca.stellardrift.confabricate.typeserializers;
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.concurrent.LazyInit;
 import com.mojang.datafixers.util.Either;
+import java.util.List;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 import net.minecraft.ResourceLocationException;
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderSet;
@@ -27,10 +30,6 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
 import org.spongepowered.configurate.ConfigurationNode;
 import org.spongepowered.configurate.serialize.SerializationException;
-
-import java.util.List;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
 
 /**
  * A tag implementation that keeps its original form for reserialization.

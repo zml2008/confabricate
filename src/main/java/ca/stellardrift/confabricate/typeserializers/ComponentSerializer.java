@@ -15,10 +15,9 @@
  */
 package ca.stellardrift.confabricate.typeserializers;
 
-import static ca.stellardrift.confabricate.typeserializers.MinecraftSerializers.opsFor;
-
 import com.google.gson.JsonElement;
 import com.mojang.serialization.JsonOps;
+import java.lang.reflect.Type;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
 import net.minecraft.network.chat.TextComponent;
@@ -29,7 +28,7 @@ import org.spongepowered.configurate.ConfigurationOptions;
 import org.spongepowered.configurate.serialize.SerializationException;
 import org.spongepowered.configurate.serialize.TypeSerializer;
 
-import java.lang.reflect.Type;
+import static ca.stellardrift.confabricate.typeserializers.MinecraftSerializers.opsFor;
 
 final class ComponentSerializer implements TypeSerializer<Component> {
 

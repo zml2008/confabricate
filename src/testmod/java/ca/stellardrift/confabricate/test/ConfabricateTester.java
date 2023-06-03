@@ -15,10 +15,14 @@
  */
 package ca.stellardrift.confabricate.test;
 
-import static org.spongepowered.configurate.transformation.ConfigurationTransformation.WILDCARD_OBJECT;
-
 import ca.stellardrift.confabricate.Confabricate;
 import ca.stellardrift.confabricate.typeserializers.MinecraftSerializers;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v1.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.player.AttackBlockCallback;
@@ -64,12 +68,7 @@ import org.spongepowered.configurate.objectmapping.meta.Comment;
 import org.spongepowered.configurate.reference.ConfigurationReference;
 import org.spongepowered.configurate.reference.ValueReference;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
+import static org.spongepowered.configurate.transformation.ConfigurationTransformation.WILDCARD_OBJECT;
 
 /**
  * A test mod that uses an auto-reloadable configuration.

@@ -1,15 +1,13 @@
-
-import ca.stellardrift.build.common.MinecraftDependenciesKt
 import ca.stellardrift.build.configurate.ConfigFormats
 import ca.stellardrift.build.configurate.transformations.ConfigurateTransformations
 
 plugins {
-    id 'net.ltgt.errorprone' version '2.0.2'
-    id 'fabric-loom' version '0.12.+'
-    id 'io.github.juuxel.loom-quiltflower' version '1.8.0'
-    id 'ca.stellardrift.opinionated' version '5.0.1'
-    id 'ca.stellardrift.configurate-transformations' version '5.0.1'
-    id 'net.kyori.indra.publishing.sonatype' version '2.2.0'
+    id 'net.ltgt.errorprone' version '3.1.0'
+    id 'fabric-loom' version '1.2.+'
+    id 'io.github.juuxel.loom-quiltflower' version '1.10.0'
+    id 'ca.stellardrift.opinionated' version '6.0.1'
+    id 'ca.stellardrift.configurate-transformations' version '6.0.1'
+    id 'net.kyori.indra.publishing.sonatype' version '3.1.1'
 }
 
 group = "ca.stellardrift"
@@ -21,8 +19,8 @@ indra.javaVersions {
 
 
 repositories {
-    stellardriftReleases()
-    stellardriftSnapshots()
+    stellardrift.releases()
+    stellardrift.snapshots()
 }
 
 tasks.withType(Jar).configureEach {
