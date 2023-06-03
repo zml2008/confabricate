@@ -15,6 +15,8 @@
  */
 package ca.stellardrift.confabricate.typeserializers;
 
+import java.lang.reflect.Type;
+import java.util.List;
 import net.minecraft.ResourceLocationException;
 import net.minecraft.resources.ResourceLocation;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -22,9 +24,6 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.spongepowered.configurate.ConfigurationNode;
 import org.spongepowered.configurate.serialize.SerializationException;
 import org.spongepowered.configurate.serialize.TypeSerializer;
-
-import java.lang.reflect.Type;
-import java.util.List;
 
 /**
  * Serializes an {@link ResourceLocation} to a configuration object.

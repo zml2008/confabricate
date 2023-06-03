@@ -15,6 +15,7 @@
  */
 package ca.stellardrift.confabricate.typeserializers;
 
+import java.lang.reflect.Type;
 import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
 import net.minecraft.core.RegistryAccess;
@@ -24,8 +25,6 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.spongepowered.configurate.ConfigurationNode;
 import org.spongepowered.configurate.serialize.SerializationException;
-
-import java.lang.reflect.Type;
 
 final class HolderSerializer<T> extends RegistryBasedSerializer<T, Holder<T>> {
 

@@ -15,8 +15,6 @@
  */
 package ca.stellardrift.confabricate.typeserializers;
 
-import static java.util.Objects.requireNonNull;
-
 import com.google.common.collect.ImmutableSet;
 import com.google.errorprone.annotations.concurrent.LazyInit;
 import com.mojang.logging.LogUtils;
@@ -25,6 +23,14 @@ import com.mojang.serialization.DynamicOps;
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.geantyref.TypeFactory;
 import io.leangen.geantyref.TypeToken;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.lang.reflect.WildcardType;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Supplier;
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderSet;
 import net.minecraft.core.Registry;
@@ -43,14 +49,7 @@ import org.spongepowered.configurate.gson.GsonConfigurationLoader;
 import org.spongepowered.configurate.serialize.TypeSerializer;
 import org.spongepowered.configurate.serialize.TypeSerializerCollection;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
-import java.lang.reflect.WildcardType;
-import java.util.Map;
-import java.util.Set;
-import java.util.function.Supplier;
+import static java.util.Objects.requireNonNull;
 
 /**
  * Access serializers for Minecraft types.
