@@ -125,9 +125,9 @@ dependencies {
     })
 
     include "com.typesafe:config:1.4.2"
-    include api("io.leangen.geantyref:geantyref:1.3.13")
+    include api("io.leangen.geantyref:geantyref:1.3.14")
 
-    checkstyle "ca.stellardrift:stylecheck:0.2.0"
+    checkstyle "ca.stellardrift:stylecheck:0.2.1"
 }
 
 indra {
