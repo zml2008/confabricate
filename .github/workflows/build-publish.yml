@@ -29,7 +29,7 @@ jobs:
         uses: actions/checkout@v4
       - uses: gradle/wrapper-validation-action@v1
       - name: setup jdk ${{ env.RUNTIME_VERSION }}
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: ${{ env.RUNTIME_VERSION }}
