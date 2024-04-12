@@ -27,20 +27,20 @@ jobs:
     steps:
       - name: Check out
         uses: actions/checkout@v4
-      - uses: gradle/wrapper-validation-action@v1
+      - uses: gradle/wrapper-validation-action@v3
       - name: setup jdk ${{ env.RUNTIME_VERSION }}
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: ${{ env.RUNTIME_VERSION }}
       - name: run gradle build
-        uses: gradle/gradle-build-action@v2
+        uses: gradle/gradle-build-action@v3
         with:
           cache-read-only: ${{ !startsWith(github.ref, 'refs/heads/mc/') || github.event_name == 'pull_request' }}
           arguments: build
       - name: Archive test results
         if: ${{ always() }}
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ runner.os }}-test-results
           path: |
